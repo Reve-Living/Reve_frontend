@@ -56,7 +56,7 @@ const Header = () => {
             ? 'border-b border-white/10 bg-background/70 shadow-lg backdrop-blur-xl'
             : 'bg-background'
         }`}
-        style={{ top: isScrolled ? 0 : '40px' }}
+        style={{ top: isScrolled ? 0 : '20px' }}
       >
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
@@ -269,7 +269,7 @@ const Header = () => {
       </motion.header>
 
       {/* Spacer for fixed header + announcement bar */}
-      <div className={`h-[${isScrolled ? '80px' : '100px'}]`} style={{ height: isScrolled ? '80px' : '100px' }} />
+      <div className={`h-[${isScrolled ? '80px' : '80px'}]`} style={{ height: isScrolled ? '80px' : '80px' }} />
     </>
   );
 };
