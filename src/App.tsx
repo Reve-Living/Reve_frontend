@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import Cursor from "@/components/Cursor";
 import CartDrawer from "@/components/CartDrawer";
+import ScrollToTop from "@/components/ScrollToTop";
+import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 import Index from "./pages/Index";
 import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
@@ -26,6 +28,8 @@ const App = () => (
           <Sonner />
           <Cursor />
           <CartDrawer />
+          <ScrollToTop />
+          <ScrollToTopOnNavigate />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/category/:slug" element={<CategoryPage />} />
