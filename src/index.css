@@ -121,19 +121,13 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    cursor: none;
-  }
-
-  /* Hide default cursor on interactive elements */
-  a, button, [role="button"], input, textarea, select {
-    cursor: none;
   }
 }
 
 @layer utilities {
   /* Story link underline animation */
   .story-link {
-    @apply relative inline-block;
+    @apply relative;
   }
   
   .story-link::after {

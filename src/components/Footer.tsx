@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter, CreditCard } from 'lucide-react';
-import logo from '@/assets/logo.jpeg';
+import logo from '@/assets/logo.png';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -36,6 +36,31 @@ const Footer = () => {
 
   return (
     <footer className="bg-espresso text-cream">
+      {/* MOVING BANNER - Large Reve Living Text */}
+      <div className="relative h-32 md:h-48 overflow-hidden bg-primary border-b border-cream/10">
+        <style>{`
+          @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
+          .animate-marquee {
+            animation: marquee 15s linear infinite;
+          }
+        `}</style>
+        
+        <div className="absolute inset-0 flex items-center">
+          <div className="animate-marquee flex whitespace-nowrap">
+            {[...Array(4)].map((_, i) => (
+              <span key={i} className="mx-8 md:mx-16 text-6xl md:text-8xl lg:text-9xl font-serif font-bold tracking-tight">
+                <span className="text-cream">REVE</span>
+                <span className="text-espresso"> LIVING</span>
+                <span className="text-espresso mx-4">•</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-5">
@@ -43,7 +68,7 @@ const Footer = () => {
           <div className="lg:col-span-2">
             <Link to="/" className="mb-6 inline-block">
               <div className="flex items-center gap-3">
-                <img src={logo} alt="Reve Living" className="h-12 w-auto rounded" />
+                <img src={logo} alt="Reve Living" className="h-20 w-auto rounded" />
                 <span className="font-serif text-xl font-semibold">Reve Living</span>
               </div>
             </Link>

@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
@@ -85,7 +84,7 @@ const HeroSlider = () => {
                 </div>
 
                 {/* Content */}
-                <div className="container relative mx-auto flex h-full items-center px-4">
+                <div className="container relative mx-auto flex h-full items-end px-4 pb-24 md:pb-32">
                   <div className="max-w-2xl">
                     <motion.p
                       initial={{ opacity: 0, y: 20 }}
@@ -131,20 +130,6 @@ const HeroSlider = () => {
             )
         )}
       </AnimatePresence>
-
-      {/* Navigation Arrows */}
-      <button
-        onClick={prevSlide}
-        className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-cream/20 text-cream backdrop-blur-sm transition-all hover:bg-cream hover:text-espresso md:left-8"
-      >
-        <ChevronLeft className="h-6 w-6" />
-      </button>
-      <button
-        onClick={nextSlide}
-        className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-cream/20 text-cream backdrop-blur-sm transition-all hover:bg-cream hover:text-espresso md:right-8"
-      >
-        <ChevronRight className="h-6 w-6" />
-      </button>
 
       {/* Dots */}
       <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-3">

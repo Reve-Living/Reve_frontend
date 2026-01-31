@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { categories } from '@/data/products';
-import logo from '@/assets/logo.jpeg';
+import logo from '@/assets/logo.png';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -53,7 +53,7 @@ const Header = () => {
         transition={{ duration: 0.5 }}
         className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'bg-background/95 shadow-lg backdrop-blur-md'
+            ? 'border-b border-white/10 bg-background/70 shadow-lg backdrop-blur-xl'
             : 'bg-background'
         }`}
         style={{ top: isScrolled ? 0 : '40px' }}
@@ -65,7 +65,7 @@ const Header = () => {
               <motion.img
                 src={logo}
                 alt="Reve Living"
-                className="h-12 w-auto rounded"
+                className="h-20 w-auto rounded mt-2"
                 whileHover={{ scale: 1.05 }}
                 transition={{ duration: 0.2 }}
               />
@@ -84,8 +84,8 @@ const Header = () => {
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
                   {link.children ? (
-                    <button className="story-link flex items-center gap-1 py-2 font-medium text-foreground transition-colors hover:text-primary">
-                      {link.name}
+                    <button className="story-link inline-flex items-center gap-1 py-2 font-medium text-foreground transition-colors hover:text-primary">
+                      <span>{link.name}</span>
                       <ChevronDown className="h-4 w-4" />
                     </button>
                   ) : (
@@ -269,7 +269,7 @@ const Header = () => {
       </motion.header>
 
       {/* Spacer for fixed header + announcement bar */}
-      <div className={`h-[${isScrolled ? '80px' : '120px'}]`} style={{ height: isScrolled ? '80px' : '120px' }} />
+      <div className={`h-[${isScrolled ? '80px' : '100px'}]`} style={{ height: isScrolled ? '80px' : '100px' }} />
     </>
   );
 };
