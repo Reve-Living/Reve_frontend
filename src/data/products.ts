@@ -2,7 +2,7 @@ export interface Product {
   id: string;
   name: string;
   slug: string;
-  category: 'divan-beds' | 'ottoman-beds' | 'upholstered-beds' | 'wooden-beds' | 'bunk-beds' | 'mattresses';
+  category: 'divan-beds' | 'ottoman-beds' | 'upholstered-beds' | 'wooden-beds' | 'bunk-beds' | 'mattresses' | 'sofas';
   price: number;
   originalPrice?: number;
   images: string[];
@@ -69,6 +69,13 @@ export const categories: Category[] = [
     slug: 'mattresses',
     description: 'Handcrafted mattresses for the ultimate night\'s sleep.',
     image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=600&fit=crop',
+  },
+  {
+    id: '7',
+    name: 'Sofas',
+    slug: 'sofas',
+    description: 'Premium sofas and seating solutions for modern living.',
+    image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=800&h=600&fit=crop',
   },
 ];
 

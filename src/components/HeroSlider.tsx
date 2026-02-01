@@ -2,38 +2,31 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const slides = [
   {
     id: 1,
     image: 'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=1920&h=1080&fit=crop',
-    title: 'Sleep in Luxury',
-    subtitle: 'UK Handcrafted Beds & Mattresses',
+    title: 'Luxury Beds',
+    subtitle: 'UK Handcrafted Bed Collection',
     cta: 'Shop Collection',
-    link: '/category/divan-beds',
+    link: '/category/beds',
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1920&h=1080&fit=crop',
-    title: 'Divan Bed Collection',
-    subtitle: 'Premium Storage Solutions',
-    cta: 'Explore Now',
-    link: '/category/divan-beds',
-  },
-  {
-    id: 3,
     image: 'https://images.unsplash.com/photo-1588046130717-0eb0c9a3ba15?w=1920&h=1080&fit=crop',
     title: 'Ottoman Beds',
-    subtitle: 'Maximise Your Space',
-    cta: 'View Range',
+    subtitle: 'Maximise Your Space with Style',
+    cta: 'Shop Collection',
     link: '/category/ottoman-beds',
   },
   {
-    id: 4,
+    id: 3,
     image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=1920&h=1080&fit=crop',
-    title: 'Natural Sleep',
-    subtitle: 'Premium Mattress Collection',
-    cta: 'Shop Mattresses',
+    title: 'Premium Mattresses',
+    subtitle: 'Sleep in Ultimate Comfort',
+    cta: 'Shop Collection',
     link: '/category/mattresses',
   },
 ];
@@ -58,7 +51,7 @@ const HeroSlider = () => {
 
   return (
     <section
-      className="relative h-[70vh] min-h-[500px] overflow-hidden md:h-[85vh]"
+      className="relative h-[60vh] min-h-[400px] overflow-hidden md:h-[70vh] md:max-h-[700px]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -69,10 +62,10 @@ const HeroSlider = () => {
             index === currentSlide && (
               <motion.div
                 key={slide.id}
-                initial={{ opacity: 0, scale: 1.1 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                transition={{ duration: 0.8 }}
+                transition={{ duration: 0.6, ease: 'easeInOut' }}
                 className="absolute inset-0"
               >
                 {/* Background Image */}
@@ -84,8 +77,8 @@ const HeroSlider = () => {
                 </div>
 
                 {/* Content */}
-                <div className="container relative mx-auto flex h-full items-end px-4 pb-24 md:pb-32">
-                  <div className="max-w-2xl">
+                <div className="container relative mx-auto flex h-full items-end px-4 pb-20 md:pb-24 md:pl-16 lg:pl-20">
+                  <div className="max-w-2xl pl-8 md:pl-0">
                     <motion.p
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -106,7 +99,6 @@ const HeroSlider = () => {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6, duration: 0.6 }}
-                      className="flex flex-wrap gap-4"
                     >
                       <Button
                         asChild
@@ -114,14 +106,6 @@ const HeroSlider = () => {
                         className="gradient-bronze text-lg font-semibold transition-transform hover:scale-105"
                       >
                         <Link to={slide.link}>{slide.cta}</Link>
-                      </Button>
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="lg"
-                        className="border-cream bg-transparent text-lg font-semibold text-cream hover:bg-cream hover:text-espresso"
-                      >
-                        <Link to="/category/mattresses">Shop Mattresses</Link>
                       </Button>
                     </motion.div>
                   </div>
@@ -131,8 +115,26 @@ const HeroSlider = () => {
         )}
       </AnimatePresence>
 
+      {/* Left Arrow */}
+      <button
+        onClick={prevSlide}
+        className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur-sm transition-all hover:bg-black/50 md:left-5 md:p-3"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft className="h-5 w-5 text-white md:h-6 md:w-6" />
+      </button>
+
+      {/* Right Arrow */}
+      <button
+        onClick={nextSlide}
+        className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur-sm transition-all hover:bg-black/50 md:right-5 md:p-3"
+        aria-label="Next slide"
+      >
+        <ChevronRight className="h-5 w-5 text-white md:h-6 md:w-6" />
+      </button>
+
       {/* Dots */}
-      <div className="absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 gap-3">
+      <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-3 md:bottom-8">
         {slides.map((_, index) => (
           <button
             key={index}

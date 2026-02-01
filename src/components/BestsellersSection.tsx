@@ -32,7 +32,7 @@ const BestsellersSection = () => {
   const bestsellers = getBestsellers().slice(0, 4);
 
   return (
-    <section className="relative bg-card py-20 md:py-32 overflow-hidden">
+    <section className="relative bg-card py-14 md:py-20 overflow-hidden">
       {/* Background Decorative Elements */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -left-40 top-20 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
@@ -46,7 +46,7 @@ const BestsellersSection = () => {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mb-16 flex flex-col items-center justify-between gap-6 lg:flex-row"
+          className="mb-10 flex flex-col items-center justify-between gap-6 lg:flex-row"
         >
           <div className="text-center lg:text-left">
             <motion.div
@@ -81,7 +81,7 @@ const BestsellersSection = () => {
               className="group gradient-bronze text-base font-semibold"
             >
               <Link to="/category/divan-beds">
-                View All Collection
+                View All Bestsellers
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -108,7 +108,7 @@ const BestsellersSection = () => {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mt-12 flex justify-center lg:hidden"
+          className="mt-8 flex justify-center lg:hidden"
         >
           <Button 
             asChild 
@@ -117,7 +117,7 @@ const BestsellersSection = () => {
             className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground"
           >
             <Link to="/category/divan-beds">
-              Explore All Bestsellers
+              View All Bestsellers
               <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </Button>

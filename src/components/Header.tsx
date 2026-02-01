@@ -34,15 +34,39 @@ const Header = () => {
     {
       name: 'Beds',
       href: '#',
-      children: categories.filter(c => c.slug !== 'mattresses').map(c => ({
-        name: c.name,
-        href: `/category/${c.slug}`,
-        description: c.description,
-      })),
+      children: [
+        { name: 'View All Beds', href: '/category/beds', description: 'Browse all our bed collections' },
+        { name: 'Divan Beds', href: '/category/divan-beds', description: 'Premium divan beds with built-in storage' },
+        { name: 'Upholstered Beds', href: '/category/upholstered-beds', description: 'Luxurious upholstered designs' },
+        { name: 'Ottoman Beds', href: '/category/ottoman-beds', description: 'Elegant lift-up storage beds' },
+        { name: 'Wooden Beds', href: '/category/wooden-beds', description: 'Classic timber bed frames' },
+        { name: 'Bunk Beds', href: '/category/bunk-beds', description: 'Space-saving solutions' },
+      ],
     },
-    { name: 'Mattresses', href: '/category/mattresses' },
+    {
+      name: 'Mattresses',
+      href: '#',
+      children: [
+        { name: 'View All Mattresses', href: '/category/mattresses', description: 'Browse all mattress options' },
+        { name: 'Pocket Spring Mattresses', href: '/category/mattresses?type=pocket-spring', description: 'Premium pocket spring comfort' },
+        { name: 'Memory Foam Mattresses', href: '/category/mattresses?type=memory-foam', description: 'Pressure-relieving memory foam' },
+        { name: 'Orthopaedic Mattresses', href: '/category/mattresses?type=orthopaedic', description: 'Professional back support' },
+        { name: 'Pillow Top Mattresses', href: '/category/mattresses?type=pillow-top', description: 'Extra plush comfort layer' },
+      ],
+    },
+    {
+      name: 'Sofas',
+      href: '#',
+      children: [
+        { name: 'View All Sofas', href: '/category/sofas', description: 'Browse all sofa styles' },
+        { name: 'Sofa Sets', href: '/category/sofas?type=sets', description: 'Complete sofa collections' },
+        { name: 'Recliner Sofas', href: '/category/sofas?type=recliner', description: 'Adjustable comfort recliners' },
+        { name: 'Sofa Beds', href: '/category/sofas?type=sofa-beds', description: 'Space-saving convertible sofas' },
+        { name: 'Corner Sofas', href: '/category/sofas?type=corner', description: 'Large corner configurations' },
+      ],
+    },
     { name: 'About Us', href: '/about' },
-    { name: 'Contact', href: '/contact' },
+    { name: 'Contact Us', href: '/contact' },
   ];
 
   return (

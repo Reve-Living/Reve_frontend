@@ -169,15 +169,20 @@ const ProductPage = () => {
 
             {/* Title & Price */}
             <div>
-              <h1 className="mb-2 font-serif text-3xl font-bold text-foreground md:text-4xl">
+              <h1 className="mb-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
                 {product.name}
               </h1>
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <span className="text-3xl font-bold text-primary">£{product.price}</span>
                 {product.originalPrice && (
-                  <span className="text-xl text-muted-foreground line-through">
-                    £{product.originalPrice}
-                  </span>
+                  <>
+                    <span className="text-xl text-muted-foreground line-through">
+                      £{product.originalPrice}
+                    </span>
+                    <Badge variant="destructive" className="text-sm">
+                      Save £{product.originalPrice - product.price} ({Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off)
+                    </Badge>
+                  </>
                 )}
               </div>
             </div>

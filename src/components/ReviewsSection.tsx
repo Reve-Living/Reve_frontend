@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Star, ChevronLeft, ChevronRight, Quote } from 'lucide-react';
 
 const reviews = [
@@ -9,145 +9,194 @@ const reviews = [
     location: 'Manchester',
     rating: 5,
     text: "Absolutely stunning bed! The quality is exceptional and the delivery was seamless. The Chelsea Divan has transformed our bedroom. Worth every penny!",
-    product: 'Chelsea Divan Bed',
-    date: '2 weeks ago',
+    product: 'Chelsea Divan',
   },
   {
     id: 2,
-    name: 'James Wilson',
-    location: 'London',
+    name: 'Emma Roberts',
+    location: 'Birmingham',
     rating: 5,
-    text: "The Windsor Ottoman is a game-changer. So much storage space and the velvet finish is luxurious. Reve Living's customer service was outstanding.",
+    text: "Thrilled with our new bed! It's even more beautiful in person. Delivery was prompt and the entire experience was easy and pleasant. Highly recommend.",
     product: 'Windsor Ottoman Bed',
-    date: '1 month ago',
   },
   {
     id: 3,
-    name: 'Emma Davis',
-    location: 'Birmingham',
+    name: 'Robert Wilson',
+    location: 'London',
     rating: 5,
-    text: "We bought the Hampton Oak for our master bedroom. The craftsmanship is incredible - you can tell it's handmade in the UK. Highly recommend!",
-    product: 'Hampton Oak Bed',
-    date: '3 weeks ago',
+    text: "Excellent quality and great service. The bed looks amazing and the storage is perfect for our needs. Delivered on time and in perfect condition.",
+    product: 'Kingston Bed',
   },
   {
     id: 4,
-    name: 'Michael Brown',
+    name: 'James Mitchell',
     location: 'Leeds',
     rating: 5,
-    text: "The Pocket Spring Deluxe mattress has completely changed my sleep. No more back pain! The quality is comparable to mattresses twice the price.",
+    text: "The Pocket Spring mattress has completely changed my sleep. No more back pain! The quality is comparable to mattresses twice the price.",
     product: 'Pocket Spring Deluxe',
-    date: '1 week ago',
+  },
+  {
+    id: 5,
+    name: 'Laura Bennett',
+    location: 'Bristol',
+    rating: 5,
+    text: "Beautiful craftsmanship on our new ottoman bed. The storage space is incredible and the velvet finish is luxurious. Customer service was outstanding.",
+    product: 'Vienna Ottoman',
+  },
+  {
+    id: 6,
+    name: 'David Clark',
+    location: 'Edinburgh',
+    rating: 5,
+    text: "We've had our Hampton Oak bed for 3 months now and it's perfect. Solid construction, beautiful design, and the delivery team were very professional.",
+    product: 'Hampton Oak Bed',
   },
 ];
 
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
+};
+
 const ReviewsSection = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const [startIndex, setStartIndex] = useState(0);
+  const reviewsPerPage = 3;
+  const totalPages = Math.ceil(reviews.length / reviewsPerPage);
+  const currentPage = Math.floor(startIndex / reviewsPerPage);
 
-  const nextReview = () => {
-    setCurrentIndex((prev) => (prev + 1) % reviews.length);
+  const nextReviews = () => {
+    setStartIndex((prev) => {
+      const next = prev + reviewsPerPage;
+      return next >= reviews.length ? 0 : next;
+    });
   };
 
-  const prevReview = () => {
-    setCurrentIndex((prev) => (prev - 1 + reviews.length) % reviews.length);
+  const prevReviews = () => {
+    setStartIndex((prev) => {
+      const next = prev - reviewsPerPage;
+      return next < 0 ? (totalPages - 1) * reviewsPerPage : next;
+    });
   };
+
+  const visibleReviews = reviews.slice(startIndex, startIndex + reviewsPerPage);
 
   return (
-    <section className="py-16 md:py-24">
+    <section className="bg-muted/30 py-12 md:py-16">
       <div className="container mx-auto px-4">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mb-12 text-center"
+          className="mb-8 text-center"
         >
-          <p className="mb-2 text-sm uppercase tracking-widest text-primary">
-            Testimonials
-          </p>
+          <div className="mb-2 inline-flex items-center gap-2 text-sm text-primary">
+            <Star className="h-4 w-4 fill-primary" />
+            <span className="font-medium">Rated 4.8/5</span>
+            <span className="text-muted-foreground">by UK customers</span>
+          </div>
           <h2 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
             What Our Customers Say
           </h2>
         </motion.div>
 
-        {/* Reviews Carousel */}
-        <div className="relative mx-auto max-w-4xl">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.3 }}
-              className="rounded-lg bg-card p-8 shadow-luxury md:p-12"
-            >
-              {/* Quote Icon */}
-              <Quote className="mb-6 h-12 w-12 text-primary/20" />
+        {/* Reviews Grid */}
+        <div className="relative">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="grid gap-5 md:grid-cols-3"
+            key={startIndex}
+          >
+            {visibleReviews.map((review) => (
+              <motion.div
+                key={review.id}
+                variants={itemVariants}
+                className="rounded-lg bg-card p-6 shadow-luxury"
+              >
+                {/* Quote Icon */}
+                <Quote className="mb-4 h-8 w-8 text-primary/30" />
 
-              {/* Rating */}
-              <div className="mb-4 flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`h-5 w-5 ${
-                      i < reviews[currentIndex].rating
-                        ? 'fill-primary text-primary'
-                        : 'text-muted'
+                {/* Rating */}
+                <div className="mb-3 flex gap-0.5">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`h-4 w-4 ${
+                        i < review.rating
+                          ? 'fill-primary text-primary'
+                          : 'text-muted'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Reviewer Info */}
+                <div className="mb-2">
+                  <p className="font-semibold text-foreground">{review.name}</p>
+                  <p className="text-sm text-muted-foreground">{review.location}</p>
+                </div>
+
+                {/* Product */}
+                <p className="mb-3 text-sm font-medium text-primary">
+                  Purchased: {review.product}
+                </p>
+
+                {/* Review Text */}
+                <p className="text-sm italic text-muted-foreground line-clamp-4">
+                  "{review.text}"
+                </p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          {/* Navigation - only show if more than one page */}
+          {totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <button
+                onClick={prevReviews}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-md transition-all hover:bg-primary hover:text-primary-foreground"
+                aria-label="Previous reviews"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+
+              {/* Page Dots */}
+              <div className="flex gap-2">
+                {[...Array(totalPages)].map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setStartIndex(index * reviewsPerPage)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentPage
+                        ? 'w-6 bg-primary'
+                        : 'w-2 bg-border hover:bg-accent'
                     }`}
                   />
                 ))}
               </div>
 
-              {/* Review Text */}
-              <p className="mb-6 font-serif text-xl italic text-foreground md:text-2xl">
-                "{reviews[currentIndex].text}"
-              </p>
-
-              {/* Reviewer Info */}
-              <div className="flex flex-col items-start gap-2">
-                <div>
-                  <p className="font-semibold text-foreground">
-                    {reviews[currentIndex].name}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {reviews[currentIndex].location} • {reviews[currentIndex].date}
-                  </p>
-                </div>
-                <p className="text-sm font-medium text-primary">
-                  Purchased: {reviews[currentIndex].product}
-                </p>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevReview}
-            className="absolute -left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-card shadow-lg transition-all hover:bg-primary hover:text-primary-foreground md:-left-12"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <button
-            onClick={nextReview}
-            className="absolute -right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-card shadow-lg transition-all hover:bg-primary hover:text-primary-foreground md:-right-12"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-
-          {/* Dots */}
-          <div className="mt-8 flex justify-center gap-2">
-            {reviews.map((_, index) => (
               <button
-                key={index}
-                onClick={() => setCurrentIndex(index)}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? 'w-8 bg-primary'
-                    : 'w-2 bg-border hover:bg-accent'
-                }`}
-              />
-            ))}
-          </div>
+                onClick={nextReviews}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-card shadow-md transition-all hover:bg-primary hover:text-primary-foreground"
+                aria-label="Next reviews"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </section>

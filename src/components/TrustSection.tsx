@@ -4,23 +4,23 @@ import { Truck, Shield, CreditCard, Award } from 'lucide-react';
 const trustFeatures = [
   {
     icon: Award,
-    title: 'UK Handcrafted',
-    description: 'Every bed made with pride in Britain',
+    title: 'Handcrafted in the UK',
+    description: 'Made with care & quality materials',
   },
   {
     icon: Truck,
-    title: 'Free UK Delivery',
-    description: 'Free delivery on orders over £500',
+    title: 'Fast UK Delivery',
+    description: 'Next-day delivery available on most items',
   },
   {
     icon: CreditCard,
-    title: 'Payment Flexibility',
-    description: 'PayPal, Cards & Cash on Delivery',
+    title: 'Secure & Flexible Payments',
+    description: 'Pay securely by card, PayPal, bank transfer, or cash on delivery',
   },
   {
     icon: Shield,
     title: '10-Year Guarantee',
-    description: 'Quality assured for a decade',
+    description: 'Quality you can trust',
   },
 ];
 
@@ -41,14 +41,27 @@ const itemVariants = {
 
 const TrustSection = () => {
   return (
-    <section className="border-y border-border py-12 md:py-16">
+    <section className="bg-muted/50 py-10 md:py-14">
       <div className="container mx-auto px-4">
+        {/* Section Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mb-8 text-center"
+        >
+          <h2 className="font-serif text-2xl font-bold text-foreground md:text-3xl">
+            Our Promise to You
+          </h2>
+        </motion.div>
+
         <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true }}
-          className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4"
+          className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4"
         >
           {trustFeatures.map((feature, index) => (
             <motion.div
@@ -56,10 +69,10 @@ const TrustSection = () => {
               variants={itemVariants}
               className="group flex flex-col items-center text-center"
             >
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent bg-card transition-all duration-300 group-hover:border-primary group-hover:bg-primary">
-                <feature.icon className="h-8 w-8 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />
+              <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-full border-2 border-accent bg-card transition-all duration-300 group-hover:border-primary group-hover:bg-primary">
+                <feature.icon className="h-7 w-7 text-accent transition-colors duration-300 group-hover:text-primary-foreground" />
               </div>
-              <h3 className="mb-2 font-serif text-lg font-semibold text-foreground">
+              <h3 className="mb-1 font-serif text-base font-semibold text-foreground">
                 {feature.title}
               </h3>
               <p className="text-sm text-muted-foreground">
