@@ -72,23 +72,20 @@ const Header = () => {
   return (
     <>
       <header
-        className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
+        className={`fixed left-0 right-0 z-50 ${
           isScrolled
-            ? 'border-b border-white/10 bg-background shadow-lg'
-            : 'bg-background'
+            ? 'top-0 border-b border-white/10 bg-background shadow-lg'
+            : 'top-[20px] bg-background'
         }`}
-        style={{ top: isScrolled ? 0 : '20px' }}
       >
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
-              <motion.img
+              <img
                 src={logo}
                 alt="Reve Living"
                 className="h-20 w-auto rounded mt-2"
-                whileHover={{ scale: 1.05 }}
-                transition={{ duration: 0.2 }}
               />
               <span className="hidden font-serif text-xl font-semibold text-foreground sm:block">
                 Reve Living
@@ -193,13 +190,11 @@ const Header = () => {
               >
                 <ShoppingBag className="h-5 w-5" />
                 {totalItems > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
+                  <span
                     className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
                   >
                     {totalItems}
-                  </motion.span>
+                  </span>
                 )}
               </Button>
 
