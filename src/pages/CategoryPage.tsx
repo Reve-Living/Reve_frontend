@@ -60,6 +60,24 @@ const CategoryPage = () => {
     load();
   }, [slug, subSlug]);
 
+  const priceBounds = useMemo(() => {
+    const prices = allProducts
+      .map((p) => Number(p.price))
+      .filter((value) => !Number.isNaN(value));
+    if (prices.length === 0) {
+      return { min: 0, max: 1500 };
+    }
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const roundedMin = Math.max(0, Math.floor(min / 50) * 50);
+    const roundedMax = Math.max(50, Math.ceil(max / 50) * 50);
+    return { min: roundedMin, max: roundedMax };
+  }, [allProducts]);
+
+  useEffect(() => {
+    setPriceRange([priceBounds.min, priceBounds.max]);
+  }, [priceBounds.min, priceBounds.max]);
+
   // Get unique sizes and colors
   const allSizes = useMemo(() => {
     const sizes = new Set<string>();
@@ -128,7 +146,7 @@ const CategoryPage = () => {
   };
 
   const clearFilters = () => {
-    setPriceRange([0, 1500]);
+    setPriceRange([priceBounds.min, priceBounds.max]);
     setSelectedSizes([]);
     setSelectedColors([]);
   };
@@ -243,6 +261,7 @@ const CategoryPage = () => {
             <FilterContent
               priceRange={priceRange}
               setPriceRange={setPriceRange}
+              priceBounds={priceBounds}
               allSizes={allSizes}
               selectedSizes={selectedSizes}
               toggleSize={toggleSize}
@@ -278,6 +297,7 @@ const CategoryPage = () => {
                 <FilterContent
                   priceRange={priceRange}
                   setPriceRange={setPriceRange}
+                  priceBounds={priceBounds}
                   allSizes={allSizes}
                   selectedSizes={selectedSizes}
                   toggleSize={toggleSize}
@@ -323,6 +343,7 @@ const CategoryPage = () => {
 interface FilterContentProps {
   priceRange: number[];
   setPriceRange: (range: number[]) => void;
+  priceBounds: { min: number; max: number };
   allSizes: string[];
   selectedSizes: string[];
   toggleSize: (size: string) => void;
@@ -335,6 +356,7 @@ interface FilterContentProps {
 const FilterContent = ({
   priceRange,
   setPriceRange,
+  priceBounds,
   allSizes,
   selectedSizes,
   toggleSize,
@@ -349,8 +371,8 @@ const FilterContent = ({
       <div>
         <h4 className="mb-4 font-serif text-lg font-semibold">Price Range</h4>
         <Slider
-          min={0}
-          max={1500}
+          min={priceBounds.min}
+          max={priceBounds.max}
           step={50}
           value={priceRange}
           onValueChange={setPriceRange}
