@@ -1,11 +1,25 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import ProductCard from './ProductCard';
-import { getBestsellers } from '@/data/products';
+import { apiGet } from '@/lib/api';
+import { Product } from '@/lib/types';
 
 const BestsellersSection = () => {
-  const bestsellers = getBestsellers().slice(0, 4);
+  const [bestsellers, setBestsellers] = useState<Product[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await apiGet<Product[]>('/products/?bestseller=1');
+        setBestsellers(data.slice(0, 4));
+      } catch {
+        setBestsellers([]);
+      }
+    };
+    load();
+  }, []);
 
   return (
     <section className="relative bg-card py-14 md:py-20 overflow-hidden">

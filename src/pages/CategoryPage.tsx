@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,12 +17,16 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { getCategoryBySlug, getProductsByCategory, Product } from '@/data/products';
+import { apiGet } from '@/lib/api';
+import { Category, Product } from '@/lib/types';
 
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const category = getCategoryBySlug(slug || '');
-  const allProducts = getProductsByCategory(slug || '');
+  const [searchParams] = useSearchParams();
+  const subSlug = searchParams.get('sub') || '';
+  const [category, setCategory] = useState<Category | null>(null);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [sortBy, setSortBy] = useState('featured');
   const [priceRange, setPriceRange] = useState([0, 1500]);
@@ -30,16 +34,42 @@ const CategoryPage = () => {
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      if (!slug) {
+        setCategory(null);
+        setAllProducts([]);
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const categoryRes = await apiGet<Category[]>(`/categories/?slug=${slug}`);
+        setCategory(categoryRes[0] || null);
+        const productsRes = subSlug
+          ? await apiGet<Product[]>(`/products/?subcategory=${subSlug}`)
+          : await apiGet<Product[]>(`/products/?category=${slug}`);
+        setAllProducts(productsRes);
+        setIsLoading(false);
+      } catch {
+        setCategory(null);
+        setAllProducts([]);
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, [slug, subSlug]);
+
   // Get unique sizes and colors
   const allSizes = useMemo(() => {
     const sizes = new Set<string>();
-    allProducts.forEach((p) => p.sizes.forEach((s) => sizes.add(s)));
+    allProducts.forEach((p) => p.sizes.forEach((s) => sizes.add(s.name)));
     return Array.from(sizes);
   }, [allProducts]);
 
   const allColors = useMemo(() => {
     const colors = new Set<string>();
-    allProducts.forEach((p) => p.colors.forEach((c) => colors.add(c)));
+    allProducts.forEach((p) => p.colors.forEach((c) => colors.add(c.name)));
     return Array.from(colors);
   }, [allProducts]);
 
@@ -55,14 +85,14 @@ const CategoryPage = () => {
     // Size filter
     if (selectedSizes.length > 0) {
       products = products.filter((p) =>
-        p.sizes.some((s) => selectedSizes.includes(s))
+        p.sizes.some((s) => selectedSizes.includes(s.name))
       );
     }
 
     // Color filter
     if (selectedColors.length > 0) {
       products = products.filter((p) =>
-        p.colors.some((c) => selectedColors.includes(c))
+        p.colors.some((c) => selectedColors.includes(c.name))
       );
     }
 
@@ -78,7 +108,7 @@ const CategoryPage = () => {
         products.sort((a, b) => b.rating - a.rating);
         break;
       case 'newest':
-        products.sort((a, b) => (b.isNew ? 1 : 0) - (a.isNew ? 1 : 0));
+        products.sort((a, b) => (b.is_new ? 1 : 0) - (a.is_new ? 1 : 0));
         break;
     }
 
@@ -103,7 +133,7 @@ const CategoryPage = () => {
     setSelectedColors([]);
   };
 
-  if (!category) {
+  if (!category && !isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <AnnouncementBar />
@@ -115,6 +145,18 @@ const CategoryPage = () => {
               <Link to="/">Return Home</Link>
             </Button>
           </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+  if (!category && isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AnnouncementBar />
+        <Header />
+        <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
+          <div className="text-center text-muted-foreground">Loading category...</div>
         </div>
         <Footer />
       </div>

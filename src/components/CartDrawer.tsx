@@ -72,7 +72,7 @@ const CartDrawer = () => {
                       className="flex gap-4 rounded-lg bg-card p-4"
                     >
                       <img
-                        src={item.product.images[0]}
+                        src={item.product.images[0]?.url}
                         alt={item.product.name}
                         className="h-20 w-20 rounded-md object-cover"
                       />

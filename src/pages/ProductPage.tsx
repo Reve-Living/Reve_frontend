@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Minus, Plus, Star, Truck, Shield, CreditCard, ChevronDown } from 'lucide-react';
+import { ChevronRight, Minus, Plus, Star, Truck, Shield, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,30 +14,68 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { getProductBySlug, getCategoryBySlug, getProductsByCategory } from '@/data/products';
+import { apiGet } from '@/lib/api';
+import { Category, Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
 const ProductPage = () => {
   const { slug } = useParams<{ slug: string }>();
-  const product = getProductBySlug(slug || '');
-  const category = product ? getCategoryBySlug(product.category) : null;
-  const relatedProducts = product
-    ? getProductsByCategory(product.category).filter((p) => p.id !== product.id).slice(0, 4)
-    : [];
+  const [product, setProduct] = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [category, setCategory] = useState<Category | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
 
   const { addItem } = useCart();
 
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedSize, setSelectedSize] = useState(product?.sizes[0] || '');
-  const [selectedColor, setSelectedColor] = useState(product?.colors[0] || '');
-  const [selectedHeadboard, setSelectedHeadboard] = useState(
-    product?.headboardStyles?.[0] || ''
-  );
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+  const [selectedHeadboard, setSelectedHeadboard] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
 
-  if (!product) {
+  useEffect(() => {
+    const load = async () => {
+      setIsLoading(true);
+      if (!slug) {
+        setProduct(null);
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const productRes = await apiGet<Product[]>(`/products/?slug=${slug}`);
+        const fetched = productRes[0] || null;
+        setProduct(fetched);
+        if (fetched?.category_slug) {
+          const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
+          setCategory(categoryRes[0] || null);
+          const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
+          setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
+        } else {
+          setCategory(null);
+          setRelatedProducts([]);
+        }
+        if (fetched?.sizes?.length) {
+          setSelectedSize(fetched.sizes[0].name);
+        }
+        if (fetched?.colors?.length) {
+          setSelectedColor(fetched.colors[0].name);
+        }
+        const firstStyle = fetched?.styles?.[0]?.options?.[0];
+        if (firstStyle) {
+          setSelectedHeadboard(firstStyle);
+        }
+        setIsLoading(false);
+      } catch {
+        setProduct(null);
+        setIsLoading(false);
+      }
+    };
+    load();
+  }, [slug]);
+
+  if (!product && !isLoading) {
     return (
       <div className="min-h-screen bg-background">
         <AnnouncementBar />
@@ -54,8 +92,21 @@ const ProductPage = () => {
       </div>
     );
   }
+  if (!product && isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AnnouncementBar />
+        <Header />
+        <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
+          <div className="text-center text-muted-foreground">Loading product...</div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   const handleAddToCart = () => {
+    if (!product) return;
     addItem({
       product,
       quantity,
@@ -72,7 +123,6 @@ const ProductPage = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
           <Link to="/" className="hover:text-primary">Home</Link>
           <ChevronRight className="h-4 w-4" />
@@ -88,9 +138,7 @@ const ProductPage = () => {
         </nav>
 
         <div className="grid gap-12 lg:grid-cols-2">
-          {/* Image Gallery */}
           <div className="space-y-4">
-            {/* Main Image */}
             <motion.div
               className="relative aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-card"
               onClick={() => setIsZoomed(!isZoomed)}
@@ -98,7 +146,7 @@ const ProductPage = () => {
               <AnimatePresence mode="wait">
                 <motion.img
                   key={selectedImage}
-                  src={product.images[selectedImage]}
+                  src={product.images[selectedImage]?.url}
                   alt={product.name}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1 }}
@@ -107,22 +155,20 @@ const ProductPage = () => {
                   className="h-full w-full object-cover"
                 />
               </AnimatePresence>
-              
-              {/* Badges */}
+
               <div className="absolute left-4 top-4 flex flex-col gap-2">
-                {product.isBestseller && (
+                {product.is_bestseller && (
                   <Badge className="bg-primary text-primary-foreground">Bestseller</Badge>
                 )}
-                {product.isNew && (
+                {product.is_new && (
                   <Badge variant="secondary" className="bg-accent text-accent-foreground">New</Badge>
                 )}
-                {product.originalPrice && (
-                  <Badge variant="destructive">Save £{product.originalPrice - product.price}</Badge>
+                {product.original_price && product.original_price > product.price && (
+                  <Badge variant="destructive">Save £{product.original_price - product.price}</Badge>
                 )}
               </div>
             </motion.div>
 
-            {/* Thumbnails */}
             {product.images.length > 1 && (
               <div className="flex gap-4">
                 {product.images.map((img, index) => (
@@ -136,7 +182,7 @@ const ProductPage = () => {
                     }`}
                   >
                     <img
-                      src={img}
+                      src={img.url}
                       alt={`${product.name} ${index + 1}`}
                       className="h-full w-full object-cover"
                     />
@@ -146,9 +192,7 @@ const ProductPage = () => {
             )}
           </div>
 
-          {/* Product Details */}
           <div className="space-y-6">
-            {/* Rating */}
             <div className="flex items-center gap-2">
               <div className="flex gap-0.5">
                 {[...Array(5)].map((_, i) => (
@@ -163,79 +207,74 @@ const ProductPage = () => {
                 ))}
               </div>
               <span className="text-sm text-muted-foreground">
-                {product.rating} ({product.reviewCount} reviews)
+                {product.rating} ({product.review_count} reviews)
               </span>
             </div>
 
-            {/* Title & Price */}
             <div>
               <h1 className="mb-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
                 {product.name}
               </h1>
               <div className="flex flex-wrap items-center gap-3">
                 <span className="text-3xl font-bold text-primary">£{product.price}</span>
-                {product.originalPrice && (
+                {product.original_price && product.original_price > product.price && (
                   <>
                     <span className="text-xl text-muted-foreground line-through">
-                      £{product.originalPrice}
+                      £{product.original_price}
                     </span>
                     <Badge variant="destructive" className="text-sm">
-                      Save £{product.originalPrice - product.price} ({Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% off)
+                      Save £{product.original_price - product.price} ({Math.round(((product.original_price - product.price) / product.original_price) * 100)}% off)
                     </Badge>
                   </>
                 )}
               </div>
             </div>
 
-            {/* Short Description */}
             <p className="text-muted-foreground">{product.description}</p>
 
-            {/* Size Selection */}
             <div>
               <h3 className="mb-3 font-medium">Size</h3>
               <div className="flex flex-wrap gap-2">
                 {product.sizes.map((size) => (
                   <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
+                    key={size.id}
+                    onClick={() => setSelectedSize(size.name)}
                     className={`rounded-md border px-4 py-2 text-sm transition-all ${
-                      selectedSize === size
+                      selectedSize === size.name
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border hover:border-primary'
                     }`}
                   >
-                    {size}
+                    {size.name}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Color Selection */}
             <div>
               <h3 className="mb-3 font-medium">Colour: {selectedColor}</h3>
               <div className="flex flex-wrap gap-2">
                 {product.colors.map((color) => (
                   <button
-                    key={color}
-                    onClick={() => setSelectedColor(color)}
+                    key={color.id}
+                    onClick={() => setSelectedColor(color.name)}
                     className={`rounded-md border px-4 py-2 text-sm transition-all ${
-                      selectedColor === color
+                      selectedColor === color.name
                         ? 'border-primary bg-primary text-primary-foreground'
                         : 'border-border hover:border-primary'
                     }`}
                   >
-                    {color}
+                    {color.name}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Headboard Selection */}
-            {product.headboardStyles && product.headboardStyles.length > 0 && (
+            {product.styles && product.styles.length > 0 && (
               <div>
                 <h3 className="mb-3 font-medium">Headboard Style</h3>
                 <div className="flex flex-wrap gap-2">
-                  {product.headboardStyles.map((style) => (
+                  {product.styles[0].options.map((style) => (
                     <button
                       key={style}
                       onClick={() => setSelectedHeadboard(style)}
@@ -252,9 +291,7 @@ const ProductPage = () => {
               </div>
             )}
 
-            {/* Quantity & Add to Cart */}
             <div className="flex flex-col gap-4 sm:flex-row">
-              {/* Quantity */}
               <div className="flex items-center rounded-md border border-border">
                 <button
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -271,7 +308,6 @@ const ProductPage = () => {
                 </button>
               </div>
 
-              {/* Add to Cart */}
               <Button
                 size="lg"
                 onClick={handleAddToCart}
@@ -281,7 +317,6 @@ const ProductPage = () => {
               </Button>
             </div>
 
-            {/* Trust Icons */}
             <div className="grid grid-cols-3 gap-4 rounded-lg bg-card p-4">
               <div className="flex flex-col items-center text-center">
                 <Truck className="mb-2 h-6 w-6 text-primary" />
@@ -297,13 +332,12 @@ const ProductPage = () => {
               </div>
             </div>
 
-            {/* Product Details Accordion */}
             <Accordion type="single" collapsible className="w-full">
               <AccordionItem value="features">
                 <AccordionTrigger>Features</AccordionTrigger>
                 <AccordionContent>
                   <ul className="list-disc space-y-2 pl-4">
-                    {product.features.map((feature, i) => (
+                    {(product.features || []).map((feature, i) => (
                       <li key={i} className="text-muted-foreground">
                         {feature}
                       </li>
@@ -315,10 +349,15 @@ const ProductPage = () => {
                 <AccordionTrigger>Delivery Information</AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-2 text-muted-foreground">
-                    <p>• Free delivery on orders over £500</p>
-                    <p>• Standard delivery: 3-5 working days</p>
-                    <p>• Premium delivery with room of choice: Available</p>
-                    <p>• Mattress removal service available</p>
+                    {product.delivery_info ? (
+                      <p>{product.delivery_info}</p>
+                    ) : (
+                      <>
+                        <p>• Free delivery on orders over £500</p>
+                        <p>• Standard delivery: 3-5 working days</p>
+                        <p>• Premium delivery with room of choice: Available</p>
+                      </>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -326,10 +365,15 @@ const ProductPage = () => {
                 <AccordionTrigger>Returns & Guarantee</AccordionTrigger>
                 <AccordionContent>
                   <div className="space-y-2 text-muted-foreground">
-                    <p>• 10-year structural guarantee</p>
-                    <p>• 30-day comfort exchange on mattresses</p>
-                    <p>• Free returns within 14 days</p>
-                    <p>• Full refund or exchange available</p>
+                    {product.returns_guarantee ? (
+                      <p>{product.returns_guarantee}</p>
+                    ) : (
+                      <>
+                        <p>• 10-year structural guarantee</p>
+                        <p>• 30-day comfort exchange on mattresses</p>
+                        <p>• Free returns within 14 days</p>
+                      </>
+                    )}
                   </div>
                 </AccordionContent>
               </AccordionItem>
@@ -337,7 +381,6 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <section className="mt-16">
             <h2 className="mb-8 font-serif text-2xl font-bold">You May Also Like</h2>

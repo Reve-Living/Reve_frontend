@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, CreditCard, Wallet, Banknote, Check } from 'lucide-react';
@@ -11,6 +11,7 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
+import { apiPost } from '@/lib/api';
 import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
@@ -22,7 +23,10 @@ const CheckoutPage = () => {
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const deliveryFee = totalPrice >= 500 ? 0 : 49;
+  const deliveryFee = state.items.reduce(
+    (sum, item) => sum + (item.product.delivery_charges || 0) * item.quantity,
+    0
+  );
   const orderTotal = totalPrice + deliveryFee;
 
   const [formData, setFormData] = useState({
@@ -36,15 +40,38 @@ const CheckoutPage = () => {
     saveInfo: false,
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const success = params.get('success');
+    const paypalToken = params.get('token');
+    if (paypalToken) {
+      apiPost('/payments/capture_paypal_order/', { orderID: paypalToken });
+    }
+    if (success === '1' || paypalToken) {
+      const lastOrderId = localStorage.getItem('last_order_id');
+      if (lastOrderId) {
+        apiPost(`/orders/${lastOrderId}/mark_paid/`, {});
+      }
+      setStep('confirmation');
+      clearCart();
+    }
+  }, [clearCart]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleContinue = () => {
     if (step === 'information') {
-      // Validate form
-      if (!formData.email || !formData.firstName || !formData.lastName || 
-          !formData.address || !formData.city || !formData.postcode || !formData.phone) {
+      if (
+        !formData.email ||
+        !formData.firstName ||
+        !formData.lastName ||
+        !formData.address ||
+        !formData.city ||
+        !formData.postcode ||
+        !formData.phone
+      ) {
         toast.error('Please fill in all required fields');
         return;
       }
@@ -56,11 +83,71 @@ const CheckoutPage = () => {
 
   const handlePlaceOrder = async () => {
     setIsProcessing(true);
-    // Simulate order processing
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsProcessing(false);
-    setStep('confirmation');
-    clearCart();
+    try {
+      const orderPayload = {
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        postal_code: formData.postcode,
+        total_amount: orderTotal,
+        delivery_charges: deliveryFee,
+        payment_method: paymentMethod,
+        items: state.items.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.quantity,
+          price: item.product.price,
+          size: item.size,
+          color: item.color,
+          style: item.headboardStyle || '',
+        })),
+      };
+
+      const orderRes = await apiPost<{ id: number }>('/orders/', orderPayload);
+      localStorage.setItem('last_order_id', String(orderRes.id));
+
+      if (paymentMethod === 'card') {
+        const session = await apiPost<{ url: string }>('/payments/create_stripe_session/', {
+          items: state.items.map((item) => ({
+            name: item.product.name,
+            price: item.product.price,
+            quantity: item.quantity,
+          })),
+          delivery_charges: deliveryFee,
+          currency: 'gbp',
+          success_url: `${window.location.origin}/checkout?success=1`,
+          cancel_url: `${window.location.origin}/checkout?canceled=1`,
+        });
+        window.location.href = session.url;
+        return;
+      }
+
+      if (paymentMethod === 'paypal') {
+        const paypalOrder = await apiPost<{ links: { rel: string; href: string }[] }>(
+          '/payments/create_paypal_order/',
+          {
+            total: orderTotal.toFixed(2),
+            currency: 'GBP',
+            return_url: `${window.location.origin}/checkout?success=1`,
+            cancel_url: `${window.location.origin}/checkout?canceled=1`,
+          }
+        );
+        const approvalLink = paypalOrder.links.find((link) => link.rel === 'approve');
+        if (approvalLink) {
+          window.location.href = approvalLink.href;
+          return;
+        }
+      }
+
+      setStep('confirmation');
+      clearCart();
+    } catch (err) {
+      toast.error('Order failed. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (state.items.length === 0 && step !== 'confirmation') {
@@ -74,7 +161,6 @@ const CheckoutPage = () => {
       <Header />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Breadcrumb */}
         <nav className="mb-8 flex items-center gap-2 text-sm">
           <Link to="/cart" className="text-muted-foreground hover:text-primary">
             Cart
@@ -105,7 +191,7 @@ const CheckoutPage = () => {
               </div>
             </div>
             <h1 className="mb-4 font-serif text-3xl font-bold">Thank You for Your Order!</h1>
-            <p className="mb-2 text-muted-foreground">Order #RL{Date.now().toString().slice(-8)}</p>
+            <p className="mb-2 text-muted-foreground">Order placed successfully</p>
             <p className="mb-8 text-muted-foreground">
               We've sent a confirmation email to {formData.email}
             </p>
@@ -124,7 +210,6 @@ const CheckoutPage = () => {
           </motion.div>
         ) : (
           <div className="grid gap-8 lg:grid-cols-3">
-            {/* Form Section */}
             <div className="lg:col-span-2">
               {step === 'information' && (
                 <motion.div
@@ -133,7 +218,6 @@ const CheckoutPage = () => {
                   className="rounded-lg bg-card p-6 shadow-luxury"
                 >
                   <h2 className="mb-6 font-serif text-2xl font-semibold">Contact Information</h2>
-                  
                   <div className="space-y-4">
                     <div>
                       <Label htmlFor="email">Email</Label>
@@ -147,7 +231,6 @@ const CheckoutPage = () => {
                         className="mt-1 border-accent"
                       />
                     </div>
-
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <Label htmlFor="firstName">First Name</Label>
@@ -170,7 +253,6 @@ const CheckoutPage = () => {
                         />
                       </div>
                     </div>
-
                     <div>
                       <Label htmlFor="address">Delivery Address</Label>
                       <Input
@@ -182,7 +264,6 @@ const CheckoutPage = () => {
                         className="mt-1 border-accent"
                       />
                     </div>
-
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <Label htmlFor="city">City</Label>
@@ -205,7 +286,6 @@ const CheckoutPage = () => {
                         />
                       </div>
                     </div>
-
                     <div>
                       <Label htmlFor="phone">Phone Number</Label>
                       <Input
@@ -218,7 +298,6 @@ const CheckoutPage = () => {
                         className="mt-1 border-accent"
                       />
                     </div>
-
                     <div className="flex items-center gap-2">
                       <Checkbox
                         id="saveInfo"
@@ -242,7 +321,6 @@ const CheckoutPage = () => {
                   className="rounded-lg bg-card p-6 shadow-luxury"
                 >
                   <h2 className="mb-6 font-serif text-2xl font-semibold">Payment Method</h2>
-
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                     <div className="space-y-4">
                       <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
@@ -259,7 +337,6 @@ const CheckoutPage = () => {
                           </div>
                         </Label>
                       </div>
-
                       <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
                         paymentMethod === 'paypal' ? 'border-primary bg-primary/5' : 'border-border'
                       }`}>
@@ -274,7 +351,6 @@ const CheckoutPage = () => {
                           </div>
                         </Label>
                       </div>
-
                       <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
                         paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border'
                       }`}>
@@ -292,41 +368,6 @@ const CheckoutPage = () => {
                     </div>
                   </RadioGroup>
 
-                  {paymentMethod === 'card' && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      className="mt-6 space-y-4"
-                    >
-                      <div>
-                        <Label htmlFor="cardNumber">Card Number</Label>
-                        <Input
-                          id="cardNumber"
-                          placeholder="1234 5678 9012 3456"
-                          className="mt-1 border-accent"
-                        />
-                      </div>
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div>
-                          <Label htmlFor="expiry">Expiry Date</Label>
-                          <Input
-                            id="expiry"
-                            placeholder="MM/YY"
-                            className="mt-1 border-accent"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="cvv">CVV</Label>
-                          <Input
-                            id="cvv"
-                            placeholder="123"
-                            className="mt-1 border-accent"
-                          />
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
                   <div className="mt-6">
                     <Button
                       variant="ghost"
@@ -339,7 +380,6 @@ const CheckoutPage = () => {
                 </motion.div>
               )}
 
-              {/* Continue Button */}
               <div className="mt-6">
                 <Button
                   size="lg"
@@ -356,11 +396,9 @@ const CheckoutPage = () => {
               </div>
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="sticky top-32 rounded-lg bg-card p-6 shadow-luxury">
                 <h2 className="mb-6 font-serif text-xl font-semibold">Order Summary</h2>
-
                 <div className="space-y-4">
                   {state.items.map((item) => (
                     <div
@@ -369,7 +407,7 @@ const CheckoutPage = () => {
                     >
                       <div className="relative">
                         <img
-                          src={item.product.images[0]}
+                          src={item.product.images[0]?.url}
                           alt={item.product.name}
                           className="h-16 w-16 rounded-md object-cover"
                         />
@@ -397,7 +435,7 @@ const CheckoutPage = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Delivery</span>
-                    <span>{deliveryFee === 0 ? 'FREE' : `£${deliveryFee.toFixed(2)}`}</span>
+                    <span>£{deliveryFee.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between border-t border-border pt-2 text-lg font-semibold">
                     <span>Total</span>

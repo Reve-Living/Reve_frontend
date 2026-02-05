@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Product } from '@/data/products';
+import { Product } from '@/lib/types';
 
 interface ProductCardProps {
   product: Product;
@@ -11,7 +11,8 @@ interface ProductCardProps {
 
 const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   // Calculate savings if there's an original price
-  const savings = product.originalPrice ? product.originalPrice - product.price : 0;
+  const savings = product.original_price ? product.original_price - product.price : 0;
+  const imageUrl = product.images?.[0]?.url || "";
 
   return (
     <div>
@@ -22,19 +23,19 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden">
           <img
-            src={product.images[0]}
+            src={imageUrl}
             alt={product.name}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
           />
           
           {/* Badges */}
           <div className="absolute left-3 top-3 flex flex-col gap-2">
-            {product.isBestseller && (
+            {product.is_bestseller && (
               <Badge className="bg-primary text-primary-foreground">
                 Bestseller
               </Badge>
             )}
-            {product.isNew && !product.originalPrice && (
+            {product.is_new && !product.original_price && (
               <Badge variant="secondary" className="bg-accent text-accent-foreground">
                 New
               </Badge>
@@ -62,7 +63,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               />
             ))}
             <span className="ml-1 text-sm text-muted-foreground">
-              ({product.reviewCount})
+              ({product.review_count})
             </span>
           </div>
 
@@ -73,7 +74,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
           {/* Short Feature Line */}
           <p className="mb-3 text-sm text-muted-foreground line-clamp-1">
-            {product.shortDescription}
+            {product.short_description || product.description}
           </p>
 
           {/* Price */}

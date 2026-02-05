@@ -1,40 +1,25 @@
 import { Link } from 'react-router-dom';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-
-// Define the 4 featured categories
-const featuredCategories = [
-  {
-    id: '1',
-    name: 'Divan Beds',
-    slug: 'divan-beds',
-    description: 'Premium divan beds with built-in drawer storage and luxury headboard options.',
-    image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=800&h=600&fit=crop',
-  },
-  {
-    id: '2',
-    name: 'Ottoman Beds',
-    slug: 'ottoman-beds',
-    description: 'Elegant ottoman beds with lift-up storage for maximum space utilisation.',
-    image: 'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&h=600&fit=crop',
-  },
-  {
-    id: '3',
-    name: 'Upholstered Beds',
-    slug: 'upholstered-beds',
-    description: 'Luxurious upholstered beds featuring premium fabrics and sophisticated designs.',
-    image: 'https://images.unsplash.com/photo-1588046130717-0eb0c9a3ba15?w=800&h=600&fit=crop',
-  },
-  {
-    id: '4',
-    name: 'Mattresses',
-    slug: 'mattresses',
-    description: 'Handcrafted mattresses for the ultimate night\'s sleep.',
-    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=800&h=600&fit=crop',
-  },
-];
+import { apiGet } from '@/lib/api';
+import { Collection } from '@/lib/types';
 
 const CategoryGrid = () => {
+  const [collections, setCollections] = useState<Collection[]>([]);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await apiGet<Collection[]>('/collections/');
+        setCollections(data.slice(0, 4));
+      } catch {
+        setCollections([]);
+      }
+    };
+    load();
+  }, []);
+
   return (
     <section className="py-14 md:py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -45,7 +30,7 @@ const CategoryGrid = () => {
               Explore Our Range
             </span>
             <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
-              Shop by Category
+              Shop by Collection
             </h2>
             <p className="mt-3 max-w-md text-muted-foreground">
               Discover our handcrafted collections, designed for comfort and built to last
@@ -58,8 +43,8 @@ const CategoryGrid = () => {
               size="lg"
               className="group gradient-bronze text-base font-semibold"
             >
-              <Link to="/categories">
-                View All Categories
+              <Link to="/collections">
+                View All Collections
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
               </Link>
             </Button>
@@ -68,18 +53,18 @@ const CategoryGrid = () => {
 
         {/* Category Grid - 4 items */}
         <div className="grid gap-4 md:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[240px] md:auto-rows-[260px]">
-          {featuredCategories.map((category) => (
+          {collections.map((collection) => (
             <div 
-              key={category.id}
+              key={collection.id}
             >
               <Link
-                to={`/category/${category.slug}`}
+                to={`/collections#${collection.slug}`}
                 className="group relative flex h-full w-full overflow-hidden rounded-2xl"
               >
                 {/* Image with Parallax Effect */}
                 <div
                   className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-out group-hover:scale-105"
-                  style={{ backgroundImage: `url(${category.image})` }}
+                  style={{ backgroundImage: `url(${collection.image})` }}
                 />
                 
                 {/* Gradient Overlay */}
@@ -112,11 +97,11 @@ const CategoryGrid = () => {
                   {/* Bottom - Category Info */}
                   <div className="space-y-2">
                     <h3 className="font-serif text-xl font-semibold text-cream md:text-2xl transition-transform duration-300 group-hover:translate-x-2">
-                      {category.name}
+                      {collection.name}
                     </h3>
                     <div className="flex items-center gap-3">
                       <p className="text-xs text-cream/70 line-clamp-1 max-w-[180px]">
-                        {category.description}
+                        {collection.description}
                       </p>
                       <span className="h-px flex-1 bg-cream/20 transition-all duration-500 group-hover:bg-primary/50" />
                     </div>

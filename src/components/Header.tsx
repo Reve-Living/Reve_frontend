@@ -5,8 +5,9 @@ import { Search, ShoppingBag, Menu, X, ChevronDown, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
-import { categories } from '@/data/products';
 import logo from '@/assets/logo.png';
+import { apiGet } from '@/lib/api';
+import { Category } from '@/lib/types';
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -29,53 +30,42 @@ const Header = () => {
     setActiveDropdown(null);
   }, [location]);
 
-  const navLinks = [
-    { name: 'Home', href: '/' },
-    {
-      name: 'Beds',
-      href: '#',
-      children: [
-        { name: 'View All Beds', href: '/category/beds', description: 'Browse all our bed collections' },
-        { name: 'Divan Beds', href: '/category/divan-beds', description: 'Premium divan beds with built-in storage' },
-        { name: 'Upholstered Beds', href: '/category/upholstered-beds', description: 'Luxurious upholstered designs' },
-        { name: 'Ottoman Beds', href: '/category/ottoman-beds', description: 'Elegant lift-up storage beds' },
-        { name: 'Wooden Beds', href: '/category/wooden-beds', description: 'Classic timber bed frames' },
-        { name: 'Bunk Beds', href: '/category/bunk-beds', description: 'Space-saving solutions' },
-      ],
-    },
-    {
-      name: 'Mattresses',
-      href: '#',
-      children: [
-        { name: 'View All Mattresses', href: '/category/mattresses', description: 'Browse all mattress options' },
-        { name: 'Pocket Spring Mattresses', href: '/category/mattresses?type=pocket-spring', description: 'Premium pocket spring comfort' },
-        { name: 'Memory Foam Mattresses', href: '/category/mattresses?type=memory-foam', description: 'Pressure-relieving memory foam' },
-        { name: 'Orthopaedic Mattresses', href: '/category/mattresses?type=orthopaedic', description: 'Professional back support' },
-        { name: 'Pillow Top Mattresses', href: '/category/mattresses?type=pillow-top', description: 'Extra plush comfort layer' },
-      ],
-    },
-    {
-      name: 'Sofas',
-      href: '#',
-      children: [
-        { name: 'View All Sofas', href: '/category/sofas', description: 'Browse all sofa styles' },
-        { name: 'Sofa Sets', href: '/category/sofas?type=sets', description: 'Complete sofa collections' },
-        { name: 'Recliner Sofas', href: '/category/sofas?type=recliner', description: 'Adjustable comfort recliners' },
-        { name: 'Sofa Beds', href: '/category/sofas?type=sofa-beds', description: 'Space-saving convertible sofas' },
-        { name: 'Corner Sofas', href: '/category/sofas?type=corner', description: 'Large corner configurations' },
-      ],
-    },
-    {
-      name: 'Furniture',
-      href: '#',
-      children: [
-        { name: 'Wardrobes', href: '/coming-soon/wardrobes', description: 'Stylish storage solutions - Coming Soon' },
-        { name: 'Bedside Tables', href: '/coming-soon/bedside-tables', description: 'Complete your bedroom - Coming Soon' },
-      ],
-    },
-    { name: 'About Us', href: '/about' },
-    { name: 'Contact Us', href: '/contact' },
-  ];
+  const [navLinks, setNavLinks] = useState<
+    { name: string; href: string; children?: { name: string; href: string; description?: string }[] }[]
+  >([{ name: 'Home', href: '/' }]);
+
+  useEffect(() => {
+    const loadNav = async () => {
+      try {
+        const categories = await apiGet<Category[]>('/categories/');
+        const dynamicLinks = categories.map((cat) => ({
+          name: cat.name,
+          href: `/category/${cat.slug}`,
+          children: [
+            { name: `View All ${cat.name}`, href: `/category/${cat.slug}` },
+            ...(cat.subcategories || []).map((sub) => ({
+              name: sub.name,
+              href: `/category/${cat.slug}?sub=${sub.slug}`,
+              description: sub.description || undefined,
+            })),
+          ],
+        }));
+        setNavLinks([
+          { name: 'Home', href: '/' },
+          ...dynamicLinks,
+          { name: 'About Us', href: '/about' },
+          { name: 'Contact Us', href: '/contact' },
+        ]);
+      } catch {
+        setNavLinks([
+          { name: 'Home', href: '/' },
+          { name: 'About Us', href: '/about' },
+          { name: 'Contact Us', href: '/contact' },
+        ]);
+      }
+    };
+    loadNav();
+  }, []);
 
   return (
     <>
@@ -185,8 +175,10 @@ const Header = () => {
               </Button>
 
               {/* Account */}
-              <Button variant="ghost" size="icon" className="hidden hover:bg-muted md:flex">
-                <User className="h-5 w-5" />
+              <Button asChild variant="ghost" size="icon" className="hidden hover:bg-muted md:flex">
+                <Link to="/login">
+                  <User className="h-5 w-5" />
+                </Link>
               </Button>
 
               {/* Cart */}
