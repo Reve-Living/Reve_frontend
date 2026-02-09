@@ -1,7 +1,20 @@
 import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { apiGet } from '@/lib/api';
+import { Product, Category } from '@/lib/types';
 
-const lifestyleTiles = [
+interface TileData {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image: string;
+  link: string;
+  slug: string;
+}
+
+const initialTiles: TileData[] = [
   {
     id: 1,
     title: 'Enhance Your Bedroom',
@@ -9,6 +22,7 @@ const lifestyleTiles = [
     description: 'Create a sanctuary of comfort and style',
     image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&h=400&fit=crop',
     link: '/category/beds',
+    slug: 'beds',
   },
   {
     id: 2,
@@ -17,6 +31,7 @@ const lifestyleTiles = [
     description: 'Sofas that blend comfort with elegance',
     image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&h=400&fit=crop',
     link: '/category/sofas',
+    slug: 'sofas',
   },
   {
     id: 3,
@@ -25,10 +40,63 @@ const lifestyleTiles = [
     description: 'Premium mattresses for restful sleep',
     image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&h=400&fit=crop',
     link: '/category/mattresses',
+    slug: 'mattresses',
   },
 ];
 
 const LifestyleSection = () => {
+  const [tiles, setTiles] = useState<TileData[]>(initialTiles);
+
+  useEffect(() => {
+    const fetchRealData = async () => {
+      try {
+        // Fetch all categories to find matching ones
+        const categories = await apiGet<Category[]>('/categories/');
+        
+        const updatedTiles = await Promise.all(
+          initialTiles.map(async (tile) => {
+            try {
+              // Try to find a category that matches the slug or name
+              const category = categories.find(
+                (c) => c.slug.includes(tile.slug) || tile.slug.includes(c.slug) || 
+                       c.name.toLowerCase().includes(tile.slug)
+              );
+
+              if (category) {
+                // Fetch latest products for this specific category
+                const products = await apiGet<Product[]>(`/products/?category=${category.slug}`);
+                
+                if (products && products.length > 0) {
+                  const latestProduct = products[0];
+                  return {
+                    ...tile,
+                    image: latestProduct.images[0]?.url || category.image || tile.image,
+                    link: `/category/${category.slug}`,
+                  };
+                } else if (category.image) {
+                  // Fallback to category image if no products
+                  return {
+                    ...tile,
+                    image: category.image,
+                    link: `/category/${category.slug}`,
+                  };
+                }
+              }
+            } catch (err) {
+              console.error(`Error fetching data for ${tile.slug}:`, err);
+            }
+            return tile;
+          })
+        );
+        setTiles(updatedTiles);
+      } catch (err) {
+        console.error('Error fetching lifestyle data:', err);
+      }
+    };
+
+    fetchRealData();
+  }, []);
+
   return (
     <section className="py-14 md:py-20 bg-[#FAF8F5]">
       <div className="container mx-auto px-4">
@@ -47,7 +115,7 @@ const LifestyleSection = () => {
 
         {/* Lifestyle Grid - Equal Compact Tiles */}
         <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          {lifestyleTiles.map((tile) => (
+          {tiles.map((tile) => (
             <div
               key={tile.id}
               className="group relative overflow-hidden rounded-2xl"
