@@ -38,6 +38,7 @@ const CheckoutPage = () => {
     postcode: '',
     phone: '',
     saveInfo: false,
+    termsAccepted: false,
   });
 
   useEffect(() => {
@@ -77,6 +78,10 @@ const CheckoutPage = () => {
       }
       setStep('payment');
     } else if (step === 'payment') {
+      if (!formData.termsAccepted) {
+        toast.error('Please accept the Terms & Conditions to continue');
+        return;
+      }
       handlePlaceOrder();
     }
   };
@@ -372,6 +377,29 @@ const CheckoutPage = () => {
                               Pay when your order arrives
                             </p>
                           </div>
+                        </Label>
+                      </div>
+                      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-4">
+                        <Checkbox
+                          id="termsAccepted"
+                          checked={formData.termsAccepted}
+                          onCheckedChange={(checked) =>
+                            setFormData({ ...formData, termsAccepted: checked as boolean })
+                          }
+                        />
+                        <Label htmlFor="termsAccepted" className="text-sm leading-relaxed cursor-pointer">
+                          I accept the{' '}
+                          <Link to="/terms-conditions" target="_blank" className="text-primary hover:underline">
+                            Terms & Conditions
+                          </Link>
+                          {', '}
+                          <Link to="/privacy-policy" target="_blank" className="text-primary hover:underline">
+                            Privacy Policy
+                          </Link>
+                          {', and '}
+                          <Link to="/returns-refunds" target="_blank" className="text-primary hover:underline">
+                            Returns & Refunds Policy
+                          </Link>
                         </Label>
                       </div>
                     </div>

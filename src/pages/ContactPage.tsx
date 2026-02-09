@@ -202,26 +202,26 @@ const ContactPage = () => {
               <h3 className="mb-6 font-serif text-xl font-semibold">Contact Details</h3>
               <div className="space-y-4">
                 <a
-                  href="tel:08001234567"
+                  href="tel:+442078717675"
                   className="flex items-center gap-4 text-muted-foreground transition-colors hover:text-primary"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     <Phone className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">0800 123 4567</p>
-                    <p className="text-sm">Free from UK landlines</p>
+                    <p className="font-medium text-foreground">020 7871 7675</p>
+                    <p className="text-sm">Mon - Fri: 9am - 6pm</p>
                   </div>
                 </a>
                 <a
-                  href="mailto:hello@reveliving.co.uk"
+                  href="mailto:info@reveliving.co.uk"
                   className="flex items-center gap-4 text-muted-foreground transition-colors hover:text-primary"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">hello@reveliving.co.uk</p>
+                    <p className="font-medium text-foreground">info@reveliving.co.uk</p>
                     <p className="text-sm">We reply within 24 hours</p>
                   </div>
                 </a>
@@ -230,8 +230,8 @@ const ContactPage = () => {
                     <MapPin className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">123 Furniture Lane</p>
-                    <p className="text-sm">Manchester, M1 2AB</p>
+                    <p className="font-medium text-foreground">Reve Living Limited</p>
+                    <p className="text-sm">128 City Road, London, EC1V 2NX</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-muted-foreground">

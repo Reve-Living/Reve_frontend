@@ -9,7 +9,7 @@ const Footer = () => {
   const footerLinks = {
     customerService: [
       { name: 'Delivery Information', href: '/delivery' },
-      { name: 'Returns Policy', href: '/returns' },
+      { name: 'Returns & Refunds', href: '/returns-refunds' },
       { name: 'FAQ', href: '/faq' },
       { name: 'Track Order', href: '/track-order' },
     ],
@@ -18,9 +18,9 @@ const Footer = () => {
       { name: 'Contact', href: '/contact' },
     ],
     legal: [
-      { name: 'Privacy Policy', href: '/privacy' },
-      { name: 'Terms & Conditions', href: '/terms' },
-      { name: 'Cookie Policy', href: '/cookies' },
+      { name: 'Privacy & Cookie Policy', href: '/privacy-policy' },
+      { name: 'Terms & Conditions', href: '/terms-conditions' },
+      { name: 'Returns Policy', href: '/returns-refunds' },
     ],
   };
 
@@ -45,22 +45,22 @@ const Footer = () => {
             {/* Contact Info */}
             <div className="mb-5 space-y-2">
               <a
-                href="tel:+4408001234567"
+                href="tel:+442078717675"
                 className="flex items-center gap-3 text-sm text-cream/80 transition-colors hover:text-primary"
               >
                 <Phone className="h-4 w-4" />
-                <span>0800 123 4567</span>
+                <span>020 7871 7675</span>
               </a>
               <a
-                href="mailto:hello@reveliving.co.uk"
+                href="mailto:info@reveliving.co.uk"
                 className="flex items-center gap-3 text-sm text-cream/80 transition-colors hover:text-primary"
               >
                 <Mail className="h-4 w-4" />
-                <span>hello@reveliving.co.uk</span>
+                <span>info@reveliving.co.uk</span>
               </a>
               <div className="flex items-start gap-3 text-sm text-cream/80">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                <span>123 Furniture Lane, Manchester, M1 2AB</span>
+                <span>128 City Road, London, EC1V 2NX</span>
               </div>
             </div>
 
