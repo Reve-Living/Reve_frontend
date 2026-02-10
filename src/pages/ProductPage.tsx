@@ -481,6 +481,21 @@ const ProductPage = () => {
                   </div>
                 </AccordionContent>
               </AccordionItem>
+              {product.faqs && product.faqs.length > 0 && (
+                <AccordionItem value="faqs">
+                  <AccordionTrigger>FAQs</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="space-y-4">
+                      {product.faqs.map((faq, i) => (
+                        <div key={`${faq.question}-${i}`}>
+                          <p className="font-medium text-foreground">{faq.question}</p>
+                          <p className="text-muted-foreground">{faq.answer}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
             </Accordion>
           </div>
         </div>
