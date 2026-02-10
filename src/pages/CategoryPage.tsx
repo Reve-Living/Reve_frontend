@@ -20,6 +20,16 @@ import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Category, Product } from '@/lib/types';
 
+// Helper function to determine if a hex color is light
+const isLightColor = (hexColor: string): boolean => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5;
+};
+
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
@@ -86,9 +96,15 @@ const CategoryPage = () => {
   }, [allProducts]);
 
   const allColors = useMemo(() => {
-    const colors = new Set<string>();
-    allProducts.forEach((p) => p.colors.forEach((c) => colors.add(c.name)));
-    return Array.from(colors);
+    const colorMap = new Map<string, { name: string; hex_code: string }>();
+    allProducts.forEach((p) => 
+      p.colors.forEach((c) => {
+        if (!colorMap.has(c.name)) {
+          colorMap.set(c.name, { name: c.name, hex_code: c.hex_code || '#888888' });
+        }
+      })
+    );
+    return Array.from(colorMap.values());
   }, [allProducts]);
 
   // Filter and sort products
@@ -347,7 +363,7 @@ interface FilterContentProps {
   allSizes: string[];
   selectedSizes: string[];
   toggleSize: (size: string) => void;
-  allColors: string[];
+  allColors: { name: string; hex_code: string }[];
   selectedColors: string[];
   toggleColor: (color: string) => void;
   clearFilters: () => void;
@@ -406,18 +422,36 @@ const FilterContent = ({
       {/* Colors */}
       <div>
         <h4 className="mb-4 font-serif text-lg font-semibold">Colour</h4>
-        <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
           {allColors.map((color) => (
-            <div key={color} className="flex items-center gap-2">
-              <Checkbox
-                id={`color-${color}`}
-                checked={selectedColors.includes(color)}
-                onCheckedChange={() => toggleColor(color)}
+            <button
+              key={color.name}
+              onClick={() => toggleColor(color.name)}
+              className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-all ${
+                selectedColors.includes(color.name)
+                  ? 'ring-2 ring-primary ring-offset-2'
+                  : 'hover:ring-2 hover:ring-muted-foreground hover:ring-offset-1'
+              }`}
+              title={color.name}
+            >
+              <span
+                className="h-7 w-7 rounded-full border border-border shadow-sm"
+                style={{ backgroundColor: color.hex_code }}
               />
-              <Label htmlFor={`color-${color}`} className="text-sm">
-                {color}
-              </Label>
-            </div>
+              {selectedColors.includes(color.name) && (
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <svg 
+                    className="h-3 w-3 drop-shadow-md" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke={isLightColor(color.hex_code) ? '#000000' : '#FFFFFF'}
+                    strokeWidth="3"
+                  >
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </span>
+              )}
+            </button>
           ))}
         </div>
       </div>

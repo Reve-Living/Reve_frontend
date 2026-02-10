@@ -19,6 +19,17 @@ import { Category, Product } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
+// Helper function to determine if a hex color is light
+const isLightColor = (hexColor: string): boolean => {
+  const hex = hexColor.replace('#', '');
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  // Using relative luminance formula
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.5;
+};
+
 const ProductPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [product, setProduct] = useState<Product | null>(null);
@@ -252,19 +263,36 @@ const ProductPage = () => {
             </div>
 
             <div>
-              <h3 className="mb-3 font-medium">Colour: {selectedColor}</h3>
-              <div className="flex flex-wrap gap-2">
+              <h3 className="mb-3 font-medium">Colour: <span className="text-primary">{selectedColor}</span></h3>
+              <div className="flex flex-wrap gap-3">
                 {product.colors.map((color) => (
                   <button
                     key={color.id}
                     onClick={() => setSelectedColor(color.name)}
-                    className={`rounded-md border px-4 py-2 text-sm transition-all ${
+                    className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition-all ${
                       selectedColor === color.name
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border hover:border-primary'
+                        ? 'ring-2 ring-primary ring-offset-2'
+                        : 'hover:ring-2 hover:ring-muted-foreground hover:ring-offset-2'
                     }`}
+                    title={color.name}
                   >
-                    {color.name}
+                    <span
+                      className="h-8 w-8 rounded-full border border-border shadow-sm"
+                      style={{ backgroundColor: color.hex_code || '#888888' }}
+                    />
+                    {selectedColor === color.name && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <svg 
+                          className="h-4 w-4 drop-shadow-md" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke={color.hex_code && isLightColor(color.hex_code) ? '#000000' : '#FFFFFF'}
+                          strokeWidth="3"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      </span>
+                    )}
                   </button>
                 ))}
               </div>
