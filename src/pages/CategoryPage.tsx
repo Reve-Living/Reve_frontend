@@ -88,23 +88,29 @@ const CategoryPage = () => {
     setPriceRange([priceBounds.min, priceBounds.max]);
   }, [priceBounds.min, priceBounds.max]);
 
+  // Helper to normalize filter values (consistent title case)
+  const normalizeValue = (value: string) => {
+    return value.trim().toLowerCase().replace(/^\w/, c => c.toUpperCase());
+  };
+
   // Get unique sizes and colors
   const allSizes = useMemo(() => {
     const sizes = new Set<string>();
-    allProducts.forEach((p) => p.sizes.forEach((s) => sizes.add(s.name)));
-    return Array.from(sizes);
+    allProducts.forEach((p) => p.sizes.forEach((s) => sizes.add(normalizeValue(s.name))));
+    return Array.from(sizes).sort();
   }, [allProducts]);
 
   const allColors = useMemo(() => {
     const colorMap = new Map<string, { name: string; hex_code: string }>();
     allProducts.forEach((p) => 
       p.colors.forEach((c) => {
-        if (!colorMap.has(c.name)) {
-          colorMap.set(c.name, { name: c.name, hex_code: c.hex_code || '#888888' });
+        const normalizedName = normalizeValue(c.name);
+        if (!colorMap.has(normalizedName)) {
+          colorMap.set(normalizedName, { name: normalizedName, hex_code: c.hex_code || '#888888' });
         }
       })
     );
-    return Array.from(colorMap.values());
+    return Array.from(colorMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }, [allProducts]);
 
   // Filter and sort products
@@ -116,17 +122,17 @@ const CategoryPage = () => {
       (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
-    // Size filter
+    // Size filter (use normalized values for comparison)
     if (selectedSizes.length > 0) {
       products = products.filter((p) =>
-        p.sizes.some((s) => selectedSizes.includes(s.name))
+        p.sizes.some((s) => selectedSizes.includes(normalizeValue(s.name)))
       );
     }
 
-    // Color filter
+    // Color filter (use normalized values for comparison)
     if (selectedColors.length > 0) {
       products = products.filter((p) =>
-        p.colors.some((c) => selectedColors.includes(c.name))
+        p.colors.some((c) => selectedColors.includes(normalizeValue(c.name)))
       );
     }
 
