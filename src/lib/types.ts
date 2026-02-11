@@ -47,6 +47,7 @@ export interface ProductColor {
 export interface ProductSize {
   id: number;
   name: string;
+  description?: string;
 }
 
 export interface ProductStyle {
@@ -66,9 +67,38 @@ export interface ProductFabric {
   image_url: string;
 }
 
+export interface FilterOption {
+  id: number;
+  name: string;
+  slug: string;
+  color_code?: string | null;
+  icon_url?: string;
+  price_delta?: number;
+  is_wingback?: boolean;
+  metadata?: Record<string, unknown>;
+  product_count?: number;
+}
+
+export interface FilterType {
+  id: number;
+  name: string;
+  slug: string;
+  display_type: string;
+  icon_url?: string;
+  display_hint?: string;
+  is_default?: boolean;
+  is_expanded_by_default: boolean;
+  options: FilterOption[];
+}
+
 export interface ProductFaq {
   question: string;
   answer: string;
+}
+
+export interface ProductDimensionRow {
+  measurement: string;
+  values: Record<string, string>;
 }
 
 export interface Product {
@@ -87,6 +117,7 @@ export interface Product {
   description: string;
   short_description?: string;
   features: string[];
+  dimensions?: ProductDimensionRow[];
   faqs?: ProductFaq[];
   delivery_info?: string;
   returns_guarantee?: string;
@@ -102,6 +133,11 @@ export interface Product {
   sizes: ProductSize[];
   styles: ProductStyle[];
   fabrics: ProductFabric[];
+  filters?: FilterType[];
+  computed_dimensions?: ProductDimensionRow[];
+  dimension_template?: number | null;
+  dimension_template_name?: string;
+  wingback_width_delta_cm?: number;
 }
 
 export interface OrderItem {

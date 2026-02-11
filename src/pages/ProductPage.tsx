@@ -26,7 +26,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
-import { Category, Product } from '@/lib/types';
+import { Category, Product, FilterType } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
@@ -49,6 +49,7 @@ type ParsedSizeOption = {
   id: string;
   label: string;
   delta: number;
+  description: string;
   raw: string;
 };
 
@@ -58,12 +59,15 @@ const gbpFormatter = new Intl.NumberFormat('en-GB', {
   maximumFractionDigits: 2,
 });
 
+const DIMENSION_SIZE_COLUMNS = ['3ft Single', '4ft Small Double', '4ft6 Double', '5ft King', '6ft Super King'];
+
 const formatPrice = (value: number): string => gbpFormatter.format(Math.max(0, value));
 
-const parseSizeOption = (rawSize: string, index: number): ParsedSizeOption => {
+const parseSizeOption = (rawSize: string, index: number, rawDescription = ''): ParsedSizeOption => {
   const raw = (rawSize || '').trim();
+  const description = (rawDescription || '').trim();
   if (!raw) {
-    return { id: `size-${index}`, label: 'Size', delta: 0, raw: rawSize };
+    return { id: `size-${index}`, label: 'Size', delta: 0, description, raw: rawSize };
   }
 
   // Supports examples like:
@@ -74,6 +78,7 @@ const parseSizeOption = (rawSize: string, index: number): ParsedSizeOption => {
       id: `size-${index}`,
       label: pipeMatch[1].trim() || raw,
       delta: Number(pipeMatch[2] || 0),
+      description,
       raw: rawSize,
     };
   }
@@ -84,11 +89,12 @@ const parseSizeOption = (rawSize: string, index: number): ParsedSizeOption => {
       id: `size-${index}`,
       label: plusMatch[1].trim() || raw,
       delta: Number(plusMatch[2] || 0),
+      description,
       raw: rawSize,
     };
   }
 
-  return { id: `size-${index}`, label: raw, delta: 0, raw: rawSize };
+  return { id: `size-${index}`, label: raw, delta: 0, description, raw: rawSize };
 };
 
 const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
@@ -126,6 +132,7 @@ const ProductPage = () => {
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({});
   const [selectedFabric, setSelectedFabric] = useState('');
+  const [selectedFilterOptions, setSelectedFilterOptions] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
 
@@ -169,6 +176,21 @@ const ProductPage = () => {
         } else {
           setSelectedFabric('');
         }
+        if (fetched?.filters?.length) {
+          const defaults: Record<string, string> = {};
+          fetched.filters.forEach((f) => {
+            const first = f.options?.[0];
+            if (first) {
+              defaults[f.slug] = first.slug;
+              if (f.slug === 'size' && first.name) {
+                setSelectedSize(first.name);
+              }
+            }
+          });
+          setSelectedFilterOptions(defaults);
+        } else {
+          setSelectedFilterOptions({});
+        }
         setIsLoading(false);
       } catch {
         setProduct(null);
@@ -208,12 +230,31 @@ const ProductPage = () => {
     );
   }
 
-  const sizeOptions = product.sizes.map((size, index) => parseSizeOption(size.name, index));
+  const sizeOptions = product.sizes.map((size, index) => parseSizeOption(size.name, index, size.description || ''));
   const activeSizeOption = sizeOptions.find((size) => size.label === selectedSize) || sizeOptions[0];
   const sizeDelta = activeSizeOption?.delta || 0;
 
-  const unitPrice = product.price + sizeDelta;
-  const unitOriginalPrice = product.original_price ? product.original_price + sizeDelta : undefined;
+  const findSelectedOption = (filter: FilterType) => {
+    if (filter.slug === 'size') {
+      return filter.options.find((opt) => opt.name === selectedSize) || filter.options[0];
+    }
+    const selectedSlug = selectedFilterOptions[filter.slug];
+    return filter.options.find((opt) => opt.slug === selectedSlug) || filter.options[0];
+  };
+
+  const filterPriceDelta = (product.filters || []).reduce((sum, filter) => {
+    if (filter.slug === 'size') return sum;
+    const opt = findSelectedOption(filter);
+    return sum + (opt?.price_delta ? Number(opt.price_delta) : 0);
+  }, 0);
+
+  const wingbackSelected = (product.filters || []).some((filter) => {
+    const opt = findSelectedOption(filter);
+    return opt?.is_wingback;
+  });
+
+  const unitPrice = product.price + sizeDelta + filterPriceDelta;
+  const unitOriginalPrice = product.original_price ? product.original_price + sizeDelta + filterPriceDelta : undefined;
   const totalPrice = unitPrice * quantity;
   const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
 
@@ -222,6 +263,15 @@ const ProductPage = () => {
   const dimensionsRows = (product.features || []).filter((feature) =>
     /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
   );
+  const dimensionTableRows = (product.dimensions || []).filter(
+    (row) => row?.measurement && row?.values && Object.keys(row.values).length > 0
+  );
+  const dimensionColumns =
+    dimensionTableRows.length > 0
+      ? DIMENSION_SIZE_COLUMNS.filter((size) =>
+          dimensionTableRows.some((row) => (row.values?.[size] || '').trim().length > 0)
+        )
+      : [];
 
   const handleAddToCart = () => {
     addItem({
@@ -351,11 +401,95 @@ const ProductPage = () => {
               <p className="mt-2 text-sm text-muted-foreground">Price updates automatically when you select a size.</p>
             </div>
 
+            {(product.filters || []).length > 0 && (
+              <div className="space-y-4 rounded-xl border border-border bg-card p-4">
+                <div className="grid gap-3 sm:grid-cols-3 md:grid-cols-5">
+                  {(product.filters || []).map((filter) => {
+                    const opt = findSelectedOption(filter);
+                    return (
+                      <div key={filter.id} className="rounded-lg border border-border bg-background p-3">
+                        <div className="mb-2 flex items-center gap-2">
+                          {filter.icon_url ? (
+                            <img src={filter.icon_url} alt={filter.name} className="h-6 w-6 object-contain" />
+                          ) : (
+                            <BedDouble className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          <span className="text-sm font-medium">{filter.name}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground line-clamp-2">
+                          {opt?.name || 'Select'}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {(product.filters || []).map((filter) => {
+                  const selected = findSelectedOption(filter);
+                  return (
+                    <div key={`options-${filter.id}`} className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="font-medium">{filter.name}</h3>
+                        {filter.display_hint && (
+                          <span className="text-xs text-muted-foreground">{filter.display_hint}</span>
+                        )}
+                      </div>
+                      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {filter.options.map((opt) => {
+                          const isSelected =
+                            filter.slug === 'size'
+                              ? selectedSize === opt.name
+                              : (selectedFilterOptions[filter.slug] || selected?.slug) === opt.slug;
+                          return (
+                            <button
+                              key={opt.id}
+                              onClick={() => {
+                                if (filter.slug === 'size') {
+                                  setSelectedSize(opt.name);
+                                } else {
+                                  setSelectedFilterOptions((prev) => ({ ...prev, [filter.slug]: opt.slug }));
+                                }
+                              }}
+                              className={`rounded-lg border p-4 text-left transition-all ${
+                                isSelected
+                                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                  : 'border-border hover:border-primary/60'
+                              }`}
+                            >
+                              <div className="mb-2 flex items-center justify-between">
+                                {opt.icon_url ? (
+                                  <img src={opt.icon_url} alt={opt.name} className="h-6 w-6 object-contain" />
+                                ) : (
+                                  <BedDouble className="h-5 w-5 text-muted-foreground" />
+                                )}
+                                {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                              </div>
+                              <p className="font-medium">{opt.name}</p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {opt.price_delta && Number(opt.price_delta) !== 0
+                                  ? `+${formatPrice(Number(opt.price_delta))}`
+                                  : 'Included'}
+                              </p>
+                              {opt.is_wingback && (
+                                <p className="mt-1 text-[11px] text-amber-700">
+                                  Wingback adds {product.wingback_width_delta_cm || 4} cm width
+                                </p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {sizeOptions.length > 0 && (
               <div>
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="font-medium">Size</h3>
-                  {dimensionsRows.length > 0 && (
+                  {(dimensionTableRows.length > 0 || dimensionsRows.length > 0) && (
                     <button
                       type="button"
                       className="text-sm font-medium text-primary underline-offset-4 hover:underline"
@@ -388,6 +522,9 @@ const ProductPage = () => {
                       <p className="mt-1 text-sm text-muted-foreground">
                         {size.delta > 0 ? `+${formatPrice(size.delta)}` : 'Included in base price'}
                       </p>
+                      {size.description && (
+                        <p className="mt-1 text-xs text-muted-foreground">{size.description}</p>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -544,7 +681,7 @@ const ProductPage = () => {
                 </AccordionItem>
               )}
 
-              {dimensionsRows.length > 0 && (
+              {(dimensionTableRows.length > 0 || dimensionsRows.length > 0) && (
                 <AccordionItem value="dimensions" id="dimensions-section">
                   <AccordionTrigger>
                     <span className="inline-flex items-center gap-2">
@@ -553,11 +690,43 @@ const ProductPage = () => {
                     </span>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <ul className="list-disc space-y-2 pl-4">
-                      {dimensionsRows.map((row, i) => (
-                        <li key={i} className="text-muted-foreground">{row}</li>
-                      ))}
-                    </ul>
+                    {wingbackSelected && (
+                      <div className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                        Wingback selected: width increases by approximately {product.wingback_width_delta_cm || 4} cm. Length and height stay the same.
+                      </div>
+                    )}
+                    {dimensionTableRows.length > 0 && dimensionColumns.length > 0 ? (
+                      <div className="overflow-x-auto rounded-md border">
+                        <table className="min-w-full text-sm">
+                          <thead className="bg-muted/60">
+                            <tr>
+                              <th className="p-2 text-left font-medium">Measurement</th>
+                              {dimensionColumns.map((size) => (
+                                <th key={size} className="p-2 text-left font-medium">{size}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {dimensionTableRows.map((row, idx) => (
+                              <tr key={`${row.measurement}-${idx}`} className="border-t">
+                                <td className="p-2 font-medium">{row.measurement}</td>
+                                {dimensionColumns.map((size) => (
+                                  <td key={`${row.measurement}-${size}`} className="p-2 text-muted-foreground">
+                                    {row.values?.[size] || '-'}
+                                  </td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <ul className="list-disc space-y-2 pl-4">
+                        {dimensionsRows.map((row, i) => (
+                          <li key={i} className="text-muted-foreground">{row}</li>
+                        ))}
+                      </ul>
+                    )}
                   </AccordionContent>
                 </AccordionItem>
               )}
