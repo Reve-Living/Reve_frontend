@@ -121,6 +121,21 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
     .filter((option): option is NormalizedStyleOption => Boolean(option));
 };
 
+const isInlineSvgMarkup = (value?: string): boolean => {
+  const v = (value || '').trim();
+  return v.startsWith('<svg') && v.endsWith('</svg>');
+};
+
+const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; className: string }) => {
+  if (isInlineSvgMarkup(icon)) {
+    return <span className={className} aria-label={alt} dangerouslySetInnerHTML={{ __html: (icon || '').trim() }} />;
+  }
+  if (icon) {
+    return <img src={icon} alt={alt} className={className} />;
+  }
+  return <BedDouble className="h-5 w-5 text-muted-foreground" />;
+};
+
 const ProductPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [product, setProduct] = useState<Product | null>(null);
@@ -412,11 +427,7 @@ const ProductPage = () => {
                     return (
                       <div key={filter.id} className="rounded-lg border border-border bg-background p-3">
                         <div className="mb-2 flex items-center gap-2">
-                          {filter.icon_url ? (
-                            <img src={filter.icon_url} alt={filter.name} className="h-6 w-6 object-contain" />
-                          ) : (
-                            <BedDouble className="h-5 w-5 text-muted-foreground" />
-                          )}
+                          <IconVisual icon={filter.icon_url} alt={filter.name} className="h-6 w-6 object-contain" />
                           <span className="text-sm font-medium">{filter.name}</span>
                         </div>
                         <p className="text-xs text-muted-foreground line-clamp-2">
@@ -460,11 +471,7 @@ const ProductPage = () => {
                               }`}
                             >
                           <div className="mb-2 flex items-center justify-between">
-                            {opt.icon_url ? (
-                              <img src={opt.icon_url} alt={opt.name} className="h-6 w-6 object-contain" />
-                            ) : (
-                              <BedDouble className="h-5 w-5 text-muted-foreground" />
-                            )}
+                                <IconVisual icon={opt.icon_url} alt={opt.name} className="h-6 w-6 object-contain" />
                             {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
                           </div>
                           <p className="font-medium">{opt.name}</p>
@@ -607,11 +614,7 @@ const ProductPage = () => {
                   return (
                     <div key={styleGroup.id}>
                       <div className="mb-3 flex items-center gap-2">
-                        {styleGroup.icon_url ? (
-                          <img src={styleGroup.icon_url} alt={styleGroup.name} className="h-6 w-6 object-contain" />
-                        ) : (
-                          <BedDouble className="h-5 w-5 text-muted-foreground" />
-                        )}
+                        <IconVisual icon={styleGroup.icon_url} alt={styleGroup.name} className="h-6 w-6 object-contain" />
                         <h3 className="font-medium">{styleGroup.name}</h3>
                       </div>
                       <div className={isHeadboard ? 'grid gap-3 sm:grid-cols-2' : 'space-y-2'}>
@@ -629,7 +632,7 @@ const ProductPage = () => {
                           >
                             <div className="mb-1 flex items-center gap-2">
                               {styleOption.icon_url ? (
-                                <img src={styleOption.icon_url} alt={styleOption.label} className="h-5 w-5 object-contain" />
+                                <IconVisual icon={styleOption.icon_url} alt={styleOption.label} className="h-5 w-5 object-contain" />
                               ) : null}
                               <span className="block font-medium">{styleOption.label}</span>
                             </div>

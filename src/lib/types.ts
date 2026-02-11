@@ -53,12 +53,14 @@ export interface ProductSize {
 export interface ProductStyle {
   id: number;
   name: string;
+  icon_url?: string;
   options: ProductStyleOption[] | string[];
 }
 
 export interface ProductStyleOption {
   label: string;
   description?: string;
+  icon_url?: string;
 }
 
 export interface ProductFabric {
