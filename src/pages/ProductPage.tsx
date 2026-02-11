@@ -1,7 +1,18 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Minus, Plus, Star, Truck, Shield, CreditCard } from 'lucide-react';
+import {
+  ChevronRight,
+  Minus,
+  Plus,
+  Star,
+  Truck,
+  Shield,
+  CreditCard,
+  Ruler,
+  BedDouble,
+  CheckCircle2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -25,7 +36,6 @@ const isLightColor = (hexColor: string): boolean => {
   const r = parseInt(hex.substring(0, 2), 16);
   const g = parseInt(hex.substring(2, 4), 16);
   const b = parseInt(hex.substring(4, 6), 16);
-  // Using relative luminance formula
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
   return luminance > 0.5;
 };
@@ -33,6 +43,52 @@ const isLightColor = (hexColor: string): boolean => {
 type NormalizedStyleOption = {
   label: string;
   description?: string;
+};
+
+type ParsedSizeOption = {
+  id: string;
+  label: string;
+  delta: number;
+  raw: string;
+};
+
+const gbpFormatter = new Intl.NumberFormat('en-GB', {
+  style: 'currency',
+  currency: 'GBP',
+  maximumFractionDigits: 2,
+});
+
+const formatPrice = (value: number): string => gbpFormatter.format(Math.max(0, value));
+
+const parseSizeOption = (rawSize: string, index: number): ParsedSizeOption => {
+  const raw = (rawSize || '').trim();
+  if (!raw) {
+    return { id: `size-${index}`, label: 'Size', delta: 0, raw: rawSize };
+  }
+
+  // Supports examples like:
+  // "Small Double (+90)", "King +115", "Super King|140"
+  const pipeMatch = raw.match(/^(.*?)\s*\|\s*(-?\d+(\.\d+)?)$/);
+  if (pipeMatch) {
+    return {
+      id: `size-${index}`,
+      label: pipeMatch[1].trim() || raw,
+      delta: Number(pipeMatch[2] || 0),
+      raw: rawSize,
+    };
+  }
+
+  const plusMatch = raw.match(/^(.*?)\s*(?:\(\s*)?\+\s*£?\s*(\d+(\.\d+)?)\s*(?:\)\s*)?$/i);
+  if (plusMatch) {
+    return {
+      id: `size-${index}`,
+      label: plusMatch[1].trim() || raw,
+      delta: Number(plusMatch[2] || 0),
+      raw: rawSize,
+    };
+  }
+
+  return { id: `size-${index}`, label: raw, delta: 0, raw: rawSize };
 };
 
 const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
@@ -95,7 +151,7 @@ const ProductPage = () => {
           setRelatedProducts([]);
         }
         if (fetched?.sizes?.length) {
-          setSelectedSize(fetched.sizes[0].name);
+          setSelectedSize(parseSizeOption(fetched.sizes[0].name, 0).label);
         }
         if (fetched?.colors?.length) {
           setSelectedColor(fetched.colors[0].name);
@@ -152,17 +208,31 @@ const ProductPage = () => {
     );
   }
 
+  const sizeOptions = product.sizes.map((size, index) => parseSizeOption(size.name, index));
+  const activeSizeOption = sizeOptions.find((size) => size.label === selectedSize) || sizeOptions[0];
+  const sizeDelta = activeSizeOption?.delta || 0;
+
+  const unitPrice = product.price + sizeDelta;
+  const unitOriginalPrice = product.original_price ? product.original_price + sizeDelta : undefined;
+  const totalPrice = unitPrice * quantity;
+  const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
+
+  const fullDescription = (product.description || '').trim();
+  const shortDescription = (product.short_description || '').trim() || fullDescription.split('. ')[0] || '';
+  const dimensionsRows = (product.features || []).filter((feature) =>
+    /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
+  );
+
   const handleAddToCart = () => {
-    if (!product) return;
     addItem({
       product,
       quantity,
-      size: selectedSize,
+      size: activeSizeOption?.label || selectedSize,
       color: selectedColor,
       selectedVariants: selectedStyles,
       fabric: selectedFabric || undefined,
     });
-    toast.success(`${product.name} added to cart!`);
+    toast.success(`${product.name} added to cart`);
   };
 
   return (
@@ -211,22 +281,22 @@ const ProductPage = () => {
                 {product.is_new && (
                   <Badge variant="secondary" className="bg-accent text-accent-foreground">New</Badge>
                 )}
-                {product.original_price && product.original_price > product.price && (
-                  <Badge variant="destructive">Save £{product.original_price - product.price}</Badge>
+                {savingsPerUnit > 0 && (
+                  <Badge variant="destructive">Save {formatPrice(savingsPerUnit)}</Badge>
                 )}
               </div>
             </motion.div>
 
             {product.images.length > 1 && (
-              <div className="flex gap-4">
+              <div className="grid grid-cols-5 gap-3">
                 {product.images.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`relative aspect-square w-20 overflow-hidden rounded-md transition-all ${
+                    className={`relative aspect-square overflow-hidden rounded-md transition-all ${
                       selectedImage === index
                         ? 'ring-2 ring-primary ring-offset-2'
-                        : 'opacity-60 hover:opacity-100'
+                        : 'opacity-70 hover:opacity-100'
                     }`}
                   >
                     <img
@@ -259,119 +329,74 @@ const ProductPage = () => {
               </span>
             </div>
 
-            <div>
-              <h1 className="mb-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
+            <div className="space-y-3">
+              <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
                 {product.name}
               </h1>
+              <p className="text-base text-muted-foreground">{shortDescription}</p>
+            </div>
+
+            <div className="rounded-xl border border-border bg-card p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="text-3xl font-bold text-primary">£{product.price}</span>
-                {product.original_price && product.original_price > product.price && (
-                  <>
-                    <span className="text-xl text-muted-foreground line-through">
-                      £{product.original_price}
-                    </span>
-                    <Badge variant="destructive" className="text-sm">
-                      Save £{product.original_price - product.price} ({Math.round(((product.original_price - product.price) / product.original_price) * 100)}% off)
-                    </Badge>
-                  </>
+                <span className="text-3xl font-bold text-primary">{formatPrice(unitPrice)}</span>
+                {unitOriginalPrice && unitOriginalPrice > unitPrice && (
+                  <span className="text-lg text-muted-foreground line-through">{formatPrice(unitOriginalPrice)}</span>
+                )}
+                {savingsPerUnit > 0 && (
+                  <Badge variant="destructive" className="text-sm">
+                    Save {formatPrice(savingsPerUnit)}
+                  </Badge>
                 )}
               </div>
+              <p className="mt-2 text-sm text-muted-foreground">Price updates automatically when you select a size.</p>
             </div>
 
-            <p className="text-muted-foreground">{product.description}</p>
-
-            <div>
-              <h3 className="mb-3 font-medium">Size</h3>
-              <div className="flex flex-wrap gap-2">
-                {product.sizes.map((size) => (
-                  <button
-                    key={size.id}
-                    onClick={() => setSelectedSize(size.name)}
-                    className={`rounded-md border px-4 py-2 text-sm transition-all ${
-                      selectedSize === size.name
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-border hover:border-primary'
-                    }`}
-                  >
-                    {size.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <h3 className="mb-3 font-medium">Colour: <span className="text-primary">{selectedColor}</span></h3>
-              <div className="flex flex-wrap gap-3">
-                {product.colors.map((color) => (
-                  <button
-                    key={color.id}
-                    onClick={() => setSelectedColor(color.name)}
-                    className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition-all ${
-                      selectedColor === color.name
-                        ? 'ring-2 ring-primary ring-offset-2'
-                        : 'hover:ring-2 hover:ring-muted-foreground hover:ring-offset-2'
-                    }`}
-                    title={color.name}
-                  >
-                    <span
-                      className="h-8 w-8 rounded-full border border-border shadow-sm"
-                      style={{ backgroundColor: color.hex_code || '#888888' }}
-                    />
-                    {selectedColor === color.name && (
-                      <span className="absolute inset-0 flex items-center justify-center">
-                        <svg 
-                          className="h-4 w-4 drop-shadow-md" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke={color.hex_code && isLightColor(color.hex_code) ? '#000000' : '#FFFFFF'}
-                          strokeWidth="3"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      </span>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {product.styles && product.styles.length > 0 && (
-              <div className="space-y-6">
-                {product.styles.map((styleGroup) => {
-                  const options = normalizeStyleOptions(styleGroup.options);
-                  if (options.length === 0) return null;
-                  return (
-                    <div key={styleGroup.id}>
-                      <h3 className="mb-3 font-medium">{styleGroup.name}</h3>
-                      <div className="space-y-2">
-                        {options.map((styleOption) => (
-                          <button
-                            key={`${styleGroup.id}-${styleOption.label}`}
-                            onClick={() =>
-                              setSelectedStyles((prev) => ({ ...prev, [styleGroup.name]: styleOption.label }))
-                            }
-                            className={`w-full rounded-md border px-4 py-3 text-left text-sm transition-all ${
-                              selectedStyles[styleGroup.name] === styleOption.label
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'border-border hover:border-primary'
-                            }`}
-                          >
-                            <span className="block font-medium">{styleOption.label}</span>
-                            {styleOption.description && (
-                              <span className="mt-1 block text-xs opacity-90">{styleOption.description}</span>
-                            )}
-                          </button>
-                        ))}
+            {sizeOptions.length > 0 && (
+              <div>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="font-medium">Size</h3>
+                  {dimensionsRows.length > 0 && (
+                    <button
+                      type="button"
+                      className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                      onClick={() =>
+                        document.getElementById('dimensions-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }
+                    >
+                      View dimensions
+                    </button>
+                  )}
+                </div>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {sizeOptions.map((size) => (
+                    <button
+                      key={size.id}
+                      onClick={() => setSelectedSize(size.label)}
+                      className={`rounded-lg border p-4 text-left transition-all ${
+                        activeSizeOption?.label === size.label
+                          ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                          : 'border-border hover:border-primary/60'
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center justify-between">
+                        <BedDouble className="h-5 w-5 text-muted-foreground" />
+                        {activeSizeOption?.label === size.label && (
+                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                        )}
                       </div>
-                    </div>
-                  );
-                })}
+                      <p className="font-medium">{size.label}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {size.delta > 0 ? `+${formatPrice(size.delta)}` : 'Included in base price'}
+                      </p>
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
 
             {product.fabrics && product.fabrics.length > 0 && (
               <div>
-                <h3 className="mb-3 font-medium">Fabric: <span className="text-primary">{selectedFabric}</span></h3>
+                <h3 className="mb-3 font-medium">Fabric</h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   {product.fabrics.map((fabric) => (
                     <button
@@ -392,6 +417,79 @@ const ProductPage = () => {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {product.colors && product.colors.length > 0 && (
+              <div>
+                <h3 className="mb-3 font-medium">Select Colour: <span className="text-primary">{selectedColor}</span></h3>
+                <div className="flex flex-wrap gap-3">
+                  {product.colors.map((color) => (
+                    <button
+                      key={color.id}
+                      onClick={() => setSelectedColor(color.name)}
+                      className={`group relative flex h-10 w-10 items-center justify-center rounded-full transition-all ${
+                        selectedColor === color.name
+                          ? 'ring-2 ring-primary ring-offset-2'
+                          : 'hover:ring-2 hover:ring-muted-foreground hover:ring-offset-2'
+                      }`}
+                      title={color.name}
+                    >
+                      <span
+                        className="h-8 w-8 rounded-full border border-border shadow-sm"
+                        style={{ backgroundColor: color.hex_code || '#888888' }}
+                      />
+                      {selectedColor === color.name && (
+                        <span className="absolute inset-0 flex items-center justify-center">
+                          <svg
+                            className="h-4 w-4 drop-shadow-md"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke={color.hex_code && isLightColor(color.hex_code) ? '#000000' : '#FFFFFF'}
+                            strokeWidth="3"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {product.styles && product.styles.length > 0 && (
+              <div className="space-y-6">
+                {product.styles.map((styleGroup) => {
+                  const options = normalizeStyleOptions(styleGroup.options);
+                  if (options.length === 0) return null;
+                  const isHeadboard = styleGroup.name.toLowerCase().includes('headboard');
+                  return (
+                    <div key={styleGroup.id}>
+                      <h3 className="mb-3 font-medium">{styleGroup.name}</h3>
+                      <div className={isHeadboard ? 'grid gap-3 sm:grid-cols-2' : 'space-y-2'}>
+                        {options.map((styleOption) => (
+                          <button
+                            key={`${styleGroup.id}-${styleOption.label}`}
+                            onClick={() =>
+                              setSelectedStyles((prev) => ({ ...prev, [styleGroup.name]: styleOption.label }))
+                            }
+                            className={`rounded-md border px-4 py-3 text-left text-sm transition-all ${
+                              selectedStyles[styleGroup.name] === styleOption.label
+                                ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
+                                : 'border-border hover:border-primary'
+                            }`}
+                          >
+                            <span className="block font-medium">{styleOption.label}</span>
+                            {styleOption.description && (
+                              <span className="mt-1 block text-xs text-muted-foreground">{styleOption.description}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -417,7 +515,7 @@ const ProductPage = () => {
                 onClick={handleAddToCart}
                 className="flex-1 gradient-bronze text-lg font-semibold"
               >
-                Add to Cart - £{(product.price * quantity).toFixed(2)}
+                Add to Cart - {formatPrice(totalPrice)}
               </Button>
             </div>
 
@@ -437,6 +535,33 @@ const ProductPage = () => {
             </div>
 
             <Accordion type="single" collapsible className="w-full">
+              {fullDescription && (
+                <AccordionItem value="description">
+                  <AccordionTrigger>Description</AccordionTrigger>
+                  <AccordionContent>
+                    <p className="text-muted-foreground">{fullDescription}</p>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
+              {dimensionsRows.length > 0 && (
+                <AccordionItem value="dimensions" id="dimensions-section">
+                  <AccordionTrigger>
+                    <span className="inline-flex items-center gap-2">
+                      <Ruler className="h-4 w-4" />
+                      Dimensions
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <ul className="list-disc space-y-2 pl-4">
+                      {dimensionsRows.map((row, i) => (
+                        <li key={i} className="text-muted-foreground">{row}</li>
+                      ))}
+                    </ul>
+                  </AccordionContent>
+                </AccordionItem>
+              )}
+
               <AccordionItem value="features">
                 <AccordionTrigger>Features</AccordionTrigger>
                 <AccordionContent>
@@ -457,9 +582,9 @@ const ProductPage = () => {
                       <p>{product.delivery_info}</p>
                     ) : (
                       <>
-                        <p>• Free delivery on orders over £500</p>
-                        <p>• Standard delivery: 3-5 working days</p>
-                        <p>• Premium delivery with room of choice: Available</p>
+                        <p>- Free delivery on orders over 500 GBP</p>
+                        <p>- Standard delivery: 3-5 working days</p>
+                        <p>- Premium delivery with room of choice: available</p>
                       </>
                     )}
                   </div>
@@ -473,9 +598,9 @@ const ProductPage = () => {
                       <p>{product.returns_guarantee}</p>
                     ) : (
                       <>
-                        <p>• 10-year structural guarantee</p>
-                        <p>• 30-day comfort exchange on mattresses</p>
-                        <p>• Free returns within 14 days</p>
+                        <p>- 10-year structural guarantee</p>
+                        <p>- 30-day comfort exchange on mattresses</p>
+                        <p>- Free returns within 14 days</p>
                       </>
                     )}
                   </div>

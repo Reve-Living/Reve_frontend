@@ -18,16 +18,37 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
-import { Category, Product } from '@/lib/types';
+import { Category, Product, SubCategory } from '@/lib/types';
 
-// Helper function to determine if a hex color is light
-const isLightColor = (hexColor: string): boolean => {
-  const hex = hexColor.replace('#', '');
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-  return luminance > 0.5;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+const resolveImageUrl = (value?: string): string => {
+  const raw = (value || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    return raw;
+  }
+  if (raw.startsWith('//')) {
+    return `https:${raw}`;
+  }
+  if (raw.startsWith('/')) {
+    const base = SUPABASE_URL || API_BASE_URL;
+    if (base) {
+      try {
+        return new URL(raw, base).toString();
+      } catch {
+        return raw;
+      }
+    }
+  }
+  return raw;
+};
+
+const toBackgroundImageValue = (value?: string): string => {
+  const resolved = resolveImageUrl(value);
+  if (!resolved) return '';
+  return `url("${encodeURI(resolved)}")`;
 };
 
 const CategoryPage = () => {
@@ -35,13 +56,13 @@ const CategoryPage = () => {
   const [searchParams] = useSearchParams();
   const subSlug = searchParams.get('sub') || '';
   const [category, setCategory] = useState<Category | null>(null);
+  const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const [sortBy, setSortBy] = useState('featured');
   const [priceRange, setPriceRange] = useState([0, 1500]);
-  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   useEffect(() => {
@@ -49,13 +70,21 @@ const CategoryPage = () => {
       setIsLoading(true);
       if (!slug) {
         setCategory(null);
+        setSubcategories([]);
         setAllProducts([]);
         setIsLoading(false);
         return;
       }
       try {
         const categoryRes = await apiGet<Category[]>(`/categories/?slug=${slug}`);
-        setCategory(categoryRes[0] || null);
+        const categoryItem = categoryRes[0] || null;
+        setCategory(categoryItem);
+        if (categoryItem) {
+          const subcategoryRes = await apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`);
+          setSubcategories(subcategoryRes);
+        } else {
+          setSubcategories([]);
+        }
         const productsRes = subSlug
           ? await apiGet<Product[]>(`/products/?subcategory=${subSlug}`)
           : await apiGet<Product[]>(`/products/?category=${slug}`);
@@ -63,6 +92,7 @@ const CategoryPage = () => {
         setIsLoading(false);
       } catch {
         setCategory(null);
+        setSubcategories([]);
         setAllProducts([]);
         setIsLoading(false);
       }
@@ -71,15 +101,23 @@ const CategoryPage = () => {
   }, [slug, subSlug]);
 
   const selectedSubcategory = useMemo(() => {
-    if (!category || !subSlug) {
+    if (!subSlug) {
       return null;
     }
-    return category.subcategories?.find((sub) => sub.slug === subSlug) || null;
-  }, [category, subSlug]);
+    return (
+      subcategories.find((sub) => sub.slug === subSlug) ||
+      category?.subcategories?.find((sub) => sub.slug === subSlug) ||
+      null
+    );
+  }, [category, subSlug, subcategories]);
 
   const heroName = selectedSubcategory?.name || category?.name || '';
   const heroDescription = selectedSubcategory?.description || category?.description || '';
-  const heroImage = selectedSubcategory?.image || category?.image || '';
+  const fallbackProductImage = allProducts[0]?.images?.[0]?.url || '';
+  const heroImage = resolveImageUrl(
+    selectedSubcategory?.image || category?.image || fallbackProductImage || ''
+  );
+  const heroBackgroundImage = toBackgroundImageValue(heroImage);
 
   const priceBounds = useMemo(() => {
     const prices = allProducts
@@ -99,51 +137,15 @@ const CategoryPage = () => {
     setPriceRange([priceBounds.min, priceBounds.max]);
   }, [priceBounds.min, priceBounds.max]);
 
-  // Helper to normalize filter values (consistent title case)
-  const normalizeValue = (value: string) => {
-    return value.trim().toLowerCase().replace(/^\w/, c => c.toUpperCase());
-  };
-
-  // Get all style options grouped by style name
-  const allStyleOptions = useMemo(() => {
-    const styleMap = new Map<string, Set<string>>();
-    allProducts.forEach((p) => 
-      p.styles.forEach((style) => {
-        const styleName = style.name;
-        if (!styleMap.has(styleName)) {
-          styleMap.set(styleName, new Set<string>());
-        }
-        // Handle both array of objects and array of strings
-        if (Array.isArray(style.options)) {
-          style.options.forEach((opt) => {
-            const optionLabel = typeof opt === 'string' ? opt : opt.label;
-            styleMap.get(styleName)!.add(optionLabel);
-          });
-        }
+  const allSizes = useMemo(() => {
+    const sizeSet = new Set<string>();
+    allProducts.forEach((p) =>
+      p.sizes.forEach((s) => {
+        const value = s.name.trim();
+        if (value) sizeSet.add(value);
       })
     );
-    // Convert to array format
-    const result: { styleName: string; options: string[] }[] = [];
-    styleMap.forEach((options, styleName) => {
-      result.push({
-        styleName,
-        options: Array.from(options).sort(),
-      });
-    });
-    return result;
-  }, [allProducts]);
-
-  const allColors = useMemo(() => {
-    const colorMap = new Map<string, { name: string; hex_code: string }>();
-    allProducts.forEach((p) => 
-      p.colors.forEach((c) => {
-        const normalizedName = normalizeValue(c.name);
-        if (!colorMap.has(normalizedName)) {
-          colorMap.set(normalizedName, { name: normalizedName, hex_code: c.hex_code || '#888888' });
-        }
-      })
-    );
-    return Array.from(colorMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+    return Array.from(sizeSet).sort((a, b) => a.localeCompare(b));
   }, [allProducts]);
 
   // Filter and sort products
@@ -155,23 +157,10 @@ const CategoryPage = () => {
       (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
-    // Style options filter
-    if (selectedOptions.length > 0) {
+    // Size filter
+    if (selectedSizes.length > 0) {
       products = products.filter((p) =>
-        p.styles.some((style) =>
-          Array.isArray(style.options) &&
-          style.options.some((opt) => {
-            const optionLabel = typeof opt === 'string' ? opt : opt.label;
-            return selectedOptions.includes(optionLabel);
-          })
-        )
-      );
-    }
-
-    // Color filter (use normalized values for comparison)
-    if (selectedColors.length > 0) {
-      products = products.filter((p) =>
-        p.colors.some((c) => selectedColors.includes(normalizeValue(c.name)))
+        p.sizes.some((size) => selectedSizes.includes(size.name))
       );
     }
 
@@ -192,24 +181,17 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, priceRange, selectedOptions, selectedColors, sortBy]);
+  }, [allProducts, priceRange, selectedSizes, sortBy]);
 
-  const toggleOption = (option: string) => {
-    setSelectedOptions((prev) =>
-      prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
-    );
-  };
-
-  const toggleColor = (color: string) => {
-    setSelectedColors((prev) =>
-      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+  const toggleSize = (size: string) => {
+    setSelectedSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
     );
   };
 
   const clearFilters = () => {
     setPriceRange([priceBounds.min, priceBounds.max]);
-    setSelectedOptions([]);
-    setSelectedColors([]);
+    setSelectedSizes([]);
   };
 
   if (!category && !isLoading) {
@@ -251,7 +233,7 @@ const CategoryPage = () => {
       <section className="relative h-64 overflow-hidden md:h-80">
         <div
           className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${heroImage})` }}
+          style={{ backgroundImage: heroBackgroundImage }}
         >
           <div className="absolute inset-0 bg-espresso/60" />
         </div>
@@ -331,12 +313,9 @@ const CategoryPage = () => {
               priceRange={priceRange}
               setPriceRange={setPriceRange}
               priceBounds={priceBounds}
-              allStyleOptions={allStyleOptions}
-              selectedOptions={selectedOptions}
-              toggleOption={toggleOption}
-              allColors={allColors}
-              selectedColors={selectedColors}
-              toggleColor={toggleColor}
+              allSizes={allSizes}
+              selectedSizes={selectedSizes}
+              toggleSize={toggleSize}
               clearFilters={clearFilters}
             />
           </aside>
@@ -367,12 +346,9 @@ const CategoryPage = () => {
                   priceRange={priceRange}
                   setPriceRange={setPriceRange}
                   priceBounds={priceBounds}
-                  allStyleOptions={allStyleOptions}
-                  selectedOptions={selectedOptions}
-                  toggleOption={toggleOption}
-                  allColors={allColors}
-                  selectedColors={selectedColors}
-                  toggleColor={toggleColor}
+                  allSizes={allSizes}
+                  selectedSizes={selectedSizes}
+                  toggleSize={toggleSize}
                   clearFilters={clearFilters}
                 />
               </motion.div>
@@ -413,12 +389,9 @@ interface FilterContentProps {
   priceRange: number[];
   setPriceRange: (range: number[]) => void;
   priceBounds: { min: number; max: number };
-  allStyleOptions: { styleName: string; options: string[] }[];
-  selectedOptions: string[];
-  toggleOption: (option: string) => void;
-  allColors: { name: string; hex_code: string }[];
-  selectedColors: string[];
-  toggleColor: (color: string) => void;
+  allSizes: string[];
+  selectedSizes: string[];
+  toggleSize: (size: string) => void;
   clearFilters: () => void;
 }
 
@@ -426,12 +399,9 @@ const FilterContent = ({
   priceRange,
   setPriceRange,
   priceBounds,
-  allStyleOptions,
-  selectedOptions,
-  toggleOption,
-  allColors,
-  selectedColors,
-  toggleColor,
+  allSizes,
+  selectedSizes,
+  toggleSize,
   clearFilters,
 }: FilterContentProps) => {
   return (
@@ -453,60 +423,21 @@ const FilterContent = ({
         </div>
       </div>
 
-      {/* Style Options */}
-      {allStyleOptions.map((styleGroup) => (
-        <div key={styleGroup.styleName}>
-          <h4 className="mb-4 font-serif text-lg font-semibold">{styleGroup.styleName}</h4>
-          <div className="space-y-3">
-            {styleGroup.options.map((option) => (
-              <div key={option} className="flex items-center gap-2">
-                <Checkbox
-                  id={`option-${option}`}
-                  checked={selectedOptions.includes(option)}
-                  onCheckedChange={() => toggleOption(option)}
-                />
-                <Label htmlFor={`option-${option}`} className="text-sm cursor-pointer">
-                  {option}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Colors */}
+      {/* Sizes */}
       <div>
-        <h4 className="mb-4 font-serif text-lg font-semibold">Colour</h4>
-        <div className="flex flex-wrap gap-2">
-          {allColors.map((color) => (
-            <button
-              key={color.name}
-              onClick={() => toggleColor(color.name)}
-              className={`relative flex h-9 w-9 items-center justify-center rounded-full transition-all ${
-                selectedColors.includes(color.name)
-                  ? 'ring-2 ring-primary ring-offset-2'
-                  : 'hover:ring-2 hover:ring-muted-foreground hover:ring-offset-1'
-              }`}
-              title={color.name}
-            >
-              <span
-                className="h-7 w-7 rounded-full border border-border shadow-sm"
-                style={{ backgroundColor: color.hex_code }}
+        <h4 className="mb-4 font-serif text-lg font-semibold">Size</h4>
+        <div className="space-y-3">
+          {allSizes.map((size) => (
+            <div key={size} className="flex items-center gap-2">
+              <Checkbox
+                id={`size-${size}`}
+                checked={selectedSizes.includes(size)}
+                onCheckedChange={() => toggleSize(size)}
               />
-              {selectedColors.includes(color.name) && (
-                <span className="absolute inset-0 flex items-center justify-center">
-                  <svg 
-                    className="h-3 w-3 drop-shadow-md" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke={isLightColor(color.hex_code) ? '#000000' : '#FFFFFF'}
-                    strokeWidth="3"
-                  >
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </span>
-              )}
-            </button>
+              <Label htmlFor={`size-${size}`} className="cursor-pointer text-sm">
+                {size}
+              </Label>
+            </div>
           ))}
         </div>
       </div>
