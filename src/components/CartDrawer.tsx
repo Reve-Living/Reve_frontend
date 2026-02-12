@@ -4,19 +4,34 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/context/CartContext';
 
-const getVariantsKey = (item: { selectedVariants?: Record<string, string>; fabric?: string }) =>
+const getVariantsKey = (item: {
+  selectedVariants?: Record<string, string>;
+  fabric?: string;
+  dimension?: string;
+  dimension_details?: string;
+}) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
     fabric: item.fabric || '',
+    dimension: item.dimension || '',
+    dimension_details: item.dimension_details || '',
   });
 
-const getVariantSummary = (item: { selectedVariants?: Record<string, string>; fabric?: string }) => {
+const getVariantSummary = (item: {
+  selectedVariants?: Record<string, string>;
+  fabric?: string;
+  dimension?: string;
+  dimension_details?: string;
+}) => {
   const variantSummary = Object.entries(item.selectedVariants || {})
     .map(([group, value]) => `${group}: ${value}`)
     .join(' | ');
-  if (item.fabric && variantSummary) return `${variantSummary} | Fabric: ${item.fabric}`;
-  if (item.fabric) return `Fabric: ${item.fabric}`;
-  return variantSummary;
+  const bits = [];
+  if (variantSummary) bits.push(variantSummary);
+  if (item.fabric) bits.push(`Fabric: ${item.fabric}`);
+  if (item.dimension) bits.push(`Dimension: ${item.dimension}`);
+  if (item.dimension_details) bits.push(item.dimension_details);
+  return bits.join(' | ');
 };
 
 const CartDrawer = () => {

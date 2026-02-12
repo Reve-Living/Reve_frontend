@@ -8,10 +8,17 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 
-const getVariantsKey = (item: { selectedVariants?: Record<string, string>; fabric?: string }) =>
+const getVariantsKey = (item: {
+  selectedVariants?: Record<string, string>;
+  fabric?: string;
+  dimension?: string;
+  dimension_details?: string;
+}) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
     fabric: item.fabric || '',
+    dimension: item.dimension || '',
+    dimension_details: item.dimension_details || '',
   });
 
 const CartPage = () => {
@@ -81,6 +88,12 @@ const CartPage = () => {
                           <p className="mt-1 text-sm text-muted-foreground">
                             Size: {item.size} | Colour: {item.color}
                           </p>
+                          {item.dimension && (
+                            <p className="text-sm text-muted-foreground">Dimension: {item.dimension}</p>
+                          )}
+                          {item.dimension_details && (
+                            <p className="text-xs text-muted-foreground">{item.dimension_details}</p>
+                          )}
                           {item.fabric && (
                             <p className="text-sm text-muted-foreground">
                               Fabric: {item.fabric}

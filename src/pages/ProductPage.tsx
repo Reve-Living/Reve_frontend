@@ -26,7 +26,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
-import { Category, Product } from '@/lib/types';
+import { Category, Product, ProductDimensionRow } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 import { toast } from 'sonner';
 
@@ -71,6 +71,33 @@ const gbpFormatter = new Intl.NumberFormat('en-GB', {
 const DIMENSION_SIZE_COLUMNS = ['3ft Single', '4ft Small Double', '4ft6 Double', '5ft King', '6ft Super King'];
 
 const formatPrice = (value: number): string => gbpFormatter.format(Math.max(0, value));
+
+const adjustDimensionsForWingback = (
+  rows: ProductDimensionRow[],
+  deltaCm: number
+): ProductDimensionRow[] => {
+  if (!deltaCm || !Number.isFinite(deltaCm)) return rows;
+  return rows.map((row) => {
+    if ((row?.measurement || '').toLowerCase().includes('width') === false) return row;
+    const adjustedValues: Record<string, string> = {};
+    Object.entries(row.values || {}).forEach(([size, rawValue]) => {
+      const value = String(rawValue || '').trim();
+      const match = value.match(/(\d+(?:\.\d+)?)\s*cm\s*\((\d+(?:\.\d+)?)\s*\"?/i);
+      if (match) {
+        const baseCm = Number.parseFloat(match[1]);
+        const baseInches = Number.parseFloat(match[2]);
+        const newCm = Number((baseCm + deltaCm).toFixed(1));
+        const newInches = Number((baseInches + deltaCm / 2.54).toFixed(1));
+        adjustedValues[size] = `${newCm} cm (${newInches}")`;
+      } else if (value) {
+        adjustedValues[size] = value;
+      } else {
+        adjustedValues[size] = '';
+      }
+    });
+    return { ...row, values: adjustedValues };
+  });
+};
 
 const parseSizeOption = (rawSize: string, index: number, rawDescription = ''): ParsedSizeOption => {
   const raw = (rawSize || '').trim();
@@ -361,17 +388,54 @@ const ProductPage = () => {
   const dimensionsRows = (product.features || []).filter((feature) =>
     /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
   );
-  const dimensionTableRows = (product.computed_dimensions || product.dimensions || []).filter(
+  const rawDimensionTableRows = (product.computed_dimensions || product.dimensions || []).filter(
     (row) => row?.measurement && row?.values && Object.keys(row.values).length > 0
   );
+  const adjustedDimensionTableRows = useMemo(
+    () =>
+      wingbackSelected
+        ? adjustDimensionsForWingback(rawDimensionTableRows, product.wingback_width_delta_cm || 4)
+        : rawDimensionTableRows,
+    [rawDimensionTableRows, wingbackSelected, product.wingback_width_delta_cm]
+  );
+  const dimensionColumns = useMemo(
+    () =>
+      adjustedDimensionTableRows.length > 0
+        ? DIMENSION_SIZE_COLUMNS.filter((size) =>
+            adjustedDimensionTableRows.some((row) => (row.values?.[size] || '').trim().length > 0)
+          )
+        : [],
+    [adjustedDimensionTableRows]
+  );
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (dimensionColumns.length === 0) {
+      setSelectedDimension(null);
+      return;
+    }
+    setSelectedDimension((prev) => (prev && dimensionColumns.includes(prev) ? prev : dimensionColumns[0]));
+  }, [dimensionColumns]);
+
+  useEffect(() => {
+    if (selectedSize && dimensionColumns.includes(selectedSize)) {
+      setSelectedDimension(selectedSize);
+    }
+  }, [selectedSize, dimensionColumns]);
+
+  const selectedDimensionDetails = useMemo(() => {
+    if (!selectedDimension) return '';
+    const details = adjustedDimensionTableRows
+      .map((row) => {
+        const value = row.values?.[selectedDimension];
+        return value ? `${row.measurement}: ${value}` : null;
+      })
+      .filter(Boolean);
+    return details.join(' | ');
+  }, [adjustedDimensionTableRows, selectedDimension]);
+
   const activeVariantGroup =
     variantGroups.find((group) => group.key === activeVariantGroupKey) || variantGroups[0];
-  const dimensionColumns =
-    dimensionTableRows.length > 0
-      ? DIMENSION_SIZE_COLUMNS.filter((size) =>
-          dimensionTableRows.some((row) => (row.values?.[size] || '').trim().length > 0)
-        )
-      : [];
 
   const handleAddToCart = () => {
     addItem({
@@ -381,6 +445,8 @@ const ProductPage = () => {
       color: selectedColor,
       selectedVariants: selectedStyles,
       fabric: selectedFabric || undefined,
+      dimension: selectedDimension || undefined,
+      dimension_details: selectedDimensionDetails || undefined,
     });
     toast.success(`${product.name} added to cart`);
   };
@@ -592,7 +658,7 @@ const ProductPage = () => {
                         );
                       })}
                     </div>
-                    {(dimensionTableRows.length > 0 || dimensionsRows.length > 0) && (
+                    {(adjustedDimensionTableRows.length > 0 || dimensionsRows.length > 0) && (
                       <div className="flex justify-center">
                         <button
                           type="button"
@@ -605,6 +671,53 @@ const ProductPage = () => {
                         </button>
                       </div>
                     )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {dimensionColumns.length > 0 && (
+              <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-medium">Dimensions</h3>
+                    <p className="text-sm text-muted-foreground">Select a size to view exact measurements.</p>
+                  </div>
+                  {wingbackSelected && (
+                    <span className="rounded-full bg-amber-50 px-3 py-1 text-xs text-amber-800">
+                      Wingback adds {product.wingback_width_delta_cm || 4} cm width
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {dimensionColumns.map((size) => (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedDimension(size)}
+                      className={`rounded-full border px-4 py-2 text-sm transition ${
+                        selectedDimension === size
+                          ? 'border-primary bg-primary text-primary-foreground'
+                          : 'border-border bg-background hover:border-primary/60'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
+                </div>
+                {selectedDimension && (
+                  <div className="divide-y rounded-md border">
+                    {adjustedDimensionTableRows.map((row) => (
+                      <div
+                        key={`${row.measurement}-${selectedDimension}`}
+                        className="grid grid-cols-1 gap-1 px-3 py-2 sm:grid-cols-3"
+                      >
+                        <span className="font-medium text-foreground sm:col-span-1">{row.measurement}</span>
+                        <span className="text-sm text-muted-foreground sm:col-span-2">
+                          {row.values?.[selectedDimension] || '—'}
+                        </span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -688,7 +801,7 @@ const ProductPage = () => {
                 </AccordionItem>
               )}
 
-              {(dimensionTableRows.length > 0 || dimensionsRows.length > 0) && (
+              {(adjustedDimensionTableRows.length > 0 || dimensionsRows.length > 0) && (
                 <AccordionItem value="dimensions" id="dimensions-section">
                   <AccordionTrigger>
                     <span className="inline-flex items-center gap-2">
@@ -702,7 +815,7 @@ const ProductPage = () => {
                         Wingback selected: width increases by approximately {product.wingback_width_delta_cm || 4} cm. Length and height stay the same.
                       </div>
                     )}
-                    {dimensionTableRows.length > 0 && dimensionColumns.length > 0 ? (
+                    {adjustedDimensionTableRows.length > 0 && dimensionColumns.length > 0 ? (
                       <div className="overflow-x-auto rounded-md border">
                         <table className="min-w-full text-sm">
                           <thead className="bg-muted/60">
@@ -714,7 +827,7 @@ const ProductPage = () => {
                             </tr>
                           </thead>
                           <tbody>
-                            {dimensionTableRows.map((row, idx) => (
+                            {adjustedDimensionTableRows.map((row, idx) => (
                               <tr key={`${row.measurement}-${idx}`} className="border-t">
                                 <td className="p-2 font-medium">{row.measurement}</td>
                                 {dimensionColumns.map((size) => (

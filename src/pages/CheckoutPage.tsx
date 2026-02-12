@@ -16,19 +16,31 @@ import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
 
-const getVariantsKey = (item: { selectedVariants?: Record<string, string>; fabric?: string }) =>
+const getVariantsKey = (item: {
+  selectedVariants?: Record<string, string>;
+  fabric?: string;
+  dimension?: string;
+  dimension_details?: string;
+}) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
     fabric: item.fabric || '',
+    dimension: item.dimension || '',
+    dimension_details: item.dimension_details || '',
   });
 
-const getVariantSummary = (item: { selectedVariants?: Record<string, string>; fabric?: string }) => {
-  const variantSummary = Object.entries(item.selectedVariants || {})
-    .map(([group, value]) => `${group}: ${value}`)
-    .join(' | ');
-  if (item.fabric && variantSummary) return `${variantSummary} | Fabric: ${item.fabric}`;
-  if (item.fabric) return `Fabric: ${item.fabric}`;
-  return variantSummary;
+const getVariantSummary = (item: {
+  selectedVariants?: Record<string, string>;
+  fabric?: string;
+  dimension?: string;
+  dimension_details?: string;
+}) => {
+  const parts = Object.entries(item.selectedVariants || {})
+    .map(([group, value]) => `${group}: ${value}`);
+  if (item.fabric) parts.push(`Fabric: ${item.fabric}`);
+  if (item.dimension) parts.push(`Dimension: ${item.dimension}`);
+  if (item.dimension_details) parts.push(item.dimension_details);
+  return parts.join(' | ');
 };
 
 const CheckoutPage = () => {
@@ -122,6 +134,8 @@ const CheckoutPage = () => {
           size: item.size,
           color: item.color,
           style: getVariantSummary(item),
+          dimension: item.dimension,
+          dimension_details: item.dimension_details,
         })),
       };
 

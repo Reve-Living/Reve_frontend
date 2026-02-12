@@ -8,6 +8,8 @@ export interface CartItem {
   color: string;
   selectedVariants?: Record<string, string>;
   fabric?: string;
+  dimension?: string;
+  dimension_details?: string;
 }
 
 interface CartState {
@@ -24,10 +26,14 @@ type CartAction =
   | { type: 'OPEN_CART' }
   | { type: 'CLOSE_CART' };
 
-const getVariantsKey = (item: Pick<CartItem, 'selectedVariants' | 'fabric'>): string => {
+const getVariantsKey = (
+  item: Pick<CartItem, 'selectedVariants' | 'fabric' | 'dimension' | 'dimension_details'>
+): string => {
   return JSON.stringify({
     selectedVariants: item.selectedVariants || {},
     fabric: item.fabric || '',
+    dimension: item.dimension || '',
+    dimension_details: item.dimension_details || '',
   });
 };
 
