@@ -321,6 +321,7 @@ const CategoryPage = () => {
               allSizes={allSizes}
               selectedSizes={selectedSizes}
               toggleSize={toggleSize}
+              isLoading={isLoading}
               clearFilters={clearFilters}
             />
           </aside>
@@ -354,6 +355,7 @@ const CategoryPage = () => {
                   allSizes={allSizes}
                   selectedSizes={selectedSizes}
                   toggleSize={toggleSize}
+                  isLoading={isLoading}
                   clearFilters={clearFilters}
                 />
               </motion.div>
@@ -397,6 +399,7 @@ interface FilterContentProps {
   allSizes: string[];
   selectedSizes: string[];
   toggleSize: (size: string) => void;
+  isLoading: boolean;
   clearFilters: () => void;
 }
 
@@ -407,6 +410,7 @@ const FilterContent = ({
   allSizes,
   selectedSizes,
   toggleSize,
+  isLoading,
   clearFilters,
 }: FilterContentProps) => {
   return (
@@ -431,20 +435,30 @@ const FilterContent = ({
       {/* Sizes */}
       <div>
         <h4 className="mb-4 font-serif text-lg font-semibold">Size</h4>
-        <div className="space-y-3">
-          {allSizes.map((size) => (
-            <div key={size} className="flex items-center gap-2">
-              <Checkbox
-                id={`size-${size}`}
-                checked={selectedSizes.includes(size)}
-                onCheckedChange={() => toggleSize(size)}
-              />
-              <Label htmlFor={`size-${size}`} className="cursor-pointer text-sm">
-                {size}
-              </Label>
-            </div>
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="space-y-2">
+            {[0, 1, 2].map((skeleton) => (
+              <div key={skeleton} className="h-4 w-24 animate-pulse rounded bg-muted/60" />
+            ))}
+          </div>
+        ) : allSizes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No size options available for this category.</p>
+        ) : (
+          <div className="space-y-3">
+            {allSizes.map((size) => (
+              <div key={size} className="flex items-center gap-2">
+                <Checkbox
+                  id={`size-${size}`}
+                  checked={selectedSizes.includes(size)}
+                  onCheckedChange={() => toggleSize(size)}
+                />
+                <Label htmlFor={`size-${size}`} className="cursor-pointer text-sm">
+                  {size}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Clear Filters */}
