@@ -20,10 +20,10 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   });
 
   return (
-    <div>
+    <div className="h-full">
       <Link
         to={`/product/${product.slug}`}
-        className="group block overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+        className="group flex h-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       >
         {/* Image Container */}
         <div className="relative aspect-[4/3] overflow-hidden">
@@ -54,9 +54,9 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="flex flex-1 flex-col p-4 gap-3">
           {/* Rating */}
-          <div className="mb-2 flex items-center gap-1">
+          <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
@@ -73,17 +73,17 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           </div>
 
           {/* Name */}
-          <h3 className="mb-1 font-serif text-lg font-semibold text-foreground transition-colors group-hover:text-primary">
+          <h3 className="font-serif text-lg font-semibold text-foreground transition-colors group-hover:text-primary line-clamp-2 min-h-[48px]">
             {product.name}
           </h3>
 
           {/* Short Feature Line */}
-          <p className="mb-3 text-sm text-muted-foreground line-clamp-1">
+          <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
             {product.short_description || product.description}
           </p>
 
           {/* Price */}
-          <div className="mb-3 flex items-center gap-2">
+          <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
               From {gbpFormatter.format(product.price)}
             </p>
@@ -95,7 +95,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           </div>
 
           {/* View Options Button */}
-          <Button className="w-full gradient-bronze">
+          <Button className="mt-auto w-full gradient-bronze">
             View Options
           </Button>
         </div>
