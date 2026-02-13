@@ -14,6 +14,37 @@ interface TileData {
   slug: string;
 }
 
+// Visual fallback tiles to avoid blank section
+const initialTiles: TileData[] = [
+  {
+    id: 1,
+    title: 'Enhance Your Bedroom',
+    subtitle: 'with Our Collection',
+    description: 'Create a sanctuary of comfort and style',
+    image: 'https://images.unsplash.com/photo-1616594039964-ae9021a400a0?w=600&h=400&fit=crop',
+    link: '/category/beds',
+    slug: 'beds',
+  },
+  {
+    id: 2,
+    title: 'Style Your',
+    subtitle: 'Living Space',
+    description: 'Sofas that blend comfort with elegance',
+    image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=600&h=400&fit=crop',
+    link: '/category/sofas',
+    slug: 'sofas',
+  },
+  {
+    id: 3,
+    title: 'Sleep Better',
+    subtitle: 'Every Night',
+    description: 'Premium mattresses for restful sleep',
+    image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=600&h=400&fit=crop',
+    link: '/category/mattresses',
+    slug: 'mattresses',
+  },
+];
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -75,13 +106,15 @@ const LifestyleSection = () => {
 
         const validTiles = tilesFromCategories.filter((tile) => tile.image || tile.description);
         if (validTiles.length === 0) {
-          setLoadError('No lifestyle tiles available yet.');
+          setLoadError('No lifestyle tiles available yet; showing defaults.');
+          setTiles(initialTiles);
+        } else {
+          setTiles(validTiles);
         }
-        setTiles(validTiles);
       } catch (err) {
         console.error('Error fetching lifestyle data:', err);
-        setLoadError('Unable to load lifestyle content.');
-        setTiles([]);
+        setLoadError('Unable to load lifestyle content; showing defaults.');
+        setTiles(initialTiles);
       } finally {
         setIsLoading(false);
       }

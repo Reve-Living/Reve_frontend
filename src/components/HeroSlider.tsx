@@ -18,6 +18,34 @@ type Slide = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+// Visual fallback to avoid blank hero if API returns no data
+const initialSlides: Slide[] = [
+  {
+    id: 'default-1',
+    image: 'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=1920&h=1080&fit=crop',
+    title: 'Luxury Beds',
+    subtitle: 'UK Handcrafted Bed Collection',
+    cta: 'Shop Collection',
+    link: '/category/beds',
+  },
+  {
+    id: 'default-2',
+    image: 'https://images.unsplash.com/photo-1588046130717-0eb0c9a3ba15?w=1920&h=1080&fit=crop',
+    title: 'Ottoman Beds',
+    subtitle: 'Maximise Your Space with Style',
+    cta: 'Shop Collection',
+    link: '/category/ottoman-beds',
+  },
+  {
+    id: 'default-3',
+    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=1920&h=1080&fit=crop',
+    title: 'Premium Mattresses',
+    subtitle: 'Sleep in Ultimate Comfort',
+    cta: 'Shop Collection',
+    link: '/category/mattresses',
+  },
+];
+
 const resolveImageUrl = (value?: string): string => {
   const raw = (value || '').trim();
   if (!raw) return '';
@@ -104,14 +132,17 @@ const HeroSlider = () => {
           };
         });
 
-        setSlides(normalizedSlides.filter((slide) => slide.image));
-        if (normalizedSlides.length === 0) {
-          setLoadError('No featured products available yet.');
+        const hydratedSlides = normalizedSlides.filter((slide) => slide.image);
+        if (hydratedSlides.length === 0) {
+          setSlides(initialSlides);
+          setLoadError('No featured products available yet; showing defaults.');
+        } else {
+          setSlides(hydratedSlides);
         }
       } catch (err) {
         console.error('Failed to load hero content', err);
-        setLoadError('Unable to load featured products right now.');
-        setSlides([]);
+        setLoadError('Unable to load featured products right now; showing defaults.');
+        setSlides(initialSlides);
       } finally {
         setIsLoading(false);
       }
@@ -122,26 +153,6 @@ const HeroSlider = () => {
 
   const hasSlides = slides.length > 0;
   const activeSlide = useMemo(() => (hasSlides ? slides[currentSlide % slides.length] : null), [slides, currentSlide, hasSlides]);
-
-  if (!isLoading && !hasSlides) {
-    return (
-      <section className="relative flex items-center justify-center bg-espresso px-4 py-20 text-center text-cream">
-        <div className="max-w-2xl space-y-3">
-          <p className="text-xs uppercase tracking-[0.2em] text-cream/80">Homepage hero</p>
-          <h1 className="font-serif text-3xl font-bold md:text-4xl">Add featured or new products in the admin to populate this section.</h1>
-          {loadError && <p className="text-cream/70 text-sm">{loadError}</p>}
-          <div className="flex justify-center gap-3">
-            <Button asChild variant="secondary">
-              <Link to="/categories">Browse categories</Link>
-            </Button>
-            <Button asChild className="gradient-bronze">
-              <Link to="/collections">View collections</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section
