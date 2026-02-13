@@ -4,12 +4,21 @@ import { Search, ShoppingBag, Menu, X, ChevronDown, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
+import { apiGet } from '@/lib/api';
+import type { Category, SubCategory } from '@/lib/types';
 import logo from '@/assets/logo.png';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [navLinks, setNavLinks] = useState<
+    { name: string; href: string; children?: { name: string; href: string }[] }[]
+  >([
+    { name: 'Home', href: '/' },
+    { name: 'About Us', href: '/about' },
+    { name: 'Contact Us', href: '/contact' },
+  ]);
   const { toggleCart, totalItems } = useCart();
   const location = useLocation();
 
@@ -18,23 +27,36 @@ const Header = () => {
     setActiveDropdown(null);
   }, [location]);
 
-  const [navLinks] = useState<
-    { name: string; href: string; children?: { name: string; href: string }[] }[]
-  >([
-    { name: 'Home', href: '/' },
-    {
-      name: 'Beds',
-      href: '/category/beds',
-      children: [
-        { name: 'Divan Beds', href: '/category/divan-beds' },
-        { name: 'Upholstered Beds', href: '/category/upholstered-beds' },
-        { name: 'Wooden Beds', href: '/category/wooden-beds' },
-        { name: 'Kids Beds', href: '/category/kids-beds' },
-      ],
-    },
-    { name: 'About Us', href: '/about' },
-    { name: 'Contact Us', href: '/contact' },
-  ]);
+  useEffect(() => {
+    const loadNav = async () => {
+      try {
+        const categories = await apiGet<Category[]>('/categories/');
+        const subcategories = await apiGet<SubCategory[]>('/subcategories/');
+
+        const dynamicLinks = categories.map((cat) => {
+          const children = subcategories
+            .filter((sub) => sub.category === cat.id)
+            .map((sub) => ({ name: sub.name, href: `/category/${sub.slug}` }));
+
+          return {
+            name: cat.name,
+            href: `/category/${cat.slug}`,
+            children: children.length ? children : undefined,
+          };
+        });
+
+        setNavLinks((prev) => {
+          // Keep Home/About/Contact in place; insert dynamic categories after Home.
+          const staticStart = prev.filter((l) => ['Home'].includes(l.name));
+          const staticEnd = prev.filter((l) => ['About Us', 'Contact Us'].includes(l.name));
+          return [...staticStart, ...dynamicLinks, ...staticEnd];
+        });
+      } catch {
+        // leave default links on failure
+      }
+    };
+    loadNav();
+  }, []);
 
   return (
     <>

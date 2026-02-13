@@ -699,7 +699,7 @@ const ProductPage = () => {
                         )}
                       </div>
 
-                      <div className="flex gap-3 overflow-x-auto pb-2 md:flex-wrap md:overflow-visible">
+                      <div className="flex gap-3 overflow-x-auto pb-2 md:flex-wrap md:overflow-visible snap-x">
                         {optionsToRender.map((option) => {
                           const isSelected = selected?.key === option.key;
                           const disabled = isStyleGroup && !groupEnabled;
@@ -721,7 +721,7 @@ const ProductPage = () => {
                                 setSelectedStyles((prev) => ({ ...prev, [styleName]: option.label }));
                                 setEnabledGroups((prev) => ({ ...prev, [group.name]: true }));
                               }}
-                              className={`relative flex min-w-[220px] flex-1 items-center gap-3 rounded-lg border px-4 py-3 transition-all snap-center ${
+                              className={`relative flex min-w-[220px] flex-1 flex-col items-start gap-2 rounded-xl border border-amber-200 bg-card/60 px-4 py-4 transition-all snap-center ${
                                 disabled
                                   ? 'cursor-not-allowed opacity-40'
                                   : isSelected
@@ -729,31 +729,33 @@ const ProductPage = () => {
                                   : 'border-border hover:border-primary/60'
                               }`}
                             >
-                              {group.kind === 'color' ? (
-                                <span
-                                  className="h-12 w-12 rounded-full border border-border"
-                                  style={{ backgroundColor: option.color_code || '#888' }}
-                                />
-                              ) : (
-                                <IconVisual
-                                  icon={option.icon_url || group.icon_url}
-                                  alt={option.label}
-                                  className="h-12 w-12 object-contain"
-                                />
-                              )}
-                              <div className="text-left">
-                                <p className="text-sm font-medium">{option.label}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  {Number(option.price_delta || 0) > 0
-                                    ? `+${formatPrice(Number(option.price_delta || 0))}`
-                                    : 'Included'}
-                                </p>
-                                {option.description && (
-                                  <p className="text-[11px] text-muted-foreground line-clamp-2">
-                                    {option.description}
-                                  </p>
+                              <div className="flex items-center gap-3">
+                                {group.kind === 'color' ? (
+                                  <span
+                                    className="h-12 w-12 rounded-full border border-border"
+                                    style={{ backgroundColor: option.color_code || '#888' }}
+                                  />
+                                ) : (
+                                  <IconVisual
+                                    icon={option.icon_url || group.icon_url}
+                                    alt={option.label}
+                                    className="h-12 w-12 object-contain"
+                                  />
                                 )}
+                                <div className="text-left">
+                                  <p className="text-sm font-semibold text-espresso">{option.label}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {Number(option.price_delta || 0) > 0
+                                      ? `+${formatPrice(Number(option.price_delta || 0))}`
+                                      : 'Included'}
+                                  </p>
+                                </div>
                               </div>
+                              {option.description && (
+                                <p className="text-[11px] text-muted-foreground line-clamp-2">
+                                  {option.description}
+                                </p>
+                              )}
                               {isSelected && <CheckCircle2 className="absolute right-3 top-3 h-4 w-4 text-primary" />}
                             </button>
                           );

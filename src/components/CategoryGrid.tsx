@@ -58,7 +58,7 @@ const CategoryGrid = () => {
               key={collection.id}
             >
               <Link
-                to={`/category/divan-beds`}
+                to={`/category/${collection.slug || 'divan-beds'}`}
                 className="group relative flex h-full w-full overflow-hidden rounded-2xl"
               >
                 {/* Image with Parallax Effect */}
