@@ -65,6 +65,7 @@ export interface ProductStyleOption {
   description?: string;
   icon_url?: string;
   price_delta?: number;
+  size?: string;
 }
 
 export interface ProductFabric {

@@ -34,6 +34,7 @@ type NormalizedStyleOption = {
   label: string;
   description?: string;
   icon_url?: string;
+  size?: string;
 };
 
 type VariantOption = {
@@ -149,7 +150,11 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
         const description = typeof rawDescription === 'string' ? rawDescription.trim() : '';
         const rawIcon = (option as { icon_url?: unknown }).icon_url;
         const icon_url = typeof rawIcon === 'string' ? rawIcon.trim() : '';
-        return { label, description, icon_url };
+        const rawDelta = (option as { price_delta?: unknown }).price_delta;
+        const price_delta = typeof rawDelta === 'number' ? rawDelta : Number(rawDelta || 0);
+        const rawSize = (option as { size?: unknown }).size;
+        const size = typeof rawSize === 'string' ? rawSize.trim() : '';
+        return { label, description, icon_url, price_delta, size };
       }
       return null;
     })
@@ -234,8 +239,14 @@ const ProductPage = () => {
         if (fetched?.sizes?.length) {
           setSelectedSize(parseSizeOption(fetched.sizes[0].name, 0).label);
         }
-        if (fetched?.colors?.length) {
+        if (fetched?.fabrics?.length && fetched.fabrics[0]?.colors?.length) {
+          setSelectedFabric(fetched.fabrics[0].name);
+          setSelectedColor(fetched.fabrics[0].colors[0].name);
+        } else if (fetched?.colors?.length) {
           setSelectedColor(fetched.colors[0].name);
+          setSelectedFabric('');
+        } else {
+          setSelectedFabric('');
         }
         const initialStyles: Record<string, string> = {};
         const nextEnabled: Record<string, boolean> = {};
@@ -268,31 +279,42 @@ const ProductPage = () => {
 
   const productImages = product?.images || [];
   const productSizes = product?.sizes || [];
+  const selectedFabricObj = (product?.fabrics || []).find((f) => f.name === selectedFabric);
+  const fabricColors = selectedFabricObj?.colors || [];
+  const availableColors = (fabricColors.length > 0 ? fabricColors : product?.colors) || [];
+  useEffect(() => {
+    if (fabricColors.length > 0) {
+      if (!fabricColors.some((c) => c.name === selectedColor)) {
+        setSelectedColor(fabricColors[0].name);
+      }
+    } else if (availableColors.length > 0) {
+      if (!availableColors.some((c) => c.name === selectedColor)) {
+        setSelectedColor(availableColors[0].name);
+      }
+    }
+  }, [fabricColors, availableColors, selectedColor]);
   const sizeOptions = productSizes.map((size, index) => parseSizeOption(size.name, index, size.description || ''));
 
   const styleVariantGroups = useMemo<VariantGroup[]>(() => {
     const currentSize = selectedSize;
     return (product?.styles || [])
-      .filter((styleGroup) => {
-        const matchSize =
-          styleGroup.is_shared ||
-          !styleGroup.size ||
-          !styleGroup.size_name ||
-          !currentSize ||
-          styleGroup.size_name === currentSize;
-        return matchSize;
-      })
       .map((styleGroup) => {
-        const options = normalizeStyleOptions(styleGroup.options).map((option, idx) => ({
-          key: `${styleGroup.id}-${idx}`,
-          label: option.label,
-          description: option.description,
-          icon_url: option.icon_url,
-          price_delta:
-            typeof option.price_delta === 'number'
-              ? option.price_delta
-              : parsePriceDeltaFromText(option.label, option.description),
-        }));
+        const options = normalizeStyleOptions(styleGroup.options)
+          .map((option, idx) => ({
+            key: `${styleGroup.id}-${idx}`,
+            label: option.label,
+            description: option.description,
+            icon_url: option.icon_url,
+            size: option.size,
+            price_delta:
+              typeof option.price_delta === 'number'
+                ? option.price_delta
+                : parsePriceDeltaFromText(option.label, option.description),
+          }))
+          .filter((opt) => {
+            if (!opt.size || !currentSize) return true;
+            return opt.size === currentSize;
+          });
         return {
           key: `style:${styleGroup.name}`,
           name: styleGroup.name,
@@ -307,12 +329,12 @@ const ProductPage = () => {
 
   const variantGroups = useMemo<VariantGroup[]>(() => {
     const groups: VariantGroup[] = [];
-    if ((product?.colors || []).length > 0) {
+    if (availableColors.length > 0) {
       groups.push({
         key: 'color',
         name: 'Colour',
         kind: 'color',
-        options: (product?.colors || []).map((color) => ({
+        options: availableColors.map((color) => ({
           key: `color-${color.id}`,
           label: color.name,
           color_code: color.hex_code,
@@ -335,7 +357,7 @@ const ProductPage = () => {
     }
     groups.push(...styleVariantGroups);
     return groups;
-  }, [product?.colors, sizeOptions, styleVariantGroups]);
+  }, [availableColors, sizeOptions, styleVariantGroups]);
 
   useEffect(() => {
     if (!variantGroups.length) return;
@@ -343,6 +365,21 @@ const ProductPage = () => {
       setActiveVariantGroupKey(variantGroups[0].key);
     }
   }, [variantGroups, activeVariantGroupKey]);
+
+  useEffect(() => {
+    setSelectedStyles((prev) => {
+      const next = { ...prev };
+      styleVariantGroups.forEach((group) => {
+        const styleName = group.styleName || group.name;
+        const current = prev[styleName];
+        const hasCurrent = group.options.some((o) => o.label === current);
+        if (!hasCurrent && group.options[0]) {
+          next[styleName] = group.options[0].label;
+        }
+      });
+      return next;
+    });
+  }, [selectedSize, styleVariantGroups]);
 
   const activeSizeOption = sizeOptions.find((size) => size.label === selectedSize) || sizeOptions[0];
   const sizeDelta = activeSizeOption?.delta || 0;
@@ -814,14 +851,19 @@ const ProductPage = () => {
               <div>
                 <h3 className="mb-3 font-medium">Fabric</h3>
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {product.fabrics.map((fabric) => (
-                    <button
-                      key={fabric.id}
-                      onClick={() => setSelectedFabric(fabric.name)}
-                      className={`rounded-xl border p-2 text-left transition-all ${
-                        selectedFabric === fabric.name
-                          ? 'border-primary ring-2 ring-primary/20'
-                          : 'border-border hover:border-primary/60'
+          {product.fabrics.map((fabric) => (
+            <button
+              key={fabric.id}
+              onClick={() => {
+                setSelectedFabric(fabric.name);
+                if ((fabric.colors || []).length > 0) {
+                  setSelectedColor(fabric.colors[0].name);
+                }
+              }}
+              className={`rounded-xl border p-2 text-left transition-all ${
+                selectedFabric === fabric.name
+                  ? 'border-primary ring-2 ring-primary/20'
+                  : 'border-border hover:border-primary/60'
                       }`}
                     >
                       <img
@@ -833,13 +875,13 @@ const ProductPage = () => {
                     </button>
                   ))}
                 </div>
-                {product.colors && product.colors.length > 0 && (
+                {availableColors.length > 0 && (
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm font-medium">Fabric colours</p>
+                    <p className="text-sm font-medium">Colours</p>
                     <div className="flex flex-wrap gap-2">
-                      {product.colors.map((color) => (
+                      {availableColors.map((color, idx) => (
                         <button
-                          key={color.id}
+                          key={color.id ?? `${color.name}-${idx}`}
                           type="button"
                           onClick={() => setSelectedColor(color.name)}
                           className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
@@ -1028,3 +1070,4 @@ const ProductPage = () => {
 };
 
 export default ProductPage;
+

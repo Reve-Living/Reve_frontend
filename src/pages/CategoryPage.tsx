@@ -234,48 +234,42 @@ const CategoryPage = () => {
       <AnnouncementBar />
       <Header />
 
-      {/* Hero Banner */}
-      <section className="relative h-64 overflow-hidden md:h-80">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: heroBackgroundImage }}
-        >
-          <div className="absolute inset-0 bg-espresso/60" />
-        </div>
-        <div className="container relative mx-auto flex h-full flex-col items-center justify-center px-4 text-center">
-          {/* Breadcrumb */}
-          <nav className="mb-4 flex items-center gap-2 text-sm text-cream/80">
-            <Link to="/" className="hover:text-cream">
-              Home
-            </Link>
+      {/* Compact heading instead of full hero */}
+      <section className="border-b border-border/50 bg-card/60">
+        <div className="container mx-auto px-4 py-8 md:py-10">
+          <nav className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-primary">Home</Link>
             <ChevronRight className="h-4 w-4" />
-            <Link to={`/category/${category.slug}`} className="hover:text-cream">
+            <Link to={`/category/${category.slug}`} className="hover:text-primary">
               {category.name}
             </Link>
             {selectedSubcategory && (
               <>
                 <ChevronRight className="h-4 w-4" />
-                <span className="text-cream">{selectedSubcategory.name}</span>
+                <span className="text-foreground">{selectedSubcategory.name}</span>
               </>
             )}
           </nav>
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-4 font-serif text-4xl font-bold text-cream md:text-5xl"
-          >
-            {heroName}
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="max-w-2xl text-cream/90"
-          >
-            {heroDescription}
-          </motion.p>
+          <div className="space-y-3 text-left">
+            <motion.h1
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="font-serif text-3xl font-bold md:text-4xl text-foreground"
+            >
+              {heroName}
+            </motion.h1>
+            {heroDescription && (
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.05 }}
+                className="max-w-3xl text-base text-muted-foreground"
+              >
+                {heroDescription}
+              </motion.p>
+            )}
+          </div>
         </div>
-        
       </section>
 
       <div className="container mx-auto px-4 py-12">
