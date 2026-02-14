@@ -79,7 +79,12 @@ const adjustDimensionsForWingback = (
 ): ProductDimensionRow[] => {
   if (!deltaCm || !Number.isFinite(deltaCm)) return rows;
   return rows.map((row) => {
-    if ((row?.measurement || '').toLowerCase().includes('width') === false) return row;
+    const label = (row?.measurement || '').toLowerCase();
+    const affectsWidth =
+      label.includes('width') ||
+      label.includes('headboard') || // wingback headboards flare outward
+      label.includes('overall width');
+    if (!affectsWidth) return row;
     const adjustedValues: Record<string, string> = {};
     Object.entries(row.values || {}).forEach(([size, rawValue]) => {
       const value = String(rawValue || '').trim();
@@ -209,6 +214,8 @@ const ProductPage = () => {
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [includeDimensions, setIncludeDimensions] = useState(true);
+  const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
+  const [showMoreOptions, setShowMoreOptions] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -234,11 +241,11 @@ const ProductPage = () => {
           setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
         } else {
           setCategory(null);
-          setRelatedProducts([]);
-        }
-        if (fetched?.sizes?.length) {
-          setSelectedSize(parseSizeOption(fetched.sizes[0].name, 0).label);
-        }
+        setRelatedProducts([]);
+      }
+      if (fetched?.sizes?.length) {
+        setSelectedSize(parseSizeOption(fetched.sizes[0].name, 0).label);
+      }
         if (fetched?.fabrics?.length && fetched.fabrics[0]?.colors?.length) {
           setSelectedFabric(fetched.fabrics[0].name);
           setSelectedColor(fetched.fabrics[0].colors[0].name);
@@ -250,6 +257,7 @@ const ProductPage = () => {
         }
         const initialStyles: Record<string, string> = {};
         const nextEnabled: Record<string, boolean> = {};
+        const nextShowMore: Record<string, boolean> = {};
         (fetched?.styles || []).forEach((styleGroup) => {
           const normalized = normalizeStyleOptions(styleGroup.options);
           const mattressZero = /mattress/i.test(styleGroup.name)
@@ -260,9 +268,11 @@ const ProductPage = () => {
             initialStyles[styleGroup.name] = firstOption.label;
           }
           nextEnabled[styleGroup.name] = true;
+          nextShowMore[`style:${styleGroup.name}`] = false;
         });
         setSelectedStyles(initialStyles);
         setEnabledGroups((prev) => ({ ...nextEnabled, ...prev }));
+        setShowMoreOptions((prev) => ({ ...nextShowMore, ...prev }));
         if (fetched?.fabrics?.length) {
           setSelectedFabric(fetched.fabrics[0].name);
         } else {
@@ -310,7 +320,7 @@ const ProductPage = () => {
             price_delta:
               typeof option.price_delta === 'number'
                 ? option.price_delta
-                : parsePriceDeltaFromText(option.label, option.description),
+                : Number(option.price_delta || 0) || parsePriceDeltaFromText(option.label, option.description),
           }))
           .filter((opt) => {
             const sizes = opt.sizes && opt.sizes.length ? opt.sizes : opt.size ? [opt.size] : [];
@@ -401,7 +411,8 @@ const ProductPage = () => {
   const stylePriceDelta = styleVariantGroups.reduce((sum, group) => {
     const selected = getSelectedOptionForGroup(group);
     if (!enabledGroups[group.name]) return sum;
-    return sum + Number(selected?.price_delta || 0);
+    const delta = Number(selected?.price_delta ?? 0);
+    return sum + (Number.isFinite(delta) ? delta : 0);
   }, 0);
 
   const wingbackSelected = styleVariantGroups.some((group) => {
@@ -409,8 +420,11 @@ const ProductPage = () => {
     return /wingback/i.test(`${selected?.label || ''} ${selected?.description || ''}`);
   });
 
-  const basePrice = product?.price ?? 0;
-  const baseOriginalPrice = product?.original_price ?? undefined;
+  const basePrice = Number(product?.price ?? 0);
+  const baseOriginalPrice =
+    product?.original_price !== undefined && product?.original_price !== null
+      ? Number(product.original_price)
+      : undefined;
   const unitPrice = basePrice + sizeDelta + stylePriceDelta;
   const unitOriginalPrice =
     baseOriginalPrice !== undefined ? baseOriginalPrice + sizeDelta + stylePriceDelta : undefined;
@@ -433,29 +447,31 @@ const ProductPage = () => {
         : rawDimensionTableRows,
     [rawDimensionTableRows, wingbackSelected, product?.wingback_width_delta_cm]
   );
-  const dimensionColumns = useMemo(
-    () =>
-      adjustedDimensionTableRows.length > 0
-        ? DIMENSION_SIZE_COLUMNS.filter((size) =>
-            adjustedDimensionTableRows.some((row) => (row.values?.[size] || '').trim().length > 0)
-          )
-        : [],
-    [adjustedDimensionTableRows]
-  );
-  const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
-  const returnsInfoAnswer =
-    (product?.returns_guarantee || '').trim() ||
-    '10-year structural guarantee, 30-day comfort exchange on mattresses, and free returns within 14 days.';
-  const faqEntries = useMemo(
-    () => {
-      const baseFaqs = Array.isArray(product?.faqs) ? product.faqs : [];
-      return [
-        ...baseFaqs,
-        { question: 'Returns & Guarantee', answer: returnsInfoAnswer },
-      ];
-    },
-    [product?.faqs, returnsInfoAnswer]
-  );
+  const dimensionColumns = useMemo(() => {
+    if (adjustedDimensionTableRows.length === 0) return [];
+    const seen = new Set<string>();
+    adjustedDimensionTableRows.forEach((row) => {
+      Object.entries(row.values || {}).forEach(([size, value]) => {
+        if ((value || '').toString().trim()) {
+          seen.add(size.trim());
+        }
+      });
+    });
+    const dynamicOrder = Array.from(seen);
+    const preferredOrder = DIMENSION_SIZE_COLUMNS.filter((s) => seen.has(s));
+    const remainder = dynamicOrder.filter((s) => !preferredOrder.includes(s));
+    return [...preferredOrder, ...remainder];
+  }, [adjustedDimensionTableRows]);
+  const selectedDimensionDetails = useMemo(() => {
+    if (!selectedDimension) return '';
+    const details = adjustedDimensionTableRows
+      .map((row) => {
+        const value = row.values?.[selectedDimension];
+        return value ? `${row.measurement}: ${value}` : null;
+      })
+      .filter(Boolean);
+    return details.join(' | ');
+  }, [adjustedDimensionTableRows, selectedDimension]);
 
   useEffect(() => {
     if (dimensionColumns.length === 0) {
@@ -470,17 +486,19 @@ const ProductPage = () => {
       setSelectedDimension(selectedSize);
     }
   }, [selectedSize, dimensionColumns]);
-
-  const selectedDimensionDetails = useMemo(() => {
-    if (!selectedDimension) return '';
-    const details = adjustedDimensionTableRows
-      .map((row) => {
-        const value = row.values?.[selectedDimension];
-        return value ? `${row.measurement}: ${value}` : null;
-      })
-      .filter(Boolean);
-    return details.join(' | ');
-  }, [adjustedDimensionTableRows, selectedDimension]);
+  const returnsInfoAnswer =
+    (product?.returns_guarantee || '').trim() ||
+    '10-year structural guarantee, 30-day comfort exchange on mattresses, and free returns within 14 days.';
+  const faqEntries = useMemo(
+    () => {
+      const baseFaqs = Array.isArray(product?.faqs) ? product.faqs : [];
+      return [
+        ...baseFaqs,
+        { question: 'Returns & Guarantee', answer: returnsInfoAnswer },
+      ];
+    },
+    [product?.faqs, returnsInfoAnswer]
+  );
 
   const activeVariantGroup =
     variantGroups.find((group) => group.key === activeVariantGroupKey) || variantGroups[0];
@@ -776,57 +794,6 @@ const ProductPage = () => {
               </div>
             )}
 
-            {dimensionColumns.length > 0 && (
-              <div className="space-y-4 rounded-xl border border-amber-300 bg-card p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h3 className="font-semibold text-espresso">Dimensions</h3>
-                    <p className="text-sm text-muted-foreground">Select a size to view exact measurements.</p>
-                  </div>
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="h-4 w-4"
-                      checked={includeDimensions}
-                      onChange={(e) => setIncludeDimensions(e.target.checked)}
-                    />
-                    Send to order
-                  </label>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {dimensionColumns.map((size) => (
-                    <button
-                      key={size}
-                      type="button"
-                      onClick={() => setSelectedDimension(size)}
-                      className={`rounded-full border px-4 py-2 text-sm transition ${
-                        selectedDimension === size
-                          ? 'border-primary bg-primary text-primary-foreground'
-                          : 'border-border bg-background hover:border-primary/60'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-                {selectedDimension && (
-                  <div className="divide-y rounded-md border border-amber-300 bg-card/60">
-                    {adjustedDimensionTableRows.map((row) => (
-                      <div
-                        key={`${row.measurement}-${selectedDimension}`}
-                        className="grid grid-cols-1 gap-1 px-3 py-2 sm:grid-cols-3"
-                      >
-                        <span className="font-medium text-foreground sm:col-span-1">{row.measurement}</span>
-                        <span className="text-sm text-muted-foreground sm:col-span-2">
-                          {row.values?.[selectedDimension] || '—'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
             {product.fabrics && product.fabrics.length > 0 && (
               <div>
                 <h3 className="mb-3 font-medium">Fabric</h3>
@@ -943,38 +910,58 @@ const ProductPage = () => {
                       Dimensions
                     </span>
                   </AccordionTrigger>
-                  <AccordionContent>
+                  <AccordionContent className="space-y-4">
                     {wingbackSelected && (
-                      <div className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+                      <div className="mb-1 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
                         Wingback selected: width increases by approximately {product.wingback_width_delta_cm || 4} cm. Length and height stay the same.
                       </div>
                     )}
-                    {adjustedDimensionTableRows.length > 0 && dimensionColumns.length > 0 ? (
-                      <div className="overflow-x-auto rounded-md border">
-                        <table className="min-w-full text-sm">
-                          <thead className="bg-muted/60">
-                            <tr>
-                              <th className="p-2 text-left font-medium">Measurement</th>
-                              {dimensionColumns.map((size) => (
-                                <th key={size} className="p-2 text-left font-medium">{size}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {adjustedDimensionTableRows.map((row, idx) => (
-                              <tr key={`${row.measurement}-${idx}`} className="border-t">
-                                <td className="p-2 font-medium">{row.measurement}</td>
-                                {dimensionColumns.map((size) => (
-                                  <td key={`${row.measurement}-${size}`} className="p-2 text-muted-foreground">
-                                    {row.values?.[size] || '-'}
-                                  </td>
-                                ))}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+
+                    {dimensionColumns.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2">
+                        {dimensionColumns.map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            onClick={() => setSelectedDimension(size)}
+                            className={`rounded-full border px-4 py-2 text-sm transition ${
+                              selectedDimension === size
+                                ? 'border-primary bg-primary text-primary-foreground'
+                                : 'border-border bg-background hover:border-primary/60'
+                            }`}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                        <label className="ml-auto flex items-center gap-2 text-xs md:text-sm">
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4"
+                            checked={includeDimensions}
+                            onChange={(e) => setIncludeDimensions(e.target.checked)}
+                          />
+                          Send selected size to order
+                        </label>
                       </div>
-                    ) : (
+                    )}
+
+                    {selectedDimension && adjustedDimensionTableRows.length > 0 && (
+                      <div className="divide-y rounded-md border">
+                        {adjustedDimensionTableRows.map((row) => (
+                          <div
+                            key={`${row.measurement}-${selectedDimension}`}
+                            className="grid grid-cols-1 gap-1 px-3 py-2 sm:grid-cols-3"
+                          >
+                            <span className="font-medium text-foreground sm:col-span-1">{row.measurement}</span>
+                            <span className="text-sm text-muted-foreground sm:col-span-2">
+                              {row.values?.[selectedDimension] || '—'}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedDimension && adjustedDimensionTableRows.length === 0 && dimensionsRows.length > 0 && (
                       <ul className="list-disc space-y-2 pl-4">
                         {dimensionsRows.map((row, i) => (
                           <li key={i} className="text-muted-foreground">{row}</li>

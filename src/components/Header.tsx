@@ -36,7 +36,10 @@ const Header = () => {
         const dynamicLinks = categories.map((cat) => {
           const children = subcategories
             .filter((sub) => sub.category === cat.id)
-            .map((sub) => ({ name: sub.name, href: `/category/${sub.slug}` }));
+            .map((sub) => ({
+              name: sub.name,
+              href: `/category/${cat.slug}?sub=${sub.slug}`,
+            }));
 
           return {
             name: cat.name,
