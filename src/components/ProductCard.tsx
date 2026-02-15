@@ -13,6 +13,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   // Calculate savings if there's an original price
   const savings = product.original_price ? product.original_price - product.price : 0;
   const imageUrl = product.images?.[0]?.url || "";
+  const shortText = (product.short_description || product.description || "").trim();
   const gbpFormatter = new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
@@ -46,7 +47,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
               </Badge>
             )}
             {savings > 0 && (
-              <Badge className="bg-bronze text-card-foreground shadow">
+              <Badge className="bg-white text-card-foreground shadow">
                 Save {gbpFormatter.format(savings)}
               </Badge>
             )}
@@ -78,9 +79,11 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           </h3>
 
           {/* Short Feature Line */}
-          <p className="text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
-            {product.short_description || product.description}
-          </p>
+          {shortText && (
+            <p className="text-sm text-muted-foreground line-clamp-2">
+              {shortText}
+            </p>
+          )}
 
           {/* Price */}
           <div className="flex items-center gap-2">

@@ -182,3 +182,14 @@ export interface Order {
   created_at: string;
   items: OrderItem[];
 }
+
+export interface Review {
+  id: number;
+  product: number;
+  product_name?: string;
+  name: string;
+  rating: number;
+  comment: string;
+  is_visible?: boolean;
+  created_at?: string;
+}
