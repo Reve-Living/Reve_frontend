@@ -1191,7 +1191,7 @@ const ProductPage = () => {
 
         <div className="grid gap-12 lg:grid-cols-2">
 
-          <div className="space-y-4">
+          <div className="space-y-4 lg:sticky lg:top-24 self-start">
 
             <motion.div
 
@@ -1349,7 +1349,7 @@ const ProductPage = () => {
 
 
 
-            <div className="rounded-xl border border-border bg-card p-4">
+            <div className="rounded-xl border border-border bg-white p-4">
 
               <div className="flex flex-wrap items-center gap-3">
 
