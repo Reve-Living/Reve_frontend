@@ -13,6 +13,9 @@ export interface CartItem {
   extras_total?: number;
   include_dimension?: boolean;
   unit_price?: number;
+  mattress_id?: number | null;
+  mattress_name?: string | null;
+  mattress_price?: number | null;
 }
 
 interface CartState {
@@ -30,7 +33,16 @@ type CartAction =
   | { type: 'CLOSE_CART' };
 
 const getVariantsKey = (
-  item: Pick<CartItem, 'selectedVariants' | 'fabric' | 'dimension' | 'dimension_details' | 'extras_total' | 'include_dimension'>
+  item: Pick<
+    CartItem,
+    | 'selectedVariants'
+    | 'fabric'
+    | 'dimension'
+    | 'dimension_details'
+    | 'extras_total'
+    | 'include_dimension'
+    | 'mattress_id'
+  >
 ): string => {
   return JSON.stringify({
     selectedVariants: item.selectedVariants || {},
@@ -39,6 +51,7 @@ const getVariantsKey = (
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    mattress_id: item.mattress_id || null,
   });
 };
 

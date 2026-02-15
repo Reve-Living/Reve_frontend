@@ -23,6 +23,7 @@ const getVariantsKey = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  mattress_id?: number | null;
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
@@ -31,6 +32,7 @@ const getVariantsKey = (item: {
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    mattress_id: item.mattress_id || null,
   });
 
 const getVariantSummary = (item: {
@@ -40,12 +42,14 @@ const getVariantSummary = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  mattress_name?: string | null;
 }) => {
   const parts = Object.entries(item.selectedVariants || {})
     .map(([group, value]) => `${group}: ${value}`);
   if (item.fabric) parts.push(`Fabric: ${item.fabric}`);
   if (item.dimension) parts.push(`Dimension: ${item.dimension}`);
   if (item.dimension_details) parts.push(item.dimension_details);
+  if (item.mattress_name) parts.push(`Mattress: ${item.mattress_name}`);
   return parts.join(' | ');
 };
 

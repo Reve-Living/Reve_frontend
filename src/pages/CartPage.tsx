@@ -22,6 +22,7 @@ const getVariantsKey = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  mattress_id?: number | null;
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
@@ -30,6 +31,7 @@ const getVariantsKey = (item: {
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    mattress_id: item.mattress_id || null,
   });
 
 const CartPage = () => {
@@ -163,6 +165,14 @@ const CartPage = () => {
                           {item.fabric && (
                             <p className="text-sm text-muted-foreground">
                               Fabric: {item.fabric}
+                            </p>
+                          )}
+                          {item.mattress_name && (
+                            <p className="text-sm text-muted-foreground">
+                              Mattress: {item.mattress_name}
+                              {typeof item.mattress_price === 'number'
+                                ? ` (${item.mattress_price.toFixed(2)})`
+                                : ''}
                             </p>
                           )}
                           {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (

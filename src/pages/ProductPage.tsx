@@ -47,7 +47,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 
 import { apiGet, apiPost } from '@/lib/api';
-import { Category, Product, ProductDimensionRow, Review } from '@/lib/types';
+import { Category, Product, ProductDimensionRow, Review, ProductMattress } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 
 import { toast } from 'sonner';
@@ -422,6 +422,7 @@ const ProductPage = () => {
 
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({});
+  const [selectedMattressId, setSelectedMattressId] = useState<number | null>(null);
   const [selectedFabric, setSelectedFabric] = useState('');
   const [enabledGroups, setEnabledGroups] = useState<Record<string, boolean>>({});
   const [activeVariantGroupKey, setActiveVariantGroupKey] = useState('');
@@ -480,6 +481,7 @@ const ProductPage = () => {
         const fetched = normalizedProducts[0] || null;
 
         setProduct(fetched);
+        setSelectedMattressId(null);
         if (fetched?.id) {
           fetchReviews(fetched.id);
         }
@@ -812,28 +814,21 @@ const ProductPage = () => {
 
 
   const stylePriceDelta = styleVariantGroups.reduce((sum, group) => {
-
     const selected = getSelectedOptionForGroup(group);
-
     if (!enabledGroups[group.name]) return sum;
-
     const delta = Number(selected?.price_delta ?? 0);
-
     return sum + (Number.isFinite(delta) ? delta : 0);
-
   }, 0);
 
-
+  const mattresses: ProductMattress[] = Array.isArray(product?.mattresses) ? (product?.mattresses as ProductMattress[]) : [];
+  const selectedMattress = mattresses.find((m) => m.id === selectedMattressId) || null;
+  const mattressPrice =
+    selectedMattress?.price !== undefined && selectedMattress?.price !== null ? Number(selectedMattress.price) : 0;
 
   const wingbackSelected = styleVariantGroups.some((group) => {
-
     const selected = getSelectedOptionForGroup(group);
-
     return /wingback/i.test(`${selected?.label || ''} ${selected?.description || ''}`);
-
   });
-
-
 
   const basePrice = Number(product?.price ?? 0);
 
@@ -845,11 +840,11 @@ const ProductPage = () => {
 
       : undefined;
 
-  const unitPrice = basePrice + sizeDelta + stylePriceDelta;
+  const unitPrice = basePrice + sizeDelta + stylePriceDelta + mattressPrice;
 
   const unitOriginalPrice =
 
-    baseOriginalPrice !== undefined ? baseOriginalPrice + sizeDelta + stylePriceDelta : undefined;
+    baseOriginalPrice !== undefined ? baseOriginalPrice + sizeDelta + stylePriceDelta + mattressPrice : undefined;
 
   const totalPrice = unitPrice * quantity;
 
@@ -1071,41 +1066,28 @@ const ProductPage = () => {
 
 
   const handleAddToCart = () => {
-
-    const extrasTotal = stylePriceDelta;
-
+    const extrasTotal = stylePriceDelta + mattressPrice;
+    const variantMap = enabledGroups
+      ? Object.fromEntries(Object.entries(selectedStyles).filter(([name]) => enabledGroups[name]))
+      : { ...selectedStyles };
+    if (mattresses.length > 0) {
+      variantMap['Mattress'] = selectedMattress ? selectedMattress.name || 'Mattress' : 'No mattress';
+    }
     addItem({
-
       product: product as Product,
-
       quantity,
-
       size: activeSizeOption?.label || selectedSize,
-
       color: selectedColor,
-
-      selectedVariants: enabledGroups
-
-        ? Object.fromEntries(
-
-            Object.entries(selectedStyles).filter(([name]) => enabledGroups[name])
-
-          )
-
-        : selectedStyles,
-
+      selectedVariants: variantMap,
+      mattress_id: selectedMattress?.id || null,
+      mattress_name: selectedMattress?.name || null,
+      mattress_price: selectedMattress ? mattressPrice : null,
       fabric: selectedFabric || undefined,
-
       dimension: includeDimensions ? selectedDimension || undefined : undefined,
-
       dimension_details: includeDimensions ? selectedDimensionDetails || undefined : undefined,
-
       include_dimension: includeDimensions,
-
       extras_total: extrasTotal,
-
       unit_price: unitPrice,
-
     });
 
     toast.success(`${product.name} added to cart`);
@@ -1373,6 +1355,64 @@ const ProductPage = () => {
 
             </div>
 
+            {mattresses.length > 0 && (
+              <div className="rounded-xl border border-border bg-white p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-base font-semibold">Choose a mattress</p>
+                  <span className="text-xs text-muted-foreground">Optional</span>
+                </div>
+                <div className="flex flex-col gap-3">
+                  {mattresses.map((mattress) => (
+                    <button
+                      key={mattress.id}
+                      type="button"
+                      onClick={() => setSelectedMattressId(mattress.id)}
+                      className={`flex items-start gap-3 rounded-lg border p-3 text-left transition ${
+                        selectedMattressId === mattress.id
+                          ? 'border-primary ring-1 ring-primary/40 bg-primary/5'
+                          : 'border-border hover:border-primary/60'
+                      }`}
+                    >
+                      {mattress.image_url ? (
+                        <img
+                          src={mattress.image_url}
+                          alt={mattress.name || 'Mattress option'}
+                          className="h-16 w-20 rounded-md object-cover"
+                        />
+                      ) : (
+                        <div className="h-16 w-20 rounded-md bg-muted flex items-center justify-center text-xs text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="font-semibold text-foreground">{mattress.name || 'Mattress'}</p>
+                          {mattress.price !== undefined && mattress.price !== null && (
+                            <span className="text-sm font-semibold text-primary">{formatPrice(Number(mattress.price))}</span>
+                          )}
+                        </div>
+                        {mattress.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-2">{mattress.description}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedMattressId(null)}
+                    className={`flex items-center justify-between rounded-lg border p-3 text-left transition ${
+                      selectedMattressId === null ? 'border-primary ring-1 ring-primary/40 bg-primary/5' : 'border-border hover:border-primary/60'
+                    }`}
+                  >
+                    <div>
+                      <p className="font-semibold text-foreground">No mattress</p>
+                      <p className="text-xs text-muted-foreground">Keep frame only.</p>
+                    </div>
+                    <span className="text-sm font-semibold text-primary">Included</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
 
             {variantGroups.length > 0 && (

@@ -78,6 +78,15 @@ export interface ProductFabric {
   colors?: ProductColor[];
 }
 
+export interface ProductMattress {
+  id: number;
+  name?: string;
+  description?: string;
+  image_url?: string;
+  price?: number | string | null;
+  source_product?: number | null;
+}
+
 export interface FilterOption {
   id: number;
   name: string;
@@ -144,6 +153,7 @@ export interface Product {
   sizes: ProductSize[];
   styles: ProductStyle[];
   fabrics: ProductFabric[];
+  mattresses?: ProductMattress[];
   filters?: FilterType[];
   computed_dimensions?: ProductDimensionRow[];
   dimension_template?: number | null;
