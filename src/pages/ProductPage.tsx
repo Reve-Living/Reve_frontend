@@ -204,7 +204,7 @@ const adjustDimensionsForWingback = (
 
 
 
-const parseSizeOption = (rawSize: string, index: number, rawDescription = ''): ParsedSizeOption => {
+const parseSizeOption = (rawSize: string, index: number, rawDescription = '', explicitDelta?: number): ParsedSizeOption => {
 
   const raw = (rawSize || '').trim();
 
@@ -244,7 +244,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = ''): P
 
 
 
-  const plusMatch = raw.match(/^(.*?)\s*(?:\(\s*)?\+\s*£?\s*(\d+(\.\d+)?)\s*(?:\)\s*)?$/i);
+  const plusMatch = raw.match(/^(.*?)\s*(?:\(\s*)?\+\s*(?:£)?\s*(\d+(?:\.\d+)?)\s*(?:\)\s*)?$/i);
 
   if (plusMatch) {
 
@@ -266,9 +266,13 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = ''): P
 
 
 
-  return { id: `size-${index}`, label: raw, delta: 0, description, raw: rawSize };
+  const fallbackDelta = Number.isFinite(explicitDelta) ? Number(explicitDelta) : 0;
+
+  return { id: `size-${index}`, label: raw, delta: fallbackDelta, description, raw: rawSize };
 
 };
+
+const formatOptionLabel = (label: string) => label.replace(/(\\d)([A-Za-z])/g, '$1 $2').trim();
 
 
 
@@ -595,7 +599,9 @@ const ProductPage = () => {
 
   }, [fabricColors, availableColors, selectedColor]);
 
-  const sizeOptions = productSizes.map((size, index) => parseSizeOption(size.name, index, size.description || ''));
+  const sizeOptions = productSizes.map((size, index) =>
+    parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+  );
 
 
 
@@ -1236,9 +1242,7 @@ const ProductPage = () => {
                 )}
 
                 {savingsPerUnit > 0 && (
-
-                  <Badge className="bg-white text-card-foreground shadow-md">Save {formatPrice(savingsPerUnit)}</Badge>
-
+                  <Badge className="bg-bronze text-white shadow-md">Save {formatPrice(savingsPerUnit)}</Badge>
                 )}
 
               </div>
@@ -1358,13 +1362,9 @@ const ProductPage = () => {
                 )}
 
                 {savingsPerUnit > 0 && (
-
-                  <Badge className="bg-bronze text-card-foreground text-sm">
-
+                  <Badge className="bg-bronze text-white text-sm">
                     Save {formatPrice(savingsPerUnit)}
-
                   </Badge>
-
                 )}
 
               </div>
@@ -1379,16 +1379,6 @@ const ProductPage = () => {
               <div className="space-y-6 rounded-xl border border-border bg-white p-4">
                 <div className="flex items-center justify-between">
                   <p className="text-base font-semibold">Options</p>
-                  {dimensionColumns.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setIsDimensionsOpen(true)}
-                      className="flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4"
-                    >
-                      <Ruler className="h-4 w-4" />
-                      Dimensions
-                    </button>
-                  )}
                 </div>
                 {variantGroups.map((group) => {
                   const selected = getSelectedOptionForGroup(group);
@@ -1402,20 +1392,20 @@ const ProductPage = () => {
                           <div>
                             <p className="text-base font-semibold capitalize">{group.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {selected?.label ? `Selected: ${selected.label}` : 'Select an option'}
+                              {selected?.label
+                                ? `Selected: ${selected.label.replace(/(\d+)(Drawers)/i, '$1 $2')}${
+                                    selected.description ? ` (${selected.description})` : ''
+                                  }`
+                                : 'Select an option'}
                             </p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-3">
+                      <div className="flex flex-wrap gap-2">
                         {group.options.map((option) => {
                           const isSelected = selected?.key === option.key;
                           const disabled = false;
-                          const sizeStyle =
-                            group.kind === 'size'
-                              ? 'h-24 w-32'
-                              : 'h-24 w-32';
                           return (
                             <button
                               key={option.key}
@@ -1444,42 +1434,73 @@ const ProductPage = () => {
                                 setSelectedStyles((prev) => ({ ...prev, [styleName]: option.label }));
                                 setEnabledGroups((prev) => ({ ...prev, [group.name]: true }));
                               }}
-                              className={`relative flex ${sizeStyle} flex-col items-center justify-center rounded-lg border bg-card transition-all ${
-                                disabled
-                                  ? 'cursor-not-allowed opacity-40'
-                                  : isSelected
-                                  ? 'border-primary bg-primary/8 ring-1 ring-primary/30'
-                                  : 'border-border hover:border-primary/60'
-                              }`}
+                              className={
+                                group.kind === 'color'
+                                  ? `relative h-12 w-12 shrink-0 rounded-md border transition ${
+                                      disabled
+                                        ? 'cursor-not-allowed opacity-40'
+                                        : isSelected
+                                        ? 'border-primary ring-2 ring-primary/40'
+                                        : 'border-border hover:border-primary/60'
+                                    }`
+                                  : `relative flex h-28 w-28 shrink-0 flex-col items-center justify-center rounded-lg border bg-white transition-all ${
+                                      disabled
+                                        ? 'cursor-not-allowed opacity-40'
+                                        : isSelected
+                                        ? 'border-primary bg-primary/8 ring-1 ring-primary/30'
+                                        : 'border-border hover:border-primary/60'
+                                    }`
+                              }
                             >
-                              <div className="flex flex-col items-center gap-2 px-3 text-center">
-                                {group.kind === 'color' ? (
+                              {group.kind === 'color' ? (
+                                <>
                                   <span
-                                    className="h-10 w-10 rounded-md border border-border"
-                                    style={{ backgroundColor: option.color_code || '#888' }}
+                                    className="absolute inset-0 rounded-md"
+                                    style={{
+                                      backgroundColor: option.color_code || '#888',
+                                      backgroundImage: option.icon_url ? `url(${option.icon_url})` : undefined,
+                                      backgroundSize: 'cover',
+                                      backgroundPosition: 'center',
+                                    }}
                                   />
-                                ) : (
+                                  {isSelected && <CheckCircle2 className="absolute right-1 top-1 h-4 w-4 text-primary drop-shadow" />}
+                                  <span className="sr-only">{formatOptionLabel(option.label)}</span>
+                                </>
+                              ) : (
+                                <div className="flex flex-col items-center gap-1.5 px-2 text-center">
                                   <IconVisual
                                     icon={option.icon_url || group.icon_url}
                                     alt={option.label}
-                                    className="h-8 w-8 object-contain"
+                                    className="h-10 w-10 object-contain"
                                   />
-                                )}
-                                <p className="text-sm font-medium text-espresso leading-tight break-words">{option.label}</p>
-                                <p className="text-[11px] text-muted-foreground">
-                                  {Number(option.price_delta || 0) > 0
-                                    ? `+${formatPrice(Number(option.price_delta || 0))}`
-                                    : 'Included'}
-                                </p>
-                                {option.description && (
-                                  <p className="text-[11px] text-muted-foreground leading-tight">{option.description}</p>
-                                )}
-                              </div>
-                              {isSelected && <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-primary" />}
+                                  <p className="text-[11px] font-semibold text-espresso leading-tight text-center break-words line-clamp-3">
+                                    {formatOptionLabel(option.label)}
+                                    {option.description && ` (${option.description})`}
+                                  </p>
+                                  <p className="text-[10px] text-muted-foreground leading-tight text-center">
+                                    {Number(option.price_delta || 0) > 0
+                                      ? `+${formatPrice(Number(option.price_delta || 0))}`
+                                      : 'Included'}
+                                  </p>
+                                </div>
+                              )}
+                              {group.kind !== 'color' && isSelected && <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-primary" />}
                             </button>
                           );
                         })}
                       </div>
+                      {dimensionColumns.length > 0 && group.kind === 'size' && (
+                        <div className="pt-3">
+                          <button
+                            type="button"
+                            onClick={() => setIsDimensionsOpen(true)}
+                            className="flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4"
+                          >
+                            <Ruler className="h-4 w-4" />
+                            Dimensions
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1544,53 +1565,35 @@ const ProductPage = () => {
                 </div>
 
                 {availableColors.length > 0 && (
-
                   <div className="mt-4 space-y-2">
-
                     <p className="text-sm font-medium">Colours</p>
-
                     <div className="flex flex-wrap gap-2">
-
-                      {availableColors.map((color, idx) => (
-
-                        <button
-
-                          key={color.id ?? `${color.name}-${idx}`}
-
-                          type="button"
-
-                          onClick={() => setSelectedColor(color.name)}
-
-                          className={`flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition ${
-
-                            selectedColor === color.name
-
-                              ? 'border-primary bg-primary text-primary-foreground'
-
-                              : 'border-border bg-background hover:border-primary/50'
-
-                          }`}
-
-                        >
-
-                          <span
-
-                            className="h-4 w-4 rounded-full border"
-
-                            style={{ backgroundColor: color.hex_code || '#888' }}
-
-                          />
-
-                          {color.name}
-
-                        </button>
-
-                      ))}
-
+                      {availableColors.map((color, idx) => {
+                        const isActive = selectedColor === color.name;
+                        const swatchStyle: React.CSSProperties = color.image_url
+                          ? {
+                              backgroundImage: `url(${color.image_url})`,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }
+                          : { backgroundColor: color.hex_code || '#888' };
+                        return (
+                          <button
+                            key={color.id ?? `${color.name}-${idx}`}
+                            type="button"
+                            onClick={() => setSelectedColor(color.name)}
+                            className={`relative h-12 w-12 overflow-hidden rounded-md border transition ${
+                              isActive ? 'border-primary ring-2 ring-primary/50' : 'border-border hover:border-primary/60'
+                            }`}
+                            style={swatchStyle}
+                            aria-label={color.name}
+                          >
+                            {isActive && <CheckCircle2 className="absolute right-1 top-1 h-4 w-4 text-primary drop-shadow" />}
+                          </button>
+                        );
+                      })}
                     </div>
-
                   </div>
-
                 )}
 
               </div>
@@ -1938,8 +1941,8 @@ const ProductPage = () => {
                         onClick={() => setSelectedDimension(size)}
                         className={`rounded-md border px-3 py-2 text-sm transition ${
                           selectedDimension === size
-                            ? 'border-primary bg-primary text-primary-foreground'
-                            : 'border-border bg-background hover:border-primary/60'
+                            ? 'border-primary bg-primary text-white shadow-sm'
+                            : 'border-border bg-white text-espresso hover:border-primary/60'
                         }`}
                       >
                         {size}
@@ -1989,11 +1992,3 @@ const ProductPage = () => {
 
 
 export default ProductPage;
-
-
-
-
-
-
-
-
