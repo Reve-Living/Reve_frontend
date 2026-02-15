@@ -1279,7 +1279,7 @@ const ProductPage = () => {
 
 
 
-          <div className="space-y-6">
+          <div className="space-y-6 lg:max-h-[calc(100vh-8rem)] lg:overflow-y-auto lg:pr-2">
 
             <div className="space-y-3">
 
