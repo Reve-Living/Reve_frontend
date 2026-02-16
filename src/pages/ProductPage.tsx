@@ -528,15 +528,18 @@ const ProductPage = () => {
 
         (fetched?.styles || []).forEach((styleGroup) => {
           const normalized = normalizeStyleOptions(styleGroup.options);
-          const mattressZero = /mattress/i.test(styleGroup.name)
-            ? normalized.find((o) => parsePriceDeltaFromText(o.label, o.description || '') === 0)
-            : undefined;
-          const firstOption = mattressZero || normalized[0];
-
-          if (firstOption) {
-            initialStyles[styleGroup.name] = firstOption.label;
+          const freeOption =
+            normalized.find(
+              (o) =>
+                parsePriceDeltaFromText(o.label, o.description || '') === 0 ||
+                Number(o.price_delta ?? 0) === 0
+            ) || undefined;
+          if (freeOption) {
+            initialStyles[styleGroup.name] = freeOption.label;
+            nextEnabled[styleGroup.name] = true;
+          } else {
+            nextEnabled[styleGroup.name] = false;
           }
-          nextEnabled[styleGroup.name] = true;
         });
         setSelectedStyles(initialStyles);
         setEnabledGroups((prev) => ({ ...nextEnabled, ...prev }));
