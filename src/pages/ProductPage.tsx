@@ -1719,7 +1719,7 @@ const adjustedDimensionTableRows = useMemo(() => {
                     <p className="text-xs text-muted-foreground">Choose after picking your style</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => setIsMattressOpen(true)}>
-                    View mattresses
+                    Upgrade mattresses
                   </Button>
                 </div>
                 <button
