@@ -428,6 +428,23 @@ const svgMarkupToDataUrl = (svgMarkup: string): string => {
 
 };
 
+// Normalizes features so we only create bullets for actual bullet separators (line breaks or •),
+// never for commas inside the text.
+const normalizeFeatures = (features: unknown): string[] => {
+  if (!features) return [];
+
+  const asArray = Array.isArray(features) ? features : [features];
+
+  return asArray
+    .flatMap((item) => {
+      if (typeof item !== 'string') return [];
+      const withNewlines = item.replace(/<br\s*\/?>/gi, '\n');
+      return withNewlines.split(/[\r\n\u2022]+/);
+    })
+    .map((entry) => entry.replace(/^[\s\-–—•]+/, '').trim())
+    .filter(Boolean);
+};
+
 
 
 const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; className: string }) => {
@@ -950,30 +967,30 @@ const ProductPage = () => {
 
     (product?.short_description || '').trim() || fullDescription.split('. ')[0] || '';
 
-    const dimensionsRows = (product?.features || []).filter((feature) =>
+  const featureList = useMemo(() => normalizeFeatures(product?.features), [product?.features]);
 
-      /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
+  const dimensionsRows = featureList.filter((feature) =>
+    /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
+  );
 
-    );
-
-const dimensionValueForSize = (row: ProductDimensionRow, size: string): string => {
-  const direct = row.values?.[size];
-  if (direct) return String(direct);
-  const fallback = DEFAULT_DIMENSION_LOOKUP[row.measurement || '']?.[size];
-  if (fallback) return String(fallback);
-  if (size === '2ft6 Small Single') {
-    const base =
-      row.values?.['3ft Single'] ||
-      DEFAULT_DIMENSION_LOOKUP[row.measurement || '']?.['3ft Single'] ||
-      '';
-    const label = (row.measurement || '').toLowerCase();
-    if (label.includes('width')) {
-      return '75 cm (30")';
+  const dimensionValueForSize = (row: ProductDimensionRow, size: string): string => {
+    const direct = row.values?.[size];
+    if (direct) return String(direct);
+    const fallback = DEFAULT_DIMENSION_LOOKUP[row.measurement || '']?.[size];
+    if (fallback) return String(fallback);
+    if (size === '2ft6 Small Single') {
+      const base =
+        row.values?.['3ft Single'] ||
+        DEFAULT_DIMENSION_LOOKUP[row.measurement || '']?.['3ft Single'] ||
+        '';
+      const label = (row.measurement || '').toLowerCase();
+      if (label.includes('width')) {
+        return '75 cm (30")';
+      }
+      if (base) return String(base);
     }
-    if (base) return String(base);
-  }
-  return '—';
-};
+    return '—';
+  };
 
   const rawDimensionTableRows = useMemo(
 
@@ -1752,7 +1769,7 @@ const adjustedDimensionTableRows = useMemo(() => {
           <div className="flex flex-wrap gap-2">
             {[
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
-              { key: 'features', label: 'Features', show: (product.features || []).length > 0 },
+              { key: 'features', label: 'Features', show: featureList.length > 0 },
               { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 },
               { key: 'delivery', label: 'Delivery', show: true },
               { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
@@ -1781,7 +1798,7 @@ const adjustedDimensionTableRows = useMemo(() => {
 
             {activeInfoTab === 'features' && (
               <ul className="list-disc space-y-2 pl-4">
-                {(product.features || []).map((feature, i) => (
+                {featureList.map((feature, i) => (
                   <li key={i} className="text-muted-foreground">
                     {feature}
                   </li>
