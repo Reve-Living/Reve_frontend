@@ -22,6 +22,8 @@ import {
   BedDouble,
   CheckCircle2,
   X,
+  Wallet,
+  BadgeDollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -481,7 +483,14 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
 const reassuranceItems = [
   { icon: Truck, label: 'Free UK Delivery' },
   { icon: Shield, label: '10-Year Guarantee' },
-  { icon: CreditCard, label: 'Pay in 3' },
+  { icon: CheckCircle2, label: 'Secure Checkout' },
+];
+
+const paymentIcons = [
+  { label: 'Visa', icon: CreditCard },
+  { label: 'Mastercard', icon: CreditCard },
+  { label: 'Amex', icon: CreditCard },
+  { label: 'PayPal', icon: Wallet },
 ];
 
 
@@ -1420,6 +1429,16 @@ const adjustedDimensionTableRows = useMemo(() => {
 
             )}
 
+            {/* Trust badges under gallery */}
+            <div className="mt-3 rounded-xl bg-[#F5F1EA] px-6 py-4 flex flex-wrap items-center justify-center gap-8 text-sm font-semibold text-espresso">
+              {reassuranceItems.map((item) => (
+                <span key={item.label} className="flex items-center gap-2">
+                  <item.icon className="h-5 w-5 text-bronze" />
+                  {item.label}
+                </span>
+              ))}
+            </div>
+
           </div>
 
 
@@ -1786,15 +1805,16 @@ const adjustedDimensionTableRows = useMemo(() => {
 
             </div>
 
-            <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-[#F5F1EA] px-4 py-3 sm:grid-cols-3">
-              {reassuranceItems.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-center gap-3 text-sm font-medium text-espresso"
+            {/* Payment chips under CTA (trust badges removed here to reduce clutter) */}
+            <div className="mt-8 w-full -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 flex flex-wrap items-center justify-center gap-4">
+              {paymentIcons.map((pm) => (
+                <span
+                  key={pm.label}
+                  className="inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-muted-foreground bg-transparent"
                 >
-                  <item.icon className="h-5 w-5 text-bronze" />
-                  <span>{item.label}</span>
-                </div>
+                  <pm.icon className="h-4 w-4 text-bronze" />
+                  {pm.label}
+                </span>
               ))}
             </div>
 
@@ -1806,7 +1826,7 @@ const adjustedDimensionTableRows = useMemo(() => {
 
         {/* Info tabs full-width below purchase panel */}
         <div className="mt-10 space-y-4">
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 lg:grid-cols-5">
             {[
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
               { key: 'features', label: 'Features', show: featureList.length > 0 },
@@ -1820,7 +1840,7 @@ const adjustedDimensionTableRows = useMemo(() => {
                   key={tab.key}
                   type="button"
                   onClick={() => setActiveInfoTab(tab.key as typeof activeInfoTab)}
-                  className={`rounded-md border px-4 py-2 text-sm font-semibold transition ${
+                  className={`w-full rounded-md border px-4 py-2 text-sm font-semibold transition text-center ${
                     activeInfoTab === tab.key
                       ? 'border-primary bg-primary text-primary-foreground shadow-sm'
                       : 'border-border bg-muted/60 text-foreground hover:border-primary/60'
@@ -1919,6 +1939,15 @@ const adjustedDimensionTableRows = useMemo(() => {
 
             {!activeInfoTab && <p className="text-sm text-muted-foreground">Select a tab to view details.</p>}
           </div>
+        </div>
+
+        <div className="mt-6 rounded-xl bg-[#F5F1EA] px-6 py-4 flex flex-wrap items-center justify-center gap-8 text-sm font-semibold text-espresso">
+          {reassuranceItems.map((item) => (
+            <span key={item.label} className="flex items-center gap-2">
+              <item.icon className="h-5 w-5 text-bronze" />
+              {item.label}
+            </span>
+          ))}
         </div>
 
         <section className="mt-12 border-t pt-10" id="reviews">
@@ -2087,17 +2116,20 @@ const adjustedDimensionTableRows = useMemo(() => {
                         {mattress.name || 'Mattress'}
                       </p>
                       {mattress.price !== undefined && mattress.price !== null ? (
-                        Number(mattress.price) > 0 ? (
-                          <span className="text-sm font-semibold text-primary whitespace-nowrap">
-                            {formatPrice(Number(mattress.price))}
-                          </span>
-                        ) : (
-                          <span className="text-xs font-semibold text-green-700">Included</span>
-                        )
+                        <span className="text-sm font-semibold text-primary whitespace-nowrap">
+                          {formatPrice(Number(mattress.price))}
+                        </span>
                       ) : (
-                        <span className="text-xs font-semibold text-green-700">Included</span>
+                        <span className="text-sm font-semibold text-primary whitespace-nowrap">{formatPrice(0)}</span>
                       )}
                     </div>
+                    <p
+                      className={`text-xs font-semibold ${
+                        Number(mattress.price || 0) > 0 ? 'text-primary' : 'text-green-700'
+                      }`}
+                    >
+                      {Number(mattress.price || 0) > 0 ? 'Upgrade' : 'Included'}
+                    </p>
                     {mattress.description && (
                       <p className="text-xs text-muted-foreground line-clamp-2">{mattress.description}</p>
                     )}
