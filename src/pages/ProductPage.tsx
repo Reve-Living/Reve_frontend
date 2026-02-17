@@ -190,6 +190,19 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 const formatPrice = (value: number): string => gbpFormatter.format(Math.max(0, value));
 
+const renderMultilineParagraphs = (value?: string) => {
+  if (!value) return null;
+  return value
+    .split(/\r?\n+/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line, idx) => (
+      <p key={`${line}-${idx}`} className={idx === 0 ? 'font-semibold whitespace-pre-line' : 'whitespace-pre-line'}>
+        {line}
+      </p>
+    ));
+};
+
 
 
 const adjustDimensionsForWingback = (
@@ -464,6 +477,12 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
   return <BedDouble className="h-5 w-5 text-muted-foreground" />;
 
 };
+
+const reassuranceItems = [
+  { icon: Truck, label: 'Free UK Delivery' },
+  { icon: Shield, label: '10-Year Guarantee' },
+  { icon: CreditCard, label: 'Pay in 3' },
+];
 
 
 
@@ -1491,6 +1510,12 @@ const adjustedDimensionTableRows = useMemo(() => {
                   const isStyleGroup = group.kind === 'style';
                   const isHeadboardGroup = isStyleGroup && group.name.toLowerCase().includes('headboard');
                   const isStorageGroup = isStyleGroup && /storage/i.test(group.name);
+                  const optionCount = group.options.length || 0;
+                  const headboardGridStyle = isHeadboardGroup
+                    ? {
+                        gridTemplateColumns: `repeat(${Math.min(Math.max(optionCount, 1), 4)}, minmax(0, 1fr))`,
+                      }
+                    : undefined;
                   const groupEnabled = enabledGroups[group.name] !== false;
                   return (
                     <div key={group.key} className="space-y-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
@@ -1518,8 +1543,11 @@ const adjustedDimensionTableRows = useMemo(() => {
                         className={
                           isStorageGroup
                             ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                            : isHeadboardGroup
+                            ? 'grid gap-3'
                             : 'flex flex-wrap gap-2'
                         }
+                        style={headboardGridStyle}
                       >
                         {group.options.map((option) => {
                           const isSelected = selected?.key === option.key;
@@ -1588,7 +1616,7 @@ const adjustedDimensionTableRows = useMemo(() => {
                                     }`
                                   : `relative flex ${
                                       isHeadboardGroup
-                                        ? 'h-32 w-44 flex-row items-center justify-start gap-4 px-3 text-left'
+                                        ? 'h-32 w-full flex-row items-center justify-start gap-4 px-3 text-left'
                                         : isStorageGroup
                                         ? 'h-28 w-full flex-col items-center justify-center px-3 text-center'
                                         : 'h-32 w-28 flex-col items-center justify-center px-2 text-center'
@@ -1758,6 +1786,18 @@ const adjustedDimensionTableRows = useMemo(() => {
 
             </div>
 
+            <div className="mt-4 grid grid-cols-1 gap-3 rounded-xl bg-[#F5F1EA] px-4 py-3 sm:grid-cols-3">
+              {reassuranceItems.map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-center gap-3 text-sm font-medium text-espresso"
+                >
+                  <item.icon className="h-5 w-5 text-bronze" />
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+
 
 
           </div>
@@ -1855,7 +1895,7 @@ const adjustedDimensionTableRows = useMemo(() => {
             {activeInfoTab === 'delivery' && (
               <div className="space-y-2 text-muted-foreground">
                 {product.delivery_info ? (
-                  <p>{product.delivery_info}</p>
+                  <div className="space-y-1">{renderMultilineParagraphs(product.delivery_info)}</div>
                 ) : (
                   <>
                     <p>- Free delivery on orders over 500 GBP</p>
@@ -1871,7 +1911,7 @@ const adjustedDimensionTableRows = useMemo(() => {
                 {faqEntries.map((faq, i) => (
                   <div key={`${faq.question}-${i}`}>
                     <p className="font-medium text-foreground">{faq.question}</p>
-                    <p className="text-muted-foreground">{faq.answer}</p>
+                    <p className="text-muted-foreground whitespace-pre-line">{faq.answer}</p>
                   </div>
                 ))}
               </div>

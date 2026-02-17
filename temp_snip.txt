@@ -1,0 +1,35 @@
+              <div className="flex items-center rounded-md border border-border">
+
+                <button
+
+                  onClick={() => setQuantity(Math.max(1, quantity - 1))}
+
+                  className="p-3 hover:bg-muted"
+
+                >
+
+                  <Minus className="h-4 w-4" />
+
+                </button>
+
+                <span className="w-12 text-center">{quantity}</span>
+
+                <button
+
+                  onClick={() => setQuantity(quantity + 1)}
+
+                  className="p-3 hover:bg-muted"
+
+                >
+
+                  <Plus className="h-4 w-4" />
+
+                </button>
+
+              </div>
+
+
+
+              <Button
+
+                size="lg"

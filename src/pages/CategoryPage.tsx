@@ -18,7 +18,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
-import { Category, Product, SubCategory } from '@/lib/types';
+import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -64,6 +64,8 @@ const CategoryPage = () => {
   const [priceRange, setPriceRange] = useState([0, 1500]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [availableFilters, setAvailableFilters] = useState<FilterType[]>([]);
+  const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     const load = async () => {
@@ -72,6 +74,7 @@ const CategoryPage = () => {
         setCategory(null);
         setSubcategories([]);
         setAllProducts([]);
+        setAvailableFilters([]);
         setIsLoading(false);
         return;
       }
@@ -94,16 +97,45 @@ const CategoryPage = () => {
           ? (productsRes as unknown as { results: Product[] }).results
           : [];
         setAllProducts(normalizedProducts);
+
+        // Fetch filter definitions for this category/subcategory
+        try {
+          const filtersRes = await apiGet<{ filters: FilterType[] }>(
+            `/categories/${slug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
+          );
+          setAvailableFilters(Array.isArray(filtersRes?.filters) ? filtersRes.filters : []);
+        } catch {
+          setAvailableFilters([]);
+        }
         setIsLoading(false);
       } catch {
         setCategory(null);
         setSubcategories([]);
         setAllProducts([]);
+        setAvailableFilters([]);
         setIsLoading(false);
       }
     };
     load();
   }, [slug, subSlug]);
+
+  // Drop selections that no longer exist when filter definitions change
+  useEffect(() => {
+    if (availableFilters.length === 0) {
+      setSelectedFilters({});
+      return;
+    }
+    setSelectedFilters((prev) => {
+      const next: Record<string, string[]> = {};
+      const valid = new Set(availableFilters.map((f) => f.slug));
+      availableFilters.forEach((f) => {
+        const options = new Set(f.options.map((o) => o.slug));
+        const selected = (prev[f.slug] || []).filter((slug) => options.has(slug));
+        if (selected.length) next[f.slug] = selected;
+      });
+      return next;
+    });
+  }, [availableFilters]);
 
   const selectedSubcategory = useMemo(() => {
     if (!subSlug) {
@@ -169,6 +201,17 @@ const CategoryPage = () => {
       );
     }
 
+    // Dynamic filters (category/subcategory specific)
+    Object.entries(selectedFilters).forEach(([filterSlug, optionSlugs]) => {
+      if (!optionSlugs.length) return;
+      products = products.filter((p) => {
+        const values = p.filter_values || [];
+        return optionSlugs.every((opt) =>
+          values.some((v) => v.filter_type === filterSlug && v.option === opt)
+        );
+      });
+    });
+
     // Sort
     switch (sortBy) {
       case 'price-low':
@@ -186,7 +229,7 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, priceRange, selectedSizes, sortBy]);
+  }, [allProducts, priceRange, selectedSizes, selectedFilters, sortBy]);
 
   const toggleSize = (size: string) => {
     setSelectedSizes((prev) =>
@@ -194,9 +237,23 @@ const CategoryPage = () => {
     );
   };
 
+  const toggleFilterOption = (filterSlug: string, optionSlug: string) => {
+    setSelectedFilters((prev) => {
+      const current = prev[filterSlug] || [];
+      const next = current.includes(optionSlug)
+        ? current.filter((o) => o !== optionSlug)
+        : [...current, optionSlug];
+      return { ...prev, [filterSlug]: next };
+    });
+  };
+
+  const isFilterSelected = (filterSlug: string, optionSlug: string) =>
+    (selectedFilters[filterSlug] || []).includes(optionSlug);
+
   const clearFilters = () => {
     setPriceRange([priceBounds.min, priceBounds.max]);
     setSelectedSizes([]);
+    setSelectedFilters({});
   };
 
   if (!category && !isLoading) {
@@ -317,6 +374,9 @@ const CategoryPage = () => {
               allSizes={allSizes}
               selectedSizes={selectedSizes}
               toggleSize={toggleSize}
+              availableFilters={availableFilters}
+              isFilterSelected={isFilterSelected}
+              toggleFilterOption={toggleFilterOption}
               isLoading={isLoading}
               clearFilters={clearFilters}
             />
@@ -351,6 +411,9 @@ const CategoryPage = () => {
                   allSizes={allSizes}
                   selectedSizes={selectedSizes}
                   toggleSize={toggleSize}
+                  availableFilters={availableFilters}
+                  isFilterSelected={isFilterSelected}
+                  toggleFilterOption={toggleFilterOption}
                   isLoading={isLoading}
                   clearFilters={clearFilters}
                 />
@@ -395,6 +458,9 @@ interface FilterContentProps {
   allSizes: string[];
   selectedSizes: string[];
   toggleSize: (size: string) => void;
+  availableFilters: FilterType[];
+  isFilterSelected: (filterSlug: string, optionSlug: string) => boolean;
+  toggleFilterOption: (filterSlug: string, optionSlug: string) => void;
   isLoading: boolean;
   clearFilters: () => void;
 }
@@ -406,6 +472,9 @@ const FilterContent = ({
   allSizes,
   selectedSizes,
   toggleSize,
+  availableFilters,
+  isFilterSelected,
+  toggleFilterOption,
   isLoading,
   clearFilters,
 }: FilterContentProps) => {
@@ -456,6 +525,46 @@ const FilterContent = ({
           </div>
         )}
       </div>
+
+      {/* Category/Subcategory Filters */}
+      {availableFilters.length > 0 && (
+        <div className="space-y-6">
+          {availableFilters.map((filter) => (
+            <div key={filter.id}>
+              <div className="flex items-center justify-between">
+                <h4 className="font-serif text-lg font-semibold">{filter.name}</h4>
+                {filter.display_hint && (
+                  <span className="text-xs text-muted-foreground">{filter.display_hint}</span>
+                )}
+              </div>
+              <div className="mt-3 space-y-3">
+                {filter.options
+                  .filter((opt) => opt.name)
+                  .map((opt) => (
+                    <label key={opt.id} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={isFilterSelected(filter.slug, opt.slug)}
+                        onCheckedChange={() => toggleFilterOption(filter.slug, opt.slug)}
+                      />
+                      <span className="flex items-center gap-2">
+                        {opt.color_code && (
+                          <span
+                            className="h-3 w-3 rounded-full border border-border"
+                            style={{ backgroundColor: opt.color_code }}
+                          />
+                        )}
+                        {opt.name}
+                        {typeof opt.product_count === 'number' && (
+                          <span className="text-xs text-muted-foreground">({opt.product_count})</span>
+                        )}
+                      </span>
+                    </label>
+                  ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Clear Filters */}
       <Button

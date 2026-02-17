@@ -111,6 +111,11 @@ export interface FilterType {
   options: FilterOption[];
 }
 
+export interface ProductFilterValue {
+  filter_type: string;
+  option: string;
+}
+
 export interface ProductFaq {
   question: string;
   answer: string;
@@ -155,6 +160,7 @@ export interface Product {
   fabrics: ProductFabric[];
   mattresses?: ProductMattress[];
   filters?: FilterType[];
+  filter_values?: ProductFilterValue[];
   computed_dimensions?: ProductDimensionRow[];
   dimension_template?: number | null;
   dimension_template_name?: string;
