@@ -154,6 +154,7 @@ export interface Product {
   in_stock: boolean;
   is_bestseller: boolean;
   is_new: boolean;
+  show_size_icons?: boolean;
   rating: number;
   review_count: number;
   images: ProductImage[];

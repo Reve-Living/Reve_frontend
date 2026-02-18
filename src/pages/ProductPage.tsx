@@ -676,6 +676,7 @@ const ProductPage = () => {
   const productImages = product?.images || [];
 
   const productSizes = product?.sizes || [];
+  const sizeIconsEnabled = product?.show_size_icons !== false;
 
   const selectedFabricObj = (product?.fabrics || []).find((f) => f.name === selectedFabric);
 
@@ -1548,6 +1549,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         {group.options.map((option) => {
                           const isSelected = selected?.key === option.key;
                           const disabled = false;
+                          const shouldShowIcon = !(group.kind === 'size' && !sizeIconsEnabled);
                           return (
                             <button
                               key={option.key}
@@ -1646,11 +1648,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     isHeadboardGroup ? 'flex-row items-center gap-3 text-left' : 'flex-col items-center gap-1.5 text-center'
                                   } w-full`}
                                 >
-                                  <IconVisual
-                                    icon={option.icon_url || group.icon_url}
-                                    alt={option.label}
-                                    className={isHeadboardGroup ? 'h-14 w-14 object-contain' : 'h-14 w-14 object-contain'}
-                                  />
+                                  {shouldShowIcon && (
+                                    <IconVisual
+                                      icon={option.icon_url || group.icon_url}
+                                      alt={option.label}
+                                      className={isHeadboardGroup ? 'h-14 w-14 object-contain' : 'h-14 w-14 object-contain'}
+                                    />
+                                  )}
                                   <div className={isHeadboardGroup ? 'flex flex-col gap-1' : 'flex flex-col items-center gap-1 text-center'}>
                                     <p
                                       className={`text-xs font-semibold text-espresso leading-tight break-words line-clamp-3 ${
