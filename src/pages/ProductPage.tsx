@@ -524,9 +524,7 @@ const ProductPage = () => {
   const [selectedFabric, setSelectedFabric] = useState('');
   const [enabledGroups, setEnabledGroups] = useState<Record<string, boolean>>({});
   const [activeVariantGroupKey, setActiveVariantGroupKey] = useState('');
-  const [activeInfoTab, setActiveInfoTab] = useState<'description' | 'features' | 'dimensions' | 'delivery' | 'faqs' | null>(
-    null
-  );
+  const [activeInfoTab, setActiveInfoTab] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isZoomed, setIsZoomed] = useState(false);
   const [includeDimensions, setIncludeDimensions] = useState(true);
@@ -1131,9 +1129,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
   const faqEntries = useMemo(() => {
     const baseFaqs = Array.isArray(product?.faqs) ? product.faqs : [];
-    const extras = returnsInfoAnswer ? [{ question: 'Returns & Guarantee', answer: returnsInfoAnswer }] : [];
 
-    return [...baseFaqs, ...extras]
+    return [...baseFaqs]
       .filter((faq) => faq && typeof faq.question === 'string' && typeof faq.answer === 'string')
       .map((faq) => ({
         question: faq.question.trim(),
@@ -1811,15 +1808,24 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
               { key: 'features', label: 'Features', show: featureList.length > 0 },
               { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 },
-              { key: 'delivery', label: 'Delivery', show: Boolean(product?.delivery_info) },
+              { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery', show: Boolean(product?.delivery_info) },
+              { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
               { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
+              ...(Array.isArray(product?.custom_info_sections)
+                ? product.custom_info_sections
+                    .map((section, idx) => ({
+                      key: `info-${idx}`,
+                      label: (section?.title || '').trim() || `Info ${idx + 1}`,
+                      show: Boolean((section?.title || section?.content || '').trim()),
+                    }))
+                : []),
             ]
               .filter((t) => t.show)
               .map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
-                  onClick={() => setActiveInfoTab(tab.key as typeof activeInfoTab)}
+                  onClick={() => setActiveInfoTab(tab.key)}
                   className={`w-full rounded-md border px-4 py-2 text-sm font-semibold transition text-center ${
                     activeInfoTab === tab.key
                       ? 'border-primary bg-primary text-primary-foreground shadow-sm'
@@ -1895,6 +1901,25 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             {activeInfoTab === 'delivery' && product.delivery_info && (
               <div className="space-y-2 text-muted-foreground">
                 <div className="space-y-1">{renderMultilineParagraphs(product.delivery_info)}</div>
+              </div>
+            )}
+
+            {activeInfoTab === 'returns' && product.returns_guarantee && (
+              <div className="space-y-2 text-muted-foreground">
+                <div className="space-y-1">{renderMultilineParagraphs(product.returns_guarantee)}</div>
+              </div>
+            )}
+
+            {activeInfoTab?.startsWith('info-') && Array.isArray(product?.custom_info_sections) && (
+              <div className="space-y-2 text-muted-foreground">
+                {(() => {
+                  const idx = Number(activeInfoTab.replace('info-', ''));
+                  const section = product.custom_info_sections?.[idx];
+                  if (!section) return <p className="text-sm text-muted-foreground">No details available.</p>;
+                  return renderMultilineParagraphs(section.content) || (
+                    <p className="text-sm text-muted-foreground">No details available.</p>
+                  );
+                })()}
               </div>
             )}
 

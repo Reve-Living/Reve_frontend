@@ -114,6 +114,7 @@ export interface FilterType {
 export interface ProductFilterValue {
   filter_type: string;
   option: string;
+  filter_option_id?: number;
 }
 
 export interface ProductFaq {
@@ -146,6 +147,9 @@ export interface Product {
   faqs?: ProductFaq[];
   delivery_info?: string;
   returns_guarantee?: string;
+  delivery_title?: string;
+  returns_title?: string;
+  custom_info_sections?: { title?: string; content?: string }[];
   delivery_charges?: number;
   in_stock: boolean;
   is_bestseller: boolean;
