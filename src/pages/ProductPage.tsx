@@ -582,6 +582,7 @@ const ProductPage = () => {
         const fetched = normalizedProducts[0] || null;
 
         setProduct(fetched);
+        setActiveInfoTab(null);
         setSelectedMattressId(null);
         if (fetched?.id) {
           fetchReviews(fetched.id);
@@ -1126,31 +1127,20 @@ const adjustedDimensionTableRows = useMemo(() => {
 
   }, [selectedSize, dimensionColumnKey]);
 
-  const returnsInfoAnswer =
+const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
-    (product?.returns_guarantee || '').trim() ||
+  const faqEntries = useMemo(() => {
+    const baseFaqs = Array.isArray(product?.faqs) ? product.faqs : [];
+    const extras = returnsInfoAnswer ? [{ question: 'Returns & Guarantee', answer: returnsInfoAnswer }] : [];
 
-    '10-year structural guarantee, 30-day comfort exchange on mattresses, and free returns within 14 days.';
-
-  const faqEntries = useMemo(
-
-    () => {
-
-      const baseFaqs = Array.isArray(product?.faqs) ? product.faqs : [];
-
-      return [
-
-        ...baseFaqs,
-
-        { question: 'Returns & Guarantee', answer: returnsInfoAnswer },
-
-      ];
-
-    },
-
-    [product?.faqs, returnsInfoAnswer]
-
-  );
+    return [...baseFaqs, ...extras]
+      .filter((faq) => faq && typeof faq.question === 'string' && typeof faq.answer === 'string')
+      .map((faq) => ({
+        question: faq.question.trim(),
+        answer: faq.answer.trim(),
+      }))
+      .filter((faq) => faq.question && faq.answer);
+  }, [product?.faqs, returnsInfoAnswer]);
 
 
 
@@ -1821,7 +1811,7 @@ const adjustedDimensionTableRows = useMemo(() => {
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
               { key: 'features', label: 'Features', show: featureList.length > 0 },
               { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 },
-              { key: 'delivery', label: 'Delivery', show: true },
+              { key: 'delivery', label: 'Delivery', show: Boolean(product?.delivery_info) },
               { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
             ]
               .filter((t) => t.show)
@@ -1902,17 +1892,9 @@ const adjustedDimensionTableRows = useMemo(() => {
               </div>
             )}
 
-            {activeInfoTab === 'delivery' && (
+            {activeInfoTab === 'delivery' && product.delivery_info && (
               <div className="space-y-2 text-muted-foreground">
-                {product.delivery_info ? (
-                  <div className="space-y-1">{renderMultilineParagraphs(product.delivery_info)}</div>
-                ) : (
-                  <>
-                    <p>- Free delivery on orders over 500 GBP</p>
-                    <p>- Standard delivery: 3-5 working days</p>
-                    <p>- Premium delivery with room of choice: available</p>
-                  </>
-                )}
+                <div className="space-y-1">{renderMultilineParagraphs(product.delivery_info)}</div>
               </div>
             )}
 
