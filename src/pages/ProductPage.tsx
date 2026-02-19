@@ -148,12 +148,12 @@ const DEFAULT_DIMENSION_ROWS: ProductDimensionRow[] = [
   {
     measurement: 'Length',
     values: {
-      '2ft6 Small Single': '193 cm (76.0")',
-      '3ft Single': '193 cm (76.0")',
-      '4ft Small Double': '193 cm (76.0")',
-      '4ft6 Double': '193 cm (76.0")',
-      '5ft King': '203 cm (79.9")',
-      '6ft Super King': '203 cm (79.9")',
+      '2ft6 Small Single': '190 cm (74.8")',
+      '3ft Single': '190 cm (74.8")',
+      '4ft Small Double': '190 cm (74.8")',
+      '4ft6 Double': '190 cm (74.8")',
+      '5ft King': '200 cm (78.7")',
+      '6ft Super King': '200 cm (78.7")',
     },
   },
   {
@@ -1702,6 +1702,17 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               </div>
             )}
 
+            {featureList.length > 0 && (
+              <div className="rounded-xl border border-border bg-white p-4 space-y-2">
+                <p className="text-base font-semibold">Key Features</p>
+                <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">
+                  {featureList.map((feature, i) => (
+                    <li key={i}>{feature}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             {mattresses.length > 0 && (
               <div className="rounded-xl border border-border bg-white p-4 space-y-3">
                 <div className="flex items-center justify-between">
@@ -1810,7 +1821,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           <div className="flex flex-nowrap gap-3 overflow-x-auto px-1" role="tablist">
             {[
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
-              { key: 'features', label: 'Features', show: featureList.length > 0 },
               { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 },
               { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery', show: Boolean(product?.delivery_info) },
               { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
@@ -1844,16 +1854,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           <div className="rounded-xl border border-border bg-card p-4">
             {activeInfoTab === 'description' && fullDescription && (
               <p className="text-muted-foreground leading-relaxed">{fullDescription}</p>
-            )}
-
-            {activeInfoTab === 'features' && (
-              <ul className="list-disc space-y-2 pl-4">
-                {featureList.map((feature, i) => (
-                  <li key={i} className="text-muted-foreground">
-                    {feature}
-                  </li>
-                ))}
-              </ul>
             )}
 
             {activeInfoTab === 'dimensions' && (
@@ -2227,7 +2227,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 ) : (
                   <p className="text-sm text-muted-foreground">Select a size to see detailed measurements.</p>
                 )}
-                <p className="text-xs text-muted-foreground">All dimensions are approximate and may vary.</p>
+                <p className="text-xs text-muted-foreground">All dimensions are approximate and may vary by ±5 cm (approximately ±2 inches) due to manufacturing tolerances.</p>
               </div>
             </div>
           </div>
