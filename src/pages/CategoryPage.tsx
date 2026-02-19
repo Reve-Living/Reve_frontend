@@ -81,8 +81,31 @@ const CategoryPage = () => {
         return;
       }
       try {
-        const categoryRes = await apiGet<Category[]>(`/categories/?slug=${slug}`);
-        const categoryItem = categoryRes[0] || null;
+        // Attempt primary slug, then common aliases (e.g., mattress ↔ mattresses), then name match fallback.
+        const tryFetchBySlug = async (slugCandidate: string) =>
+          apiGet<Category[]>(`/categories/?slug=${slugCandidate}`).catch(() => []);
+
+        const aliasSlug =
+          slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
+
+        let categoryRes = await tryFetchBySlug(slug);
+        if ((!categoryRes || categoryRes.length === 0) && aliasSlug) {
+          categoryRes = await tryFetchBySlug(aliasSlug);
+        }
+
+        let categoryItem = categoryRes?.[0] || null;
+
+        // Final fallback: search all categories by name match when slug lookup fails.
+        if (!categoryItem) {
+          const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
+          categoryItem =
+            allCategories.find(
+              (c) => c.name?.trim().toLowerCase() === slug.replace(/-/g, ' ').toLowerCase()
+            ) || null;
+        }
+
+        const resolvedSlug = categoryItem?.slug || slug;
+
         setCategory(categoryItem);
         if (categoryItem) {
           const subcategoryRes = await apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`);
@@ -92,7 +115,7 @@ const CategoryPage = () => {
         }
         const productsRes = subSlug
           ? await apiGet<Product[]>(`/products/?subcategory=${subSlug}`)
-          : await apiGet<Product[]>(`/products/?category=${slug}`);
+          : await apiGet<Product[]>(`/products/?category=${resolvedSlug}`);
         const normalizedProducts = Array.isArray(productsRes)
           ? productsRes
           : Array.isArray((productsRes as unknown as { results?: Product[] })?.results)
@@ -103,7 +126,7 @@ const CategoryPage = () => {
         // Fetch filter definitions for this category/subcategory
         try {
           const filtersRes = await apiGet<{ filters: FilterType[] }>(
-            `/categories/${slug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
+            `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
           );
           setAvailableFilters(Array.isArray(filtersRes?.filters) ? filtersRes.filters : []);
         } catch {
@@ -570,7 +593,7 @@ const FilterContent = ({
                           />
                         )}
                         {opt.name}
-                        {typeof opt.product_count === 'number' && (
+                        {typeof opt.product_count === 'number' && opt.product_count > 0 && (
                           <span className="text-xs text-muted-foreground">({opt.product_count})</span>
                         )}
                       </span>

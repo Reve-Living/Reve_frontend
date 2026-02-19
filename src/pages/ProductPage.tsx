@@ -2138,14 +2138,12 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 </button>
               ))}
 
-              {mattresses.length > 4 && (
-                <Link
-                  to="/category/mattresses"
-                  className="flex items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
-                >
-                  View more mattresses
-                </Link>
-              )}
+              <Link
+                to="/category/mattresses"
+                className="flex items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
+              >
+                View all mattresses
+              </Link>
             </div>
 
             <div className="border-t border-border px-5 py-4 bg-white">

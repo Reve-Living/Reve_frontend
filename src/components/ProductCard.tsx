@@ -74,7 +74,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           </div>
 
           {/* Name */}
-          <h3 className="font-serif text-lg font-semibold text-foreground transition-colors group-hover:text-primary line-clamp-2 min-h-[48px]">
+          <h3 className="font-serif text-lg font-semibold text-foreground transition-colors group-hover:text-primary line-clamp-2 min-h-[48px] lining-nums">
             {product.name}
           </h3>
 
