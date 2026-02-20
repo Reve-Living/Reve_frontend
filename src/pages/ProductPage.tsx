@@ -553,6 +553,7 @@ const ProductPage = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const showDimensionsTable = (product as Product | undefined)?.show_dimensions_table !== false;
 
   const fetchReviews = async (productId: number) => {
     setIsLoadingReviews(true);
@@ -1088,6 +1089,7 @@ const ProductPage = () => {
   };
 
   const rawDimensionTableRows = useMemo(() => {
+    if (!showDimensionsTable) return [];
     const explicitDimensions = (product?.dimensions || []).filter(
       (row) => row?.measurement && row?.values && Object.keys(row.values).length > 0
     );
@@ -1095,7 +1097,7 @@ const ProductPage = () => {
     return (product?.computed_dimensions || []).filter(
       (row) => row?.measurement && row?.values && Object.keys(row.values).length > 0
     );
-  }, [product?.computed_dimensions, product?.dimensions]);
+  }, [product?.computed_dimensions, product?.dimensions, showDimensionsTable]);
   const dimensionParagraph = (product as Product | undefined)?.dimension_paragraph?.trim() || '';
 
 const adjustedDimensionTableRows = useMemo(() => {
@@ -1938,7 +1940,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           <div className="flex flex-nowrap gap-3 overflow-x-auto px-1" role="tablist">
             {[
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
-              { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 },
+              { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 || !!dimensionParagraph },
               { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery', show: Boolean(product?.delivery_info) },
               { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
               { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
