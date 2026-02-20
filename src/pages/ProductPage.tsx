@@ -679,7 +679,7 @@ const ProductPage = () => {
           const firstId = freeMattress?.id ?? fetched.mattresses[0].id ?? null;
           setSelectedMattressId(firstId);
           const firstMattress = fetched.mattresses.find((m) => m.id === firstId);
-          setSelectedMattressPosition(firstMattress?.enable_bunk_positions ? 'top' : null);
+          setSelectedMattressPosition(firstMattress?.enable_bunk_positions ? 'both' : null);
         } else {
           setSelectedMattressId(null);
           setSelectedMattressPosition(null);
@@ -1022,14 +1022,22 @@ const ProductPage = () => {
 
   const mattresses: ProductMattress[] = Array.isArray(product?.mattresses) ? (product?.mattresses as ProductMattress[]) : [];
   const selectedMattress = mattresses.find((m) => m.id === selectedMattressId) || null;
-  const mattressPrice = (() => {
-    if (!selectedMattress) return 0;
-    const base = selectedMattress.price !== undefined && selectedMattress.price !== null ? Number(selectedMattress.price) : 0;
-    if (!selectedMattress.enable_bunk_positions) return base;
-    if (selectedMattressPosition === 'both') return base * 2;
-    if (selectedMattressPosition === 'top' || selectedMattressPosition === 'bottom') return base;
-    return 0;
-  })();
+  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null) => {
+    if (!m) return 0;
+    const base = m.price !== undefined && m.price !== null ? Number(m.price) : 0;
+    const top = m.price_top !== undefined && m.price_top !== null ? Number(m.price_top) : base;
+    const bottom = m.price_bottom !== undefined && m.price_bottom !== null ? Number(m.price_bottom) : base;
+    const both =
+      m.price_both !== undefined && m.price_both !== null
+        ? Number(m.price_both)
+        : top + bottom;
+    if (!m.enable_bunk_positions || !pos) return base;
+    if (pos === 'top') return top;
+    if (pos === 'bottom') return bottom;
+    return both;
+  };
+
+  const mattressPrice = priceForPosition(selectedMattress, selectedMattressPosition);
 
   const wingbackSelected = styleVariantGroups.some((group) => {
     const selected = getSelectedOptionForGroup(group);
@@ -2319,7 +2327,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   type="button"
                   onClick={() => {
                     setSelectedMattressId(mattress.id);
-                    setSelectedMattressPosition(mattress.enable_bunk_positions ? 'top' : null);
+                    setSelectedMattressPosition(mattress.enable_bunk_positions ? 'both' : null);
                   }}
                   className={`flex w-full min-h-[116px] items-center gap-4 rounded-xl border p-4 text-left transition ${
                     selectedMattressId === mattress.id
@@ -2387,8 +2395,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                               checked={selectedMattressPosition === pos}
                               onChange={() => setSelectedMattressPosition(pos)}
                             />
-                            <span className="capitalize">
+                            <span className="capitalize flex flex-col leading-tight">
                               {pos === 'top' ? 'Top' : pos === 'bottom' ? 'Bottom' : 'Both'}
+                              <span className="text-[11px] text-muted-foreground">
+                                {formatPrice(priceForPosition(mattress, pos))}
+                              </span>
                             </span>
                           </label>
                         ))}

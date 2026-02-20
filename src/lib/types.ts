@@ -86,6 +86,9 @@ export interface ProductMattress {
   image_url?: string;
   price?: number | string | null;
   enable_bunk_positions?: boolean;
+  price_top?: number | string | null;
+  price_bottom?: number | string | null;
+  price_both?: number | string | null;
   source_product?: number | null;
 }
 
