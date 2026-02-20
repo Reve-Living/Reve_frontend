@@ -640,7 +640,7 @@ const ProductPage = () => {
           setSelectedFabric(firstFabricWithColors.name);
           setSelectedColor(firstWithImage?.name || '');
         } else if (fetched?.colors?.length) {
-          setSelectedColor(fetched.colors[0].name);
+          setSelectedColor('');
           setSelectedFabric('');
         } else {
           setSelectedFabric('');
@@ -737,17 +737,11 @@ const ProductPage = () => {
   const displayColors = (availableColors || []).filter((c) => c.image_url);
 
   useEffect(() => {
-
-    if (displayColors.length > 0) {
-      if (!displayColors.some((c) => c.name === selectedColor)) {
-        setSelectedColor(displayColors[0].name);
-      }
-    } else if (availableColors.length > 0) {
-      if (!availableColors.some((c) => c.name === selectedColor)) {
-        setSelectedColor(availableColors[0].name);
-      }
+    // If current selection no longer exists, clear it instead of auto-selecting first color
+    const names = new Set(displayColors.map((c) => c.name).concat(availableColors.map((c) => c.name)));
+    if (selectedColor && !names.has(selectedColor)) {
+      setSelectedColor('');
     }
-
   }, [fabricColors, availableColors, displayColors, selectedColor]);
 
   const openGallery = () => {
@@ -988,7 +982,7 @@ const ProductPage = () => {
 
     if (group.kind === 'color') {
 
-      return group.options.find((option) => option.label === selectedColor) || group.options[0];
+      return group.options.find((option) => option.label === selectedColor);
 
     }
 
@@ -1617,8 +1611,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
               </div>
 
-              <p className="mt-2 text-sm text-muted-foreground">Price updates automatically when you select a size.</p>
-
+             
             </div>
 
             {variantGroups.length > 0 && (
@@ -1691,7 +1684,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                   return;
                                 }
                                 if (group.kind === 'color') {
-                                  setSelectedColor(option.label);
+                                  setSelectedColor((prev) => (prev === option.label ? '' : option.label));
                                   return;
                                 }
                                 if (group.kind === 'size') {
