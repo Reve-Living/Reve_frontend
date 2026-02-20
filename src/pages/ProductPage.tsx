@@ -702,7 +702,22 @@ const ProductPage = () => {
 
 
   const productImages = product?.images || [];
-  const totalImages = productImages.length;
+  const displayImages = useMemo(() => {
+    if (!selectedColor) return productImages;
+    const matched = productImages.filter((img) =>
+      (img as ProductImage).color_name
+        ? (img as ProductImage).color_name!.toLowerCase() === selectedColor.toLowerCase()
+        : false
+    );
+    return matched.length > 0 ? matched : productImages;
+  }, [productImages, selectedColor]);
+  const totalImages = displayImages.length;
+
+  useEffect(() => {
+    if (selectedImage >= totalImages) {
+      setSelectedImage(totalImages > 0 ? 0 : 0);
+    }
+  }, [totalImages, selectedImage]);
 
   const productSizes = product?.sizes || [];
   const sizeIconsEnabled = product?.show_size_icons !== false;
@@ -1081,6 +1096,7 @@ const ProductPage = () => {
       (row) => row?.measurement && row?.values && Object.keys(row.values).length > 0
     );
   }, [product?.computed_dimensions, product?.dimensions]);
+  const dimensionParagraph = (product as Product | undefined)?.dimension_paragraph?.trim() || '';
 
 const adjustedDimensionTableRows = useMemo(() => {
     const filteredRows = rawDimensionTableRows.filter(
@@ -1398,7 +1414,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   key={selectedImage}
 
-                  src={productImages[selectedImage]?.url}
+                  src={displayImages[selectedImage]?.url}
 
                   alt={product.name}
 
@@ -1433,7 +1449,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     <span>Click to expand</span>
                   </button>
                   <div className="pointer-events-none flex items-center gap-1">
-                    {productImages.map((_, idx) => (
+                    {displayImages.map((_, idx) => (
                       <span
                         key={`dot-${idx}`}
                         className={`h-2 w-2 rounded-full bg-white transition-all ${
@@ -1470,11 +1486,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 
-            {productImages.length > 1 && (
+            {displayImages.length > 1 && (
 
               <div className="grid grid-cols-5 gap-3">
 
-                {productImages.map((img, index) => (
+                {displayImages.map((img, index) => (
 
                   <button
 
@@ -1963,6 +1979,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             {activeInfoTab === 'dimensions' && (
               <div className="space-y-3">
                 <div className="overflow-x-auto">
+                  {dimensionParagraph && (
+                    <div className="rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground leading-relaxed mb-2">
+                      {dimensionParagraph}
+                    </div>
+                  )}
                   {dimensionColumns.length > 0 && adjustedDimensionTableRows.length > 0 ? (
                     <table className="min-w-full border border-border text-sm">
                       <thead className="bg-muted/50">
@@ -1996,13 +2017,15 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         ))}
                       </tbody>
                     </table>
-                  ) : (
+                  ) : !dimensionParagraph ? (
                     <p className="text-sm text-muted-foreground">Dimensions not available.</p>
-                  )}
+                  ) : null}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  All dimensions are approximate and may vary by ±5 cm (approximately ±2 inches) due to manufacturing tolerances.
-                </p>
+                {dimensionColumns.length > 0 && adjustedDimensionTableRows.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    All dimensions are approximate and may vary by ±5 cm (approximately ±2 inches) due to manufacturing tolerances.
+                  </p>
+                )}
               </div>
             )}
 
@@ -2187,7 +2210,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <X className="h-5 w-5" />
             </button>
             <img
-              src={productImages[selectedImage]?.url}
+              src={displayImages[selectedImage]?.url}
               alt={`${product.name} large view`}
               className="h-full w-full max-h-[80vh] rounded-lg bg-black/20 object-contain"
             />
@@ -2211,7 +2234,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 </button>
                 <div className="absolute inset-x-0 bottom-4 flex flex-col items-center gap-3 px-3">
                   <div className="flex items-center gap-1 rounded-full bg-black/60 px-3 py-2">
-                    {productImages.map((_, idx) => (
+                    {displayImages.map((_, idx) => (
                       <button
                         key={`lightbox-dot-${idx}`}
                         type="button"
@@ -2233,7 +2256,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <ChevronLeft className="h-4 w-4" />
                     </button>
                     <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
-                      {productImages.map((img, idx) => (
+                      {displayImages.map((img, idx) => (
                         <button
                           key={`lightbox-thumb-${idx}`}
                           type="button"
