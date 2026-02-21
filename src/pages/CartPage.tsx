@@ -17,6 +17,7 @@ import { useCart } from '@/context/CartContext';
 
 const getVariantsKey = (item: {
   selectedVariants?: Record<string, string>;
+  mattresses?: { id: number; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -26,6 +27,7 @@ const getVariantsKey = (item: {
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
+    mattresses: (item.mattresses || []).map((m) => ({ id: m.id, position: m.position || null })),
     fabric: item.fabric || '',
     dimension: item.dimension || '',
     dimension_details: item.dimension_details || '',
@@ -167,14 +169,27 @@ const CartPage = () => {
                               Fabric: {item.fabric}
                             </p>
                           )}
-                          {item.mattress_name && (
+                          {Array.isArray(item.mattresses) && item.mattresses.length > 0 ? (
+                            <p className="text-sm text-muted-foreground">
+                              Mattresses:{' '}
+                              {item.mattresses
+                                .map((m) => {
+                                  const label = m.name || 'Mattress';
+                                  const pos = m.position ? ` (${m.position})` : '';
+                                  const price =
+                                    typeof m.price === 'number' ? ` (${m.price.toFixed(2)})` : '';
+                                  return `${label}${pos}${price}`;
+                                })
+                                .join(' • ')}
+                            </p>
+                          ) : item.mattress_name ? (
                             <p className="text-sm text-muted-foreground">
                               Mattress: {item.mattress_name}
                               {typeof item.mattress_price === 'number'
                                 ? ` (${item.mattress_price.toFixed(2)})`
                                 : ''}
                             </p>
-                          )}
+                          ) : null}
                           {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
                             <p className="text-sm text-muted-foreground">
                               {Object.entries(item.selectedVariants)

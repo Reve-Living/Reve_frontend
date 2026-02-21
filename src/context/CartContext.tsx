@@ -7,6 +7,12 @@ export interface CartItem {
   size: string;
   color: string;
   selectedVariants?: Record<string, string>;
+  mattresses?: {
+    id: number;
+    name?: string | null;
+    position?: 'top' | 'bottom' | 'both' | null;
+    price?: number | null;
+  }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -37,6 +43,7 @@ const getVariantsKey = (
   item: Pick<
     CartItem,
     | 'selectedVariants'
+    | 'mattresses'
     | 'fabric'
     | 'dimension'
     | 'dimension_details'
@@ -53,6 +60,10 @@ const getVariantsKey = (
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    mattresses: (item.mattresses || []).map((m) => ({
+      id: m.id,
+      position: m.position || null,
+    })),
     mattress_id: item.mattress_id || null,
     mattress_position: item.mattress_position || null,
   });

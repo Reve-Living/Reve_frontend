@@ -18,6 +18,7 @@ type CheckoutStep = 'information' | 'payment' | 'confirmation';
 
 const getVariantsKey = (item: {
   selectedVariants?: Record<string, string>;
+  mattresses?: { id: number; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -27,6 +28,7 @@ const getVariantsKey = (item: {
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
+    mattresses: (item.mattresses || []).map((m) => ({ id: m.id, position: m.position || null })),
     fabric: item.fabric || '',
     dimension: item.dimension || '',
     dimension_details: item.dimension_details || '',
@@ -37,6 +39,7 @@ const getVariantsKey = (item: {
 
 const getVariantSummary = (item: {
   selectedVariants?: Record<string, string>;
+  mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -49,7 +52,15 @@ const getVariantSummary = (item: {
   if (item.fabric) parts.push(`Fabric: ${item.fabric}`);
   if (item.dimension) parts.push(`Dimension: ${item.dimension}`);
   if (item.dimension_details) parts.push(item.dimension_details);
-  if (item.mattress_name) parts.push(`Mattress: ${item.mattress_name}`);
+  if (Array.isArray(item.mattresses) && item.mattresses.length > 0) {
+    parts.push(
+      `Mattresses: ${item.mattresses
+        .map((m) => `${m.name || 'Mattress'}${m.position ? ` (${m.position})` : ''}`)
+        .join(', ')}`
+    );
+  } else if (item.mattress_name) {
+    parts.push(`Mattress: ${item.mattress_name}`);
+  }
   return parts.join(' | ');
 };
 
