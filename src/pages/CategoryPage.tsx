@@ -121,7 +121,13 @@ const CategoryPage = () => {
           : Array.isArray((productsRes as unknown as { results?: Product[] })?.results)
           ? (productsRes as unknown as { results: Product[] }).results
           : [];
-        setAllProducts(normalizedProducts);
+        const orderedProducts = [...normalizedProducts].sort((a, b) => {
+          const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : 0;
+          const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : 0;
+          if (aOrder !== bOrder) return aOrder - bOrder;
+          return (b.id || 0) - (a.id || 0);
+        });
+        setAllProducts(orderedProducts);
 
         // Fetch filter definitions for this category/subcategory
         try {

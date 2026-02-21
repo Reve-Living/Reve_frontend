@@ -45,7 +45,15 @@ const CategoriesPage = () => {
       setIsLoading(true);
       try {
         const productsRes = await apiGet<Product[]>('/products/');
-        setAllProducts(productsRes);
+        const orderedProducts = Array.isArray(productsRes)
+          ? [...productsRes].sort((a, b) => {
+              const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : 0;
+              const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : 0;
+              if (aOrder !== bOrder) return aOrder - bOrder;
+              return (b.id || 0) - (a.id || 0);
+            })
+          : [];
+        setAllProducts(orderedProducts);
         setIsLoading(false);
       } catch {
         setAllProducts([]);
