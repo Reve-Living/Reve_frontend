@@ -592,16 +592,7 @@ const FilterContent = ({
               </div>
               <div className="mt-3 space-y-3">
                 {filter.options
-                  .filter(
-                    (opt) =>
-                      opt.name &&
-                      // Only show options that have products in this category/subcategory
-                      (typeof opt.product_count === 'number'
-                        ? opt.product_count > 0
-                        : opt.slug
-                        ? activeOptionSlugs.has(opt.slug)
-                        : true)
-                  )
+                  .filter((opt) => opt.name)
                   .map((opt) => (
                     <label key={opt.id} className="flex items-center gap-2 text-sm">
                       <Checkbox

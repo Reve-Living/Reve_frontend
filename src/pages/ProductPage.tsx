@@ -742,7 +742,11 @@ const ProductPage = () => {
       ? []
       : product?.colors || [];
 
-  const displayColors = (availableColors || []).filter((c) => c.image_url);
+  const displayColors = useMemo(() => {
+    const list = availableColors || [];
+    const withImages = list.filter((c) => c.image_url);
+    return withImages.length > 0 ? withImages : list;
+  }, [availableColors]);
 
   const fabricColorOptions = useMemo(() => {
     return (product?.fabrics || []).flatMap((fabric) =>
