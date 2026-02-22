@@ -1767,6 +1767,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   const isStyleGroup = group.kind === 'style';
                   const isHeadboardGroup = isStyleGroup && group.name.toLowerCase().includes('headboard');
                   const isStorageGroup = isStyleGroup && /storage/i.test(group.name);
+                  const isFabricGroup = group.kind === 'fabric';
                   const optionCount = group.options.length || 0;
                   const headboardGridStyle = isHeadboardGroup
                     ? {
@@ -1774,11 +1775,14 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       }
                     : undefined;
                   const groupEnabled = enabledGroups[group.name] !== false;
+                  const showGroupIcon = group.kind !== 'fabric' && group.kind !== 'color';
                   return (
                     <div key={group.key} className="space-y-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
+                          {showGroupIcon && (
+                            <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
+                          )}
                           <div>
                             <p className="text-base font-semibold capitalize">{group.name}</p>
                             <p className="text-xs text-muted-foreground">
@@ -1786,8 +1790,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                 ? `Selected: ${selected.label.replace(/(\d+)(Drawers)/i, '$1 $2')}${
                                     selected.description ? ` (${selected.description})` : ''
                                   }`
-                                : group.kind === 'fabric'
-                                ? 'Selected: No color binding'
                                 : isStorageGroup
                                 ? 'Selected: No Storage'
                                 : isHeadboardGroup
@@ -1798,41 +1800,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         </div>
                       </div>
 
-                      {group.kind === 'fabric' ? (
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-foreground">Optional: bind to color</label>
-                          {fabricColorOptions.length === 0 ? (
-                            <p className="text-xs text-muted-foreground">No fabric colors available.</p>
-                          ) : (
-                            <select
-                              className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                              value={
-                                selectedFabric && selectedColor ? `${selectedFabric}__${selectedColor}` : '__none__'
-                              }
-                              onChange={(event) => {
-                                const value = event.target.value;
-                                if (value === '__none__') {
-                                  setSelectedFabric('');
-                                  setSelectedColor('');
-                                  return;
-                                }
-                                const [fabricName, colorName] = value.split('__');
-                                setSelectedFabric(fabricName || '');
-                                setSelectedColor(colorName || '');
-                              }}
-                            >
-                              <option value="__none__">No color binding</option>
-                              {fabricColorOptions.map((opt) => (
-                                <option key={opt.value} value={opt.value}>
-                                  {opt.label}
-                                </option>
-                              ))}
-                            </select>
-                          )}
-                          <p className="text-xs text-muted-foreground">Choose a fabric colour; leave blank for no binding.</p>
-                        </div>
-                      ) : (
-                        <div
+                                              <div
                           className={
                             isStorageGroup
                               ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
@@ -1845,26 +1813,34 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           {group.options.map((option) => {
                             const isSelected = selected?.key === option.key;
                             const disabled = false;
-                            const shouldShowIcon = !(group.kind === 'size' && !sizeIconsEnabled);
+                          const shouldShowIcon =
+                            !(group.kind === 'size' && !sizeIconsEnabled) &&
+                            group.kind !== 'fabric';
                             return (
                               <button
-                                key={option.key}
-                                type="button"
-                                disabled={disabled}
-                                onClick={() => {
-                                  if (group.kind === 'color') {
-                                    setSelectedColor((prev) => (prev === option.label ? '' : option.label));
-                                    return;
-                                  }
-                                  if (group.kind === 'size') {
-                                    setSelectedSize(option.label);
-                                    return;
-                                  }
-                                   // Style group selection (allow toggle-off for storage)
-                                   const styleName = group.styleName || group.name;
-                                   const isStorageGroup = /storage/i.test(styleName);
-                                   const isStyleGroup = group.kind === 'style';
-                                   const isAlreadySelected = selected?.key === option.key;
+                              key={option.key}
+                              type="button"
+                              disabled={disabled}
+                              onClick={() => {
+                                if (group.kind === 'color') {
+                                  setSelectedColor((prev) => (prev === option.label ? '' : option.label));
+                                  return;
+                                }
+                                if (group.kind === 'size') {
+                                  setSelectedSize(option.label);
+                                  return;
+                                }
+                                if (group.kind === 'fabric') {
+                                  setSelectedFabric(option.label);
+                                  // clear color if it no longer matches selected fabric colors
+                                  setSelectedColor('');
+                                  return;
+                                }
+                                 // Style group selection (allow toggle-off for storage)
+                                 const styleName = group.styleName || group.name;
+                                 const isStorageGroup = /storage/i.test(styleName);
+                                 const isStyleGroup = group.kind === 'style';
+                                 const isAlreadySelected = selected?.key === option.key;
 
                                    if (isStyleGroup && isAlreadySelected) {
                                      // Allow deselect for any style group (storage, headboard, etc.)
@@ -1889,6 +1865,14 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                           : isSelected
                                           ? 'border-black ring-2 ring-black/40'
                                           : 'border-black/60 hover:border-black'
+                                      }`
+                                    : isFabricGroup
+                                    ? `relative inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
+                                        disabled
+                                          ? 'cursor-not-allowed opacity-40'
+                                          : isSelected
+                                          ? 'border-primary bg-primary/10 text-primary ring-1 ring-primary/30'
+                                          : 'border-border bg-white text-espresso hover:border-primary/60'
                                       }`
                                     : `relative flex ${
                                         isHeadboardGroup
@@ -1919,54 +1903,59 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     <span className="sr-only">{formatOptionLabel(option.label)}</span>
                                   </>
                                 ) : (
-                                  <div
-                                    className={`flex ${
-                                      isHeadboardGroup
-                                        ? 'flex-row items-center gap-3 text-left'
-                                        : 'flex-col items-center gap-1.5 text-center'
-                                    } w-full`}
-                                  >
-                                    {shouldShowIcon && (
-                                      <IconVisual
-                                        icon={option.icon_url || group.icon_url}
-                                        alt={option.label}
-                                        className={isHeadboardGroup ? 'h-14 w-14 object-contain' : 'h-14 w-14 object-contain'}
-                                      />
-                                    )}
+                                  isFabricGroup ? (
+                                    <span className="text-sm font-semibold text-espresso">
+                                      {formatOptionLabel(option.label)}
+                                    </span>
+                                  ) : (
                                     <div
-                                      className={
-                                        isHeadboardGroup ? 'flex flex-col gap-1' : 'flex flex-col items-center gap-1 text-center'
-                                      }
+                                      className={`flex ${
+                                        isHeadboardGroup
+                                          ? 'flex-row items-center gap-3 text-left'
+                                          : 'flex-col items-center gap-1.5 text-center'
+                                      } w-full`}
                                     >
-                                      <p
-                                        className={`text-xs font-semibold text-espresso leading-tight break-words line-clamp-3 ${
-                                          isHeadboardGroup ? 'text-left' : 'text-center'
-                                        }`}
+                                      {shouldShowIcon && (
+                                        <IconVisual
+                                          icon={option.icon_url || group.icon_url}
+                                          alt={option.label}
+                                          className={isHeadboardGroup ? 'h-14 w-14 object-contain' : 'h-14 w-14 object-contain'}
+                                        />
+                                      )}
+                                      <div
+                                        className={
+                                          isHeadboardGroup ? 'flex flex-col gap-1' : 'flex flex-col items-center gap-1 text-center'
+                                        }
                                       >
-                                        {formatOptionLabel(option.label)}
-                                        {option.description && ` (${option.description})`}
-                                      </p>
-                                      <p
-                                        className={`text-[11px] text-muted-foreground leading-tight ${
-                                          isHeadboardGroup ? 'text-left' : 'text-center'
-                                        }`}
-                                      >
-                                        {Number(option.price_delta || 0) > 0
-                                          ? `+${formatPrice(Number(option.price_delta || 0))}`
-                                          : 'Included'}
-                                      </p>
+                                        <p
+                                          className={`text-xs font-semibold text-espresso leading-tight break-words line-clamp-3 ${
+                                            isHeadboardGroup ? 'text-left' : 'text-center'
+                                          }`}
+                                        >
+                                          {formatOptionLabel(option.label)}
+                                          {option.description && ` (${option.description})`}
+                                        </p>
+                                        <p
+                                          className={`text-[11px] text-muted-foreground leading-tight ${
+                                            isHeadboardGroup ? 'text-left' : 'text-center'
+                                          }`}
+                                        >
+                                          {Number(option.price_delta || 0) > 0
+                                            ? `+${formatPrice(Number(option.price_delta || 0))}`
+                                            : 'Included'}
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
+                                  )
                                 )}
 
-                                {group.kind !== 'color' && isSelected && (
+                                {group.kind !== 'color' && !isFabricGroup && isSelected && (
                                   <CheckCircle2 className="absolute right-2 top-2 h-4 w-4 text-primary" />
                                 )}
                               </button>
                             );
                           })}
                         </div>
-                      )}
                       {dimensionColumns.length > 0 && group.kind === 'size' && (
                         <div className="pt-3">
                           <button
