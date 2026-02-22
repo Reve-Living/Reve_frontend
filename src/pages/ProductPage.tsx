@@ -1135,12 +1135,11 @@ const ProductPage = () => {
   const dimensionImages = (product as Product | undefined)?.dimension_images || [];
   const matchedDimensionImages = useMemo(() => {
     if (!Array.isArray(dimensionImages)) return [];
-    if (selectedDimension) {
-      return dimensionImages.filter(
-        (img) => (img.size || '').toLowerCase().trim() === selectedDimension.toLowerCase().trim()
-      );
-    }
-    return dimensionImages;
+    if (!selectedDimension) return dimensionImages;
+    const filtered = dimensionImages.filter(
+      (img) => (img.size || '').toLowerCase().trim() === selectedDimension.toLowerCase().trim()
+    );
+    return filtered.length > 0 ? filtered : dimensionImages;
   }, [dimensionImages, selectedDimension]);
 
   const mattressMap = useMemo(() => {
