@@ -1156,6 +1156,28 @@ const ProductPage = () => {
     [product?.mattresses]
   );
 
+  const getBunkOccupancy = useCallback(
+    (list: SelectedMattressPick[]) => {
+      let topTaken = false;
+      let bottomTaken = false;
+      list.forEach((sel) => {
+        const mattress = sel.id ? mattressMap[sel.id] : undefined;
+        if (!mattress?.enable_bunk_positions) return;
+        const pos = sel.position || 'both';
+        if (pos === 'both') {
+          topTaken = true;
+          bottomTaken = true;
+        } else if (pos === 'top') {
+          topTaken = true;
+        } else if (pos === 'bottom') {
+          bottomTaken = true;
+        }
+      });
+      return { topTaken, bottomTaken };
+    },
+    [mattressMap]
+  );
+
   const normalizeBunkMattressSelections = useCallback(
     (list: SelectedMattressPick[]): SelectedMattressPick[] => {
       if (!bunkMattressRulesEnabled) return list;
@@ -2494,11 +2516,18 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         if (existing) {
                           next = prev.filter((m) => m.id !== mattress.id);
                         } else {
+                          let defaultPosition: 'top' | 'bottom' | 'both' | null = null;
+                          if (mattress.enable_bunk_positions) {
+                            const { topTaken, bottomTaken } = getBunkOccupancy(prev);
+                            if (!topTaken) defaultPosition = 'top';
+                            else if (!bottomTaken) defaultPosition = 'bottom';
+                            else defaultPosition = 'both';
+                          }
                           next = [
                             ...prev,
                             {
                               id: mattress.id,
-                              position: mattress.enable_bunk_positions ? 'both' : null,
+                              position: mattress.enable_bunk_positions ? defaultPosition : null,
                             },
                           ];
                         }
