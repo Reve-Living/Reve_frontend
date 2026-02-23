@@ -82,6 +82,9 @@ const Header = () => {
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background shadow-sm">
+        <div className="gradient-bronze py-0.5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-primary-foreground">
+          Coming Soon
+        </div>
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
             {/* Logo */}
@@ -257,7 +260,7 @@ const Header = () => {
       </header>
 
       {/* Spacer for fixed header + announcement bar */}
-      <div className="h-20" />
+      <div className="h-[100px]" />
     </>
   );
 };
