@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { apiGet } from '@/lib/api';
-import { Product } from '@/lib/types';
+import { Product, HeroSlide as HeroSlideType } from '@/lib/types';
 
 type Slide = {
   id: string | number;
@@ -89,60 +89,89 @@ const HeroSlider = () => {
     const load = async () => {
       setIsLoading(true);
       setLoadError('');
-      try {
-        // Prefer fresh/new products for the hero. Fall back to bestsellers, then any products.
-        const trySources: Array<Promise<Product[]>> = [
-          apiGet<Product[]>('/products/?is_new=1'),
-          apiGet<Product[]>('/products/?bestseller=1'),
-          apiGet<Product[]>('/products/'),
-        ];
+      const loadFromProducts = async () => {
+        try {
+          // Prefer fresh/new products for the hero. Fall back to bestsellers, then any products.
+          const trySources: Array<Promise<Product[]>> = [
+            apiGet<Product[]>('/products/?is_new=1'),
+            apiGet<Product[]>('/products/?bestseller=1'),
+            apiGet<Product[]>('/products/'),
+          ];
 
-        let products: Product[] = [];
-        for (const source of trySources) {
-          try {
-            const result = await source;
-            if (Array.isArray(result) && result.length > 0) {
-              products = result;
-              break;
+          let products: Product[] = [];
+          for (const source of trySources) {
+            try {
+              const result = await source;
+              if (Array.isArray(result) && result.length > 0) {
+                products = result;
+                break;
+              }
+            } catch {
+              // keep trying the next source
             }
-          } catch {
-            // keep trying the next source
           }
-        }
 
-        const normalizedSlides: Slide[] = products.slice(0, 5).map((product, index) => {
-          const image =
-            resolveImageUrl(product.images?.[0]?.url) ||
-            resolveImageUrl(product.colors?.[0]?.image) ||
-            '';
+          const normalizedSlides: Slide[] = products.slice(0, 5).map((product, index) => {
+            const image =
+              resolveImageUrl(product.images?.[0]?.url) ||
+              resolveImageUrl(product.colors?.[0]?.image) ||
+              '';
 
-          const subtitle =
-            (product.short_description || product.description || '')
-              .split('.')
-              .find((chunk) => chunk.trim().length > 3)?.trim() ||
-            'Discover our latest arrivals curated for you.';
+            const subtitle =
+              (product.short_description || product.description || '')
+                .split('.')
+                .find((chunk) => chunk.trim().length > 3)?.trim() ||
+              'Discover our latest arrivals curated for you.';
 
-          return {
-            id: product.id || `product-${index}`,
-            image,
-            title: product.name,
-            subtitle,
-            cta: product.category_name ? `Shop ${product.category_name}` : 'Shop Now',
-            link: `/product/${product.slug}`,
-          };
-        });
+            return {
+              id: product.id || `product-${index}`,
+              image,
+              title: product.name,
+              subtitle,
+              cta: product.category_name ? `Shop ${product.category_name}` : 'Shop Now',
+              link: `/product/${product.slug}`,
+            };
+          });
 
-        const hydratedSlides = normalizedSlides.filter((slide) => slide.image);
-        if (hydratedSlides.length === 0) {
+          const hydratedSlides = normalizedSlides.filter((slide) => slide.image);
+          if (hydratedSlides.length === 0) {
+            setSlides(initialSlides);
+            setLoadError('No hero slides found yet; showing defaults.');
+          } else {
+            setSlides(hydratedSlides);
+          }
+        } catch (err) {
+          console.error('Failed to load hero content from products', err);
+          setLoadError('Unable to load hero content right now; showing defaults.');
           setSlides(initialSlides);
-          setLoadError('No featured products available yet; showing defaults.');
+        }
+      };
+
+      try {
+        const heroSlides = await apiGet<HeroSlideType[]>('/hero-slides/');
+        const normalized = (heroSlides || [])
+          .filter((slide) => slide && slide.image && slide.is_active !== false)
+          .map((slide) => ({
+            id: slide.id ?? slide.title,
+            image: resolveImageUrl(slide.image),
+            title: slide.title,
+            subtitle: slide.subtitle?.trim() || 'Discover our latest arrivals curated for you.',
+            cta: slide.cta_text?.trim() || (slide.category_name ? `Shop ${slide.category_name}` : 'Shop Now'),
+            link:
+              slide.cta_link?.trim() ||
+              (slide.category_slug ? `/category/${slide.category_slug}` : '/categories'),
+          }))
+          .filter((slide) => slide.image);
+
+        if (normalized.length > 0) {
+          setSlides(normalized);
         } else {
-          setSlides(hydratedSlides);
+          await loadFromProducts();
         }
       } catch (err) {
-        console.error('Failed to load hero content', err);
-        setLoadError('Unable to load featured products right now; showing defaults.');
-        setSlides(initialSlides);
+        console.error('Failed to load hero slides', err);
+        setLoadError('Using featured products while hero slides are unavailable.');
+        await loadFromProducts();
       } finally {
         setIsLoading(false);
       }

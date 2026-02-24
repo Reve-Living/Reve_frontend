@@ -27,6 +27,22 @@ export interface Collection {
   products_data?: Product[];
 }
 
+export interface HeroSlide {
+  id: number;
+  title: string;
+  subtitle?: string;
+  category?: number | null;
+  category_name?: string;
+  category_slug?: string;
+  cta_text?: string;
+  cta_link?: string;
+  image: string;
+  is_active?: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface ProductImage {
   id: number;
   url: string;
