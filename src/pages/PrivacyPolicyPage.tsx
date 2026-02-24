@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const PrivacyPolicyPage = () => {
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       <main className="container mx-auto px-4 py-12">
         <motion.div
@@ -168,3 +166,4 @@ const PrivacyPolicyPage = () => {
 };
 
 export default PrivacyPolicyPage;
+

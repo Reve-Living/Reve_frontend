@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
 import { Award, Heart, Leaf, Hammer } from 'lucide-react';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import NewsletterSection from '@/components/NewsletterSection';
@@ -31,8 +30,7 @@ const values = [
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       {/* Hero Section */}
       <section className="relative h-80 overflow-hidden md:h-96">
@@ -212,3 +210,4 @@ const AboutPage = () => {
 };
 
 export default AboutPage;
+

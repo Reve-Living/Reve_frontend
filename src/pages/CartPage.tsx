@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 
 import { Input } from '@/components/ui/input';
 
-import AnnouncementBar from '@/components/AnnouncementBar';
 
 import Header from '@/components/Header';
 
@@ -50,10 +49,7 @@ const CartPage = () => {
   return (
 
     <div className="min-h-screen bg-background">
-
-      <AnnouncementBar />
-
-      <Header />
+<Header />
 
 
 
@@ -471,4 +467,5 @@ const CartPage = () => {
 
 
 export default CartPage;
+
 

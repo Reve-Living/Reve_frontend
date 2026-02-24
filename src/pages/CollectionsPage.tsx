@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Collection } from '@/lib/types';
@@ -48,8 +47,7 @@ const CollectionsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       <section className="relative bg-card py-16 md:py-24">
         <div className="container mx-auto px-4">
@@ -130,3 +128,4 @@ const CollectionsPage = () => {
 };
 
 export default CollectionsPage;
+

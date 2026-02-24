@@ -43,7 +43,6 @@ import {
 
 } from '@/components/ui/accordion';
 
-import AnnouncementBar from '@/components/AnnouncementBar';
 
 import Header from '@/components/Header';
 
@@ -1423,10 +1422,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
     return (
 
       <div className="min-h-screen bg-background">
-
-        <AnnouncementBar />
-
-        <Header />
+<Header />
 
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
 
@@ -1457,10 +1453,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
     return (
 
       <div className="min-h-screen bg-background">
-
-        <AnnouncementBar />
-
-        <Header />
+<Header />
 
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
 
@@ -1556,10 +1549,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
   return (
 
     <div className="min-h-screen bg-background">
-
-      <AnnouncementBar />
-
-      <Header />
+<Header />
 
 
 
@@ -2810,3 +2800,4 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 export default ProductPage;
+

@@ -2,7 +2,6 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, Bell, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useState } from 'react';
@@ -46,8 +45,7 @@ const ComingSoonPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
       
       <main className="pb-20">
         {/* Hero Section */}
@@ -164,3 +162,4 @@ const ComingSoonPage = () => {
 };
 
 export default ComingSoonPage;
+

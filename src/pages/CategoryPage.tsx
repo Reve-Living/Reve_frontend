@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
@@ -308,8 +307,7 @@ const CategoryPage = () => {
   if (!category && !isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementBar />
-        <Header />
+<Header />
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
           <div className="text-center">
             <h1 className="mb-4 font-serif text-3xl font-bold">Category Not Found</h1>
@@ -325,8 +323,7 @@ const CategoryPage = () => {
   if (!category && isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementBar />
-        <Header />
+<Header />
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
           <div className="text-center text-muted-foreground">Loading category...</div>
         </div>
@@ -337,8 +334,7 @@ const CategoryPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       {/* Compact heading instead of full hero */}
       <section className="border-b border-border/50 bg-card/60">
@@ -632,3 +628,4 @@ const FilterContent = ({
 };
 
 export default CategoryPage;
+

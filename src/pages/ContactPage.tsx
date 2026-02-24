@@ -11,7 +11,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { toast } from 'sonner';
@@ -71,8 +70,7 @@ const ContactPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       {/* Hero Section */}
       <section className="relative h-64 overflow-hidden md:h-80">
@@ -274,3 +272,4 @@ const ContactPage = () => {
 };
 
 export default ContactPage;
+

@@ -159,7 +159,11 @@ const HeroSlider = () => {
             cta: slide.cta_text?.trim() || (slide.category_name ? `Shop ${slide.category_name}` : 'Shop Now'),
             link:
               slide.cta_link?.trim() ||
-              (slide.category_slug ? `/category/${slide.category_slug}` : '/categories'),
+              (slide.subcategory_slug && slide.category_slug
+                ? `/category/${slide.category_slug}?sub=${slide.subcategory_slug}`
+                : slide.category_slug
+                ? `/category/${slide.category_slug}`
+                : '/categories'),
           }))
           .filter((slide) => slide.image);
 

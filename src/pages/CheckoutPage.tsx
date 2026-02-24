@@ -7,7 +7,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
@@ -224,8 +223,7 @@ const CheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       <main className="container mx-auto px-4 py-8">
         <nav className="mb-8 flex items-center gap-2 text-sm">
@@ -547,3 +545,4 @@ const CheckoutPage = () => {
 };
 
 export default CheckoutPage;
+

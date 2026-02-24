@@ -1,13 +1,11 @@
 import { motion } from 'framer-motion';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 const ReturnsRefundsPage = () => {
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       <main className="container mx-auto px-4 py-12">
         <motion.div
@@ -126,3 +124,4 @@ const ReturnsRefundsPage = () => {
 };
 
 export default ReturnsRefundsPage;
+

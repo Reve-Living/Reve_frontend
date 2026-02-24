@@ -4,7 +4,6 @@ import { ChevronDown, ChevronUp, X, SlidersHorizontal, Star } from 'lucide-react
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
@@ -467,8 +466,7 @@ const DivanBedsPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       <main className="pb-16">
         {/* Hero Banner */}
@@ -607,3 +605,4 @@ const DivanBedsPage = () => {
 };
 
 export default DivanBedsPage;
+

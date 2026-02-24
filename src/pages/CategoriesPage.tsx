@@ -13,7 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
@@ -197,8 +196,7 @@ const CategoriesPage = () => {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <AnnouncementBar />
-        <Header />
+<Header />
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
           <div className="text-center text-muted-foreground">Loading products...</div>
         </div>
@@ -209,8 +207,7 @@ const CategoriesPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
 
       {/* Hero Banner */}
       <section className="relative bg-card py-16 md:py-24">
@@ -473,3 +470,4 @@ const FilterContent = ({
 };
 
 export default CategoriesPage;
+

@@ -1,4 +1,3 @@
-import AnnouncementBar from '@/components/AnnouncementBar';
 import Header from '@/components/Header';
 import HeroSlider from '@/components/HeroSlider';
 import CategoryGrid from '@/components/CategoryGrid';
@@ -11,8 +10,7 @@ import Footer from '@/components/Footer';
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <AnnouncementBar />
-      <Header />
+<Header />
       <main>
         <HeroSlider />
         <CategoryGrid />
@@ -29,3 +27,4 @@ const Index = () => {
 };
 
 export default Index;
+

@@ -34,6 +34,9 @@ export interface HeroSlide {
   category?: number | null;
   category_name?: string;
   category_slug?: string;
+  subcategory?: number | null;
+  subcategory_name?: string;
+  subcategory_slug?: string;
   cta_text?: string;
   cta_link?: string;
   image: string;
