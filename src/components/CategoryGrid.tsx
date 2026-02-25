@@ -70,7 +70,7 @@ const CategoryGrid = () => {
               Explore Our Range
             </span>
             <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
-              Shop by Category
+              Shop by Collections
             </h2>
             <p className="mt-3 max-w-md text-muted-foreground">
               Discover our handcrafted ranges, designed for comfort and built to last
