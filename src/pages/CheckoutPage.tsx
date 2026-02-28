@@ -192,9 +192,13 @@ const CheckoutPage = () => {
             toast.error('Failed to initialize payment. Please try again.');
             return;
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error('Stripe session creation failed:', error);
-          toast.error('Payment initialization failed. Please try again.');
+          const serverMessage =
+            error?.response?.data?.error ||
+            error?.message ||
+            'Payment initialization failed. Please try again.';
+          toast.error(serverMessage);
           return;
         }
       }
