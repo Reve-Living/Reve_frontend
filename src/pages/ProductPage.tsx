@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -514,6 +514,7 @@ const ProductPage = () => {
 
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const selectForBedSlug = searchParams.get('select-for-bed') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
   
@@ -541,6 +542,7 @@ const ProductPage = () => {
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({});
   type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | 'both' | null };
   const [selectedMattresses, setSelectedMattresses] = useState<SelectedMattressPick[]>([]);
+  const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(false);
   const [selectedFabric, setSelectedFabric] = useState('');
@@ -1092,63 +1094,12 @@ const ProductPage = () => {
     return sum + (Number.isFinite(delta) ? delta : 0);
   }, 0);
 
-  const mattresses: ProductMattress[] = Array.isArray(product?.mattresses) ? (product?.mattresses as ProductMattress[]) : [];
-  const getMattressById = (id: number) => mattresses.find((m) => m.id === id) || null;
-  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null) => {
-    if (!m) return 0;
-    const base = m.price !== undefined && m.price !== null ? Number(m.price) : 0;
-    const top = m.price_top !== undefined && m.price_top !== null ? Number(m.price_top) : base;
-    const bottom = m.price_bottom !== undefined && m.price_bottom !== null ? Number(m.price_bottom) : base;
-    const both =
-      m.price_both !== undefined && m.price_both !== null
-        ? Number(m.price_both)
-        : top + bottom;
-    if (!m.enable_bunk_positions || !pos) return base;
-    if (pos === 'top') return top;
-    if (pos === 'bottom') return bottom;
-    return both;
-  };
-  const selectedMattressDetails = selectedMattresses
-    .map((sel) => {
-      const m = getMattressById(sel.id);
-      if (!m) return null;
-      const position = m.enable_bunk_positions ? sel.position || 'both' : null;
-      return {
-        ...m,
-        position,
-        price_value: priceForPosition(m, position),
-      };
-    })
-    .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | 'both' | null; price_value: number }>;
-  const totalMattressPrice = selectedMattressDetails.reduce((sum, m) => sum + (Number.isFinite(m.price_value) ? m.price_value : 0), 0);
-  const primaryMattress = selectedMattressDetails[0] || null;
+
 
   const wingbackSelected = styleVariantGroups.some((group) => {
     const selected = getSelectedOptionForGroup(group);
     return /wingback/i.test(`${selected?.label || ''} ${selected?.description || ''}`);
   });
-
-  const basePrice = Number(product?.price ?? 0);
-
-  const baseOriginalPrice =
-
-    product?.original_price !== undefined && product?.original_price !== null
-
-      ? Number(product.original_price)
-
-      : undefined;
-
-  const unitPrice = basePrice + sizeDelta + stylePriceDelta + totalMattressPrice;
-
-  const unitOriginalPrice =
-
-    baseOriginalPrice !== undefined ? baseOriginalPrice + sizeDelta + stylePriceDelta + totalMattressPrice : undefined;
-
-  const totalPrice = unitPrice * quantity;
-
-  const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
-
-
 
   const fullDescription = (product?.description || '').trim();
 
@@ -1206,8 +1157,68 @@ const ProductPage = () => {
     (product?.mattresses || []).forEach((m) => {
       if (m.id) map[m.id] = m;
     });
+    if (externalMattress?.id) {
+      map[externalMattress.id] = externalMattress;
+    }
     return map;
-  }, [product?.mattresses]);
+  }, [product?.mattresses, externalMattress]);
+
+  const mattresses: ProductMattress[] = Array.isArray(product?.mattresses)
+    ? (product?.mattresses as ProductMattress[])
+    : [];
+  const getMattressById = (id: number) => mattressMap[id] || null;
+  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null) => {
+    if (!m) return 0;
+    const base = m.price !== undefined && m.price !== null ? Number(m.price) : 0;
+    const top = m.price_top !== undefined && m.price_top !== null ? Number(m.price_top) : base;
+    const bottom = m.price_bottom !== undefined && m.price_bottom !== null ? Number(m.price_bottom) : base;
+    const both =
+      m.price_both !== undefined && m.price_both !== null
+        ? Number(m.price_both)
+        : top + bottom;
+    if (!m.enable_bunk_positions || !pos) return base;
+    if (pos === 'top') return top;
+    if (pos === 'bottom') return bottom;
+    return both;
+  };
+
+  const selectedMattressDetails = selectedMattresses
+    .map((sel) => {
+      const m = getMattressById(sel.id);
+      if (!m) return null;
+      const position = m.enable_bunk_positions ? sel.position || 'both' : null;
+      return {
+        ...m,
+        position,
+        price_value: priceForPosition(m, position),
+      };
+    })
+    .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | 'both' | null; price_value: number }>;
+  const totalMattressPrice = selectedMattressDetails.reduce(
+    (sum, m) => sum + (Number.isFinite(m.price_value) ? m.price_value : 0),
+    0
+  );
+  const primaryMattress = selectedMattressDetails[0] || null;
+
+  const basePrice = Number(product?.price ?? 0);
+
+  const baseOriginalPrice =
+
+    product?.original_price !== undefined && product?.original_price !== null
+
+      ? Number(product.original_price)
+
+      : undefined;
+
+  const unitPrice = basePrice + sizeDelta + stylePriceDelta + totalMattressPrice;
+
+  const unitOriginalPrice =
+
+    baseOriginalPrice !== undefined ? baseOriginalPrice + sizeDelta + stylePriceDelta + totalMattressPrice : undefined;
+
+  const totalPrice = unitPrice * quantity;
+
+  const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
 
   const bunkMattressRulesEnabled = useMemo(
     () => (product?.mattresses || []).some((m) => m.enable_bunk_positions),
@@ -1298,6 +1309,55 @@ const ProductPage = () => {
     },
     [bunkMattressRulesEnabled, mattressMap]
   );
+
+  // Apply pre-selected mattress when returning from the mattress listing
+  useEffect(() => {
+    const preSelectMattressId = searchParams.get('pre-select-mattress');
+    if (!preSelectMattressId || !product?.mattresses) return;
+
+    const targetId = Number(preSelectMattressId);
+    const mattressToSelect =
+      product.mattresses.find((m) => Number(m.id) === targetId) ||
+      product.mattresses.find((m) => Number(m.source_product) === targetId);
+
+    const applySelection = (mattress: ProductMattress) => {
+      setExternalMattress(mattress);
+      setSelectedMattresses(
+        normalizeBunkMattressSelections([
+          {
+            id: Number(mattress.id),
+            position: mattress.enable_bunk_positions ? 'both' : null,
+          },
+        ])
+      );
+    };
+
+    if (mattressToSelect?.id) {
+      applySelection(mattressToSelect);
+      return;
+    }
+
+    // Fallback: fetch the mattress product by id and map it into a pseudo mattress option
+    const fetchExternal = async () => {
+      try {
+        const res = await apiGet<Product | Product[]>(`/products/${targetId}/`);
+        const productData = Array.isArray(res) ? res[0] : res;
+        if (!productData?.id) return;
+        applySelection({
+          id: productData.id,
+          name: productData.name,
+          price: Number(productData.price ?? 0),
+          image_url: productData.images?.[0]?.url,
+          enable_bunk_positions: false,
+          source_product: productData.id,
+        });
+      } catch {
+        // swallow – no match
+      }
+    };
+
+    fetchExternal();
+  }, [location.search, product?.mattresses, searchParams, normalizeBunkMattressSelections]);
 
 const adjustedDimensionTableRows = useMemo(() => {
     if (rawDimensionTableRows.length === 0) return [];
