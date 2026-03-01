@@ -88,17 +88,17 @@ const CategoriesPage = () => {
   // Get all style options grouped by style name
   const allStyleOptions = useMemo(() => {
     const styleMap = new Map<string, Set<string>>();
-    allProducts.forEach((p) => 
-      p.styles.forEach((style) => {
-        const styleName = style.name;
+    allProducts.forEach((p) =>
+      (p.styles || []).forEach((style) => {
+        const styleName = style?.name || '';
+        if (!styleName) return;
         if (!styleMap.has(styleName)) {
           styleMap.set(styleName, new Set<string>());
         }
-        // Handle both array of objects and array of strings
-        if (Array.isArray(style.options)) {
+        if (Array.isArray(style?.options)) {
           style.options.forEach((opt) => {
-            const optionLabel = typeof opt === 'string' ? opt : opt.label;
-            styleMap.get(styleName)!.add(optionLabel);
+            const optionLabel = typeof opt === 'string' ? opt : opt?.label || '';
+            if (optionLabel) styleMap.get(styleName)!.add(optionLabel);
           });
         }
       })
@@ -116,11 +116,12 @@ const CategoriesPage = () => {
 
   const allColors = useMemo(() => {
     const colorMap = new Map<string, { name: string; hex_code: string }>();
-    allProducts.forEach((p) => 
-      p.colors.forEach((c) => {
-        const normalizedName = normalizeValue(c.name);
+    allProducts.forEach((p) =>
+      (p.colors || []).forEach((c) => {
+        const normalizedName = normalizeValue(c?.name || '');
+        if (!normalizedName) return;
         if (!colorMap.has(normalizedName)) {
-          colorMap.set(normalizedName, { name: normalizedName, hex_code: c.hex_code || '#888888' });
+          colorMap.set(normalizedName, { name: normalizedName, hex_code: c?.hex_code || '#888888' });
         }
       })
     );

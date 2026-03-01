@@ -23,8 +23,10 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
   });
 
   // Build the product link - if coming from a bed product, add mattress selection params
-  const productLink = fromBedProduct 
-    ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${selectedBedSize ? `&bed-size=${encodeURIComponent(selectedBedSize)}` : ''}`
+  const productLink = fromBedProduct
+    ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${
+        selectedBedSize ? `&bed-size=${encodeURIComponent(selectedBedSize)}` : ''
+      }`
     : `/product/${product.slug}`;
 
   const isInMattressSelection = !!fromBedProduct;

@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { apiGet } from '@/lib/api';
 import { Product } from '@/lib/types';
 
 const BestsellersSection = () => {
+  const navigate = useNavigate();
   const [bestsellers, setBestsellers] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -52,15 +53,13 @@ const BestsellersSection = () => {
           </div>
           
           <div>
-            <Button 
-              asChild 
+            <Button
               size="lg"
               className="group gradient-bronze text-base font-semibold"
+              onClick={() => navigate('/category/divan-beds')}
             >
-              <Link to="/category/divan-beds">
-                View All Bestsellers
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
+              View All Bestsellers
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           </div>
         </div>
@@ -78,16 +77,14 @@ const BestsellersSection = () => {
         <div
           className="mt-8 flex justify-center lg:hidden"
         >
-          <Button 
-            asChild 
+          <Button
             variant="outline"
             size="lg"
             className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            onClick={() => navigate('/category/divan-beds')}
           >
-            <Link to="/category/divan-beds">
-              View All Bestsellers
-              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-            </Link>
+            View All Bestsellers
+            <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
           </Button>
         </div>
       </div>

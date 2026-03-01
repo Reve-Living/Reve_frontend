@@ -542,6 +542,7 @@ const ProductPage = () => {
   type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | 'both' | null };
   const [selectedMattresses, setSelectedMattresses] = useState<SelectedMattressPick[]>([]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
+  const [showAllMattresses, setShowAllMattresses] = useState(false);
   const [selectedFabric, setSelectedFabric] = useState('');
   const [enabledGroups, setEnabledGroups] = useState<Record<string, boolean>>({});
   const [activeVariantGroupKey, setActiveVariantGroupKey] = useState('');
@@ -655,7 +656,10 @@ const ProductPage = () => {
         // Pre-select mattress if coming from a mattress selection flow
         const preSelectMattressId = searchParams.get('pre-select-mattress');
         if (preSelectMattressId && fetched?.mattresses) {
-          const mattressToSelect = fetched.mattresses.find((m) => m.id === Number(preSelectMattressId));
+          const targetId = Number(preSelectMattressId);
+          const mattressToSelect =
+            fetched.mattresses.find((m) => Number(m.id) === targetId) ||
+            fetched.mattresses.find((m) => Number(m.source_product) === targetId);
           if (mattressToSelect?.id) {
             setSelectedMattresses(
               normalizeBunkMattressSelections([
@@ -693,9 +697,14 @@ const ProductPage = () => {
       }
 
       if (fetched?.sizes?.length) {
-
-        setSelectedSize(parseSizeOption(fetched.sizes[0].name, 0).label);
-
+        const parsedSizes = fetched.sizes.map((size, index) =>
+          parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+        );
+        const normalizedLinkedSize = (linkedBedSize || '').trim().toLowerCase();
+        const matchedSize = normalizedLinkedSize
+          ? parsedSizes.find((opt) => opt.label.trim().toLowerCase() === normalizedLinkedSize)
+          : null;
+        setSelectedSize((matchedSize || parsedSizes[0]).label);
       }
 
         const firstFabricWithColors = (fetched?.fabrics || []).find((f) => (f.colors || []).length > 0);
@@ -1471,7 +1480,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
   const handleAddToCart = () => {
     // If this is a mattress being selected for a bed, navigate back to the bed product
     if (selectForBedSlug && product?.id) {
-      window.location.href = `/product/${selectForBedSlug}?pre-select-mattress=${product.id}`;
+      const bedSizeQuery = linkedBedSize ? `&bed-size=${encodeURIComponent(linkedBedSize)}` : '';
+      window.location.href = `/product/${selectForBedSlug}?pre-select-mattress=${product.id}${bedSizeQuery}`;
       return;
     }
 
@@ -2038,13 +2048,23 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     <p className="text-base font-semibold">Mattress</p>
                     <p className="text-xs text-muted-foreground">Choose after picking your style</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => setIsMattressOpen(true)}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAllMattresses(false);
+                      setIsMattressOpen(true);
+                    }}
+                  >
                     Upgrade mattresses
                   </Button>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsMattressOpen(true)}
+                  onClick={() => {
+                    setShowAllMattresses(false);
+                    setIsMattressOpen(true);
+                  }}
                   className="flex w-full items-center justify-between rounded-lg border border-dashed border-primary/50 px-3 py-3 text-left transition hover:border-primary/70"
                 >
                   <div className="flex flex-col">
@@ -2553,7 +2573,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
-              {mattresses.slice(0, 4).map((mattress) => {
+              {(showAllMattresses ? mattresses : mattresses.slice(0, 4)).map((mattress) => {
                 const selectedPick = selectedMattresses.find((m) => m.id === mattress.id);
                 const isSelected = Boolean(selectedPick);
                 const currentPosition =
@@ -2686,16 +2706,26 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 );
               })}
 
-              <Link
-                to={`/category/mattresses${selectedSize ? `?bed-size=${encodeURIComponent(selectedSize)}&from=${encodeURIComponent(product.slug)}` : ''}`}
-                className="flex items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
-              >
-                View all mattresses
-              </Link>
+              {!showAllMattresses && mattresses.length > 0 && (
+                <Link
+                  to={`/category/mattresses?from=${encodeURIComponent(product.slug)}${
+                    selectedSize ? `&bed-size=${encodeURIComponent(selectedSize)}` : ''
+                  }`}
+                  className="flex w-full items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
+                >
+                  View all mattresses
+                </Link>
+              )}
             </div>
 
             <div className="border-t border-border px-5 py-4 bg-white">
-              <Button className="w-full" onClick={() => setIsMattressOpen(false)}>
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setShowAllMattresses(false);
+                  setIsMattressOpen(false);
+                }}
+              >
                 Apply selection
               </Button>
             </div>
