@@ -7,9 +7,11 @@ import { Product } from '@/lib/types';
 interface ProductCardProps {
   product: Product;
   index?: number;
+  fromBedProduct?: string; // slug of the bed product this mattress is being selected for
+  selectedBedSize?: string; // the bed size that was selected on the bed product
 }
 
-const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
+const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: ProductCardProps) => {
   // Calculate savings if there's an original price
   const savings = product.original_price ? product.original_price - product.price : 0;
   const imageUrl = product.images?.[0]?.url || "";
@@ -20,10 +22,18 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     maximumFractionDigits: 2,
   });
 
+  // Build the product link - if coming from a bed product, add mattress selection params
+  const productLink = fromBedProduct 
+    ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${selectedBedSize ? `&bed-size=${encodeURIComponent(selectedBedSize)}` : ''}`
+    : `/product/${product.slug}`;
+
+  const isInMattressSelection = !!fromBedProduct;
+  const buttonText = isInMattressSelection ? 'Select Mattress' : 'View Options';
+
   return (
     <div className="h-full">
       <Link
-        to={`/product/${product.slug}`}
+        to={productLink}
         className="group flex h-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       >
         {/* Image Container */}
@@ -99,7 +109,7 @@ const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
           {/* View Options Button */}
           <Button className="mt-auto w-full gradient-bronze">
-            View Options
+            {buttonText}
           </Button>
         </div>
       </Link>

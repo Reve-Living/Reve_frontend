@@ -54,6 +54,8 @@ const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const subSlug = searchParams.get('sub') || '';
+  const linkedBedSize = searchParams.get('bed-size') || '';
+  const linkedBedProduct = searchParams.get('from') || '';
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -66,8 +68,11 @@ const CategoryPage = () => {
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
-  // Decide instantly based on the route slug to avoid showing stale filters while category data loads.
-  const showSizeFilter = slug === 'beds';
+  const isMattressCategory = (slug: string | undefined) => 
+    slug === 'mattress' || slug === 'mattresses';
+  
+  const showSizeFilter = category?.slug === 'beds';
+  const showBedSizeFilter = isMattressCategory(category?.slug) && !!linkedBedSize;
   // Track which filter option slugs actually exist on products currently in view (after category/subcategory selection)
   const activeOptionSlugs = useMemo(() => {
     const present = new Set<string>();
@@ -243,10 +248,17 @@ const CategoryPage = () => {
       (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
     );
 
-    // Size filter
+    // Size filter for beds
     if (showSizeFilter && selectedSizes.length > 0) {
       products = products.filter((p) =>
         (p.sizes || []).some((size) => selectedSizes.includes(size.name))
+      );
+    }
+
+    // Bed size filter for mattresses (when linked from a bed product)
+    if (showBedSizeFilter && linkedBedSize) {
+      products = products.filter((p) =>
+        (p.sizes || []).some((size) => size.name.toLowerCase().includes(linkedBedSize.toLowerCase()))
       );
     }
 
@@ -371,6 +383,24 @@ const CategoryPage = () => {
                 {heroDescription}
               </motion.p>
             )}
+            {showBedSizeFilter && linkedBedSize && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="rounded-lg bg-primary/8 border border-primary/30 px-4 py-2 inline-block"
+              >
+                <p className="text-sm font-medium text-primary">
+                  Showing {linkedBedSize} size mattresses
+                  <Link 
+                    to={`/category/${slug}`}
+                    className="ml-2 underline underline-offset-2 hover:no-underline"
+                  >
+                    View all →
+                  </Link>
+                </p>
+              </motion.div>
+            )}
           </div>
         </div>
 
@@ -485,7 +515,13 @@ const CategoryPage = () => {
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
                 {filteredProducts.map((product, index) => (
-                  <ProductCard key={product.id} product={product} index={index} />
+                  <ProductCard 
+                    key={product.id} 
+                    product={product} 
+                    index={index}
+                    fromBedProduct={linkedBedProduct}
+                    selectedBedSize={linkedBedSize}
+                  />
                 ))}
               </div>
             )}
