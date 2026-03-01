@@ -315,7 +315,7 @@ const CartPage = () => {
 
                   <Link to="/">
 
-                    Ã¢ÂÂ Continue Shopping
+                    Continue Shopping
 
                   </Link>
 

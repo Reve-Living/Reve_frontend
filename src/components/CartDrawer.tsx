@@ -226,7 +226,7 @@ const CartDrawer = () => {
 
                         <p className="text-sm text-muted-foreground">
 
-                          {item.size} â¢ {item.color}
+                          {item.size} | {item.color}
 
                         </p>
 
