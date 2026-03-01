@@ -2140,7 +2140,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             {[
               { key: 'description', label: 'Description', show: Boolean(fullDescription) },
               { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 || !!dimensionParagraph },
-              { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery', show: Boolean(product?.delivery_info) },
+              { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery Information', show: Boolean(product?.delivery_info) },
               { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
               { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
               ...(Array.isArray(product?.custom_info_sections)
