@@ -32,8 +32,11 @@ interface CartState {
 
 type CartAction =
   | { type: 'ADD_ITEM'; payload: CartItem }
-  | { type: 'REMOVE_ITEM'; payload: { productId: string; size: string; color: string; variantsKey: string } }
-  | { type: 'UPDATE_QUANTITY'; payload: { productId: string; size: string; color: string; variantsKey: string; quantity: number } }
+  | { type: 'REMOVE_ITEM'; payload: { productId: number; size: string; color: string; variantsKey: string } }
+  | {
+      type: 'UPDATE_QUANTITY';
+      payload: { productId: number; size: string; color: string; variantsKey: string; quantity: number };
+    }
   | { type: 'CLEAR_CART' }
   | { type: 'TOGGLE_CART' }
   | { type: 'OPEN_CART' }
@@ -138,8 +141,8 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
 interface CartContextType {
   state: CartState;
   addItem: (item: CartItem) => void;
-  removeItem: (productId: string, size: string, color: string, variantsKey: string) => void;
-  updateQuantity: (productId: string, size: string, color: string, variantsKey: string, quantity: number) => void;
+  removeItem: (productId: number, size: string, color: string, variantsKey: string) => void;
+  updateQuantity: (productId: number, size: string, color: string, variantsKey: string, quantity: number) => void;
   clearCart: () => void;
   toggleCart: () => void;
   openCart: () => void;
@@ -154,9 +157,9 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false });
 
   const addItem = (item: CartItem) => dispatch({ type: 'ADD_ITEM', payload: item });
-  const removeItem = (productId: string, size: string, color: string, variantsKey: string) =>
+  const removeItem = (productId: number, size: string, color: string, variantsKey: string) =>
     dispatch({ type: 'REMOVE_ITEM', payload: { productId, size, color, variantsKey } });
-  const updateQuantity = (productId: string, size: string, color: string, variantsKey: string, quantity: number) =>
+  const updateQuantity = (productId: number, size: string, color: string, variantsKey: string, quantity: number) =>
     dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, size, color, variantsKey, quantity } });
   const clearCart = () => dispatch({ type: 'CLEAR_CART' });
   const toggleCart = () => dispatch({ type: 'TOGGLE_CART' });

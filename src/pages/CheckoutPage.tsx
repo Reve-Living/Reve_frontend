@@ -46,20 +46,47 @@ const getVariantSummary = (item: {
   include_dimension?: boolean;
   mattress_name?: string | null;
 }) => {
-  const parts = Object.entries(item.selectedVariants || {})
-    .map(([group, value]) => `${group}: ${value}`);
-  if (item.fabric) parts.push(`Fabric: ${item.fabric}`);
-  if (item.dimension) parts.push(`Dimension: ${item.dimension}`);
-  if (item.dimension_details) parts.push(item.dimension_details);
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  const addPart = (text?: string) => {
+    const cleaned = (text || '').trim();
+    if (!cleaned) return;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    parts.push(cleaned);
+  };
+
+  const hasExplicitMattress =
+    (item.mattresses && item.mattresses.length > 0) || Boolean(item.mattress_name);
+
+  // Variants, skipping mattress-like entries if a dedicated mattress field exists
+  Object.entries(item.selectedVariants || {}).forEach(([group, value]) => {
+    const lowerGroup = group.trim().toLowerCase();
+    if (hasExplicitMattress && lowerGroup.includes('mattress')) return;
+    addPart(`${group}: ${value}`);
+  });
+
+  if (item.fabric) addPart(`Fabric: ${item.fabric}`);
+
+  // Prefer detailed dimensions block; fall back to simple dimension label
+  if (item.dimension_details) {
+    addPart(item.dimension_details);
+  } else if (item.dimension) {
+    addPart(`Dimension: ${item.dimension}`);
+  }
+
+  // Mattress info – choose one source to avoid repeats
   if (Array.isArray(item.mattresses) && item.mattresses.length > 0) {
-    parts.push(
-      `Mattresses: ${item.mattresses
+    addPart(
+      `Mattress${item.mattresses.length > 1 ? 'es' : ''}: ${item.mattresses
         .map((m) => `${m.name || 'Mattress'}${m.position ? ` (${m.position})` : ''}`)
         .join(', ')}`
     );
   } else if (item.mattress_name) {
-    parts.push(`Mattress: ${item.mattress_name}`);
+    addPart(`Mattress: ${item.mattress_name}`);
   }
+
   return parts.join(' | ');
 };
 

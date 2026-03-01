@@ -28,6 +28,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 import { Badge } from '@/components/ui/badge';
 
@@ -710,27 +711,9 @@ const ProductPage = () => {
           setSelectedFabric('');
         }
 
-        const initialStyles: Record<string, string> = {};
-
-        const nextEnabled: Record<string, boolean> = {};
-
-        (fetched?.styles || []).forEach((styleGroup) => {
-          const normalized = normalizeStyleOptions(styleGroup.options);
-          const freeOption =
-            normalized.find(
-              (o) =>
-                parsePriceDeltaFromText(o.label, o.description || '') === 0 ||
-                Number(o.price_delta ?? 0) === 0
-            ) || undefined;
-          if (freeOption) {
-            initialStyles[styleGroup.name] = freeOption.label;
-            nextEnabled[styleGroup.name] = true;
-          } else {
-            nextEnabled[styleGroup.name] = false;
-          }
-        });
-        setSelectedStyles(initialStyles);
-        setEnabledGroups((prev) => ({ ...nextEnabled, ...prev }));
+        // Keep style groups optional by default (no auto headboard/storage selection)
+        setSelectedStyles({});
+        setEnabledGroups({});
         if (fetched?.fabrics?.length) {
           setSelectedFabric(fetched.fabrics[0].name);
         } else {
@@ -1098,6 +1081,58 @@ const ProductPage = () => {
     if (pos === 'bottom') return bottom;
     return both;
   };
+  const extractSizeTokens = (value: string): string[] => {
+    const v = (value || '').toLowerCase();
+    const tokens: string[] = [];
+
+    // numeric ft patterns
+    const ftMatches = v.match(/(\d(?:\.\d)?)(?:\s*)ft/gi);
+    if (ftMatches) {
+      ftMatches.forEach((m) => {
+        const num = m.replace(/[^0-9.]/g, '');
+        if (num) tokens.push(`${num}ft`);
+      });
+    }
+
+    // common names
+    const mappings: Record<string, string> = {
+      'small single': 'small single',
+      '2ft6': '2ft6',
+      '2 ft 6': '2ft6',
+      'single': '3ft',
+      '3ft': '3ft',
+      'three quarter': '4ft',
+      '4ft': '4ft',
+      '4ft6': '4ft6',
+      'double': '4ft6',
+      'king': '5ft',
+      'kingsize': '5ft',
+      'king size': '5ft',
+      '5ft': '5ft',
+      'super king': '6ft',
+      'superking': '6ft',
+      '6ft': '6ft',
+    };
+    Object.entries(mappings).forEach(([phrase, token]) => {
+      if (v.includes(phrase)) tokens.push(token);
+    });
+
+    // de-duplicate
+    return Array.from(new Set(tokens));
+  };
+
+  const selectedSizeTokens = useMemo(() => extractSizeTokens(selectedSize || ''), [selectedSize]);
+
+  const sizeMatchesMattress = useCallback(
+    (m: ProductMattress) => {
+      if (!selectedSizeTokens.length) return false;
+      const mattressTokens = extractSizeTokens(m.name || '');
+      if (mattressTokens.length === 0) return false;
+      return selectedSizeTokens.some((t) => mattressTokens.includes(t));
+    },
+    [selectedSizeTokens]
+  );
+
   const selectedMattressDetails = selectedMattresses
     .map((sel) => {
       const m = getMattressById(sel.id);
@@ -1112,6 +1147,53 @@ const ProductPage = () => {
     .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | 'both' | null; price_value: number }>;
   const totalMattressPrice = selectedMattressDetails.reduce((sum, m) => sum + (Number.isFinite(m.price_value) ? m.price_value : 0), 0);
   const primaryMattress = selectedMattressDetails[0] || null;
+  const sortedMattresses = useMemo(() => {
+    return [...mattresses].sort((a, b) => {
+      const aIncluded =
+        Number(a.price ?? 0) === 0 &&
+        Number(a.price_top ?? 0) === 0 &&
+        Number(a.price_bottom ?? 0) === 0 &&
+        Number(a.price_both ?? 0) === 0;
+      const bIncluded =
+        Number(b.price ?? 0) === 0 &&
+        Number(b.price_top ?? 0) === 0 &&
+        Number(b.price_bottom ?? 0) === 0 &&
+        Number(b.price_both ?? 0) === 0;
+
+      // Keep included first
+      if (aIncluded !== bIncluded) return aIncluded ? -1 : 1;
+
+      // Prefer size match to the current bed
+      const aMatch = sizeMatchesMattress(a);
+      const bMatch = sizeMatchesMattress(b);
+      if (aMatch !== bMatch) return aMatch ? -1 : 1;
+
+      // Then sort by price
+      const aPrice = Number(a.price ?? a.price_both ?? a.price_top ?? a.price_bottom ?? 0);
+      const bPrice = Number(b.price ?? b.price_both ?? b.price_top ?? b.price_bottom ?? 0);
+      if (!Number.isNaN(aPrice) && !Number.isNaN(bPrice) && aPrice !== bPrice) {
+        return aPrice - bPrice;
+      }
+
+      return (a.name || '').localeCompare(b.name || '');
+    });
+  }, [mattresses, sizeMatchesMattress]);
+
+  const [showAllMattresses, setShowAllMattresses] = useState(false);
+  const showOnlyMatchedSize = true;
+
+  const displayedMattresses = useMemo(() => {
+    const matched = sortedMattresses.filter((m) => sizeMatchesMattress(m));
+    const remainder = sortedMattresses.filter((m) => !sizeMatchesMattress(m));
+
+    if (showOnlyMatchedSize && matched.length > 0 && !showAllMattresses) {
+      return matched.slice(0, 4);
+    }
+
+    if (showAllMattresses) return sortedMattresses;
+
+    return [...matched, ...remainder].slice(0, 4);
+  }, [showAllMattresses, showOnlyMatchedSize, sortedMattresses, sizeMatchesMattress]);
 
   const wingbackSelected = styleVariantGroups.some((group) => {
     const selected = getSelectedOptionForGroup(group);
@@ -1960,19 +2042,22 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                       )}
                                       <div
                                         className={
-                                          isHeadboardGroup ? 'flex flex-col gap-1' : 'flex flex-col items-center gap-1 text-center'
+                                          isHeadboardGroup
+                                            ? 'flex w-full max-w-full flex-col gap-1 text-left'
+                                            : 'flex flex-col items-center gap-1 text-center'
                                         }
                                       >
                                         <p
-                                          className={`text-xs font-semibold text-espresso leading-tight break-words line-clamp-3 ${
+                                          className={`text-xs font-semibold text-espresso leading-tight break-words text-balance line-clamp-3 ${
                                             isHeadboardGroup ? 'text-left' : 'text-center'
                                           }`}
+                                          style={{ hyphens: 'auto', wordBreak: 'break-word' }}
                                         >
                                           {formatOptionLabel(option.label)}
                                           {option.description && ` (${option.description})`}
                                         </p>
                                         <p
-                                          className={`text-[11px] text-muted-foreground leading-tight ${
+                                          className={`text-[11px] text-muted-foreground leading-tight break-words ${
                                             isHeadboardGroup ? 'text-left' : 'text-center'
                                           }`}
                                         >
@@ -2065,7 +2150,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 <button
 
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
-
+                  type="button"
                   className="p-3 hover:bg-muted"
 
                 >
@@ -2079,7 +2164,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 <button
 
                   onClick={() => setQuantity(quantity + 1)}
-
+                  type="button"
                   className="p-3 hover:bg-muted"
 
                 >
@@ -2546,7 +2631,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 space-y-4">
-              {mattresses.slice(0, 8).map((mattress) => {
+              {displayedMattresses.map((mattress) => {
                 const selectedPick = selectedMattresses.find((m) => m.id === mattress.id);
                 const isSelected = Boolean(selectedPick);
                 const currentPosition =
@@ -2679,16 +2764,35 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 );
               })}
 
+              {mattresses.length > 4 && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllMattresses((prev) => !prev)}
+                  className="flex w-full items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
+                >
+                  {showAllMattresses ? 'Show fewer mattresses' : 'View all mattresses'}
+                </button>
+              )}
+
+              {/* Deep dive link keeps size context via query params */}
               <Link
-                to="/category/mattresses"
-                className="flex items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
+                to={`/category/mattresses?size=${encodeURIComponent(selectedSize || '')}&from=${encodeURIComponent(
+                  slug || ''
+                )}`}
+                className="flex items-center justify-center rounded-lg border border-border px-4 py-2 text-sm font-semibold text-espresso hover:bg-muted transition"
               >
-                View all mattresses
+                Browse full mattress range (keeps your bed size)
               </Link>
             </div>
 
             <div className="border-t border-border px-5 py-4 bg-white">
-              <Button className="w-full" onClick={() => setIsMattressOpen(false)}>
+              <Button
+                className="w-full"
+                onClick={() => {
+                  setShowAllMattresses(false);
+                  setIsMattressOpen(false);
+                }}
+              >
                 Apply selection
               </Button>
             </div>

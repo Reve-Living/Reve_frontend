@@ -66,7 +66,8 @@ const CategoryPage = () => {
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
-  const showSizeFilter = category?.slug === 'beds';
+  // Decide instantly based on the route slug to avoid showing stale filters while category data loads.
+  const showSizeFilter = slug === 'beds';
   // Track which filter option slugs actually exist on products currently in view (after category/subcategory selection)
   const activeOptionSlugs = useMemo(() => {
     const present = new Set<string>();

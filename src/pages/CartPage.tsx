@@ -23,6 +23,7 @@ const getVariantsKey = (item: {
   extras_total?: number;
   include_dimension?: boolean;
   mattress_id?: number | null;
+  mattress_position?: 'top' | 'bottom' | 'both' | null;
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
@@ -33,10 +34,26 @@ const getVariantsKey = (item: {
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
     mattress_id: item.mattress_id || null,
+    mattress_position: item.mattress_position || null,
   });
 
 const CartPage = () => {
   const { state, removeItem, updateQuantity, totalPrice } = useCart();
+
+  const sanitize = (value?: string) =>
+    (value || '')
+      .replace(/[^A-Za-z0-9\s\-\.,:()£€'"]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const metaLine = (item: any) => {
+    const parts: string[] = [];
+    const size = sanitize(item.size);
+    const color = sanitize(item.color);
+    if (size) parts.push(`Size: ${size}`);
+    if (color) parts.push(`Colour: ${color}`);
+    return parts.join(' | ');
+  };
 
 
 
@@ -87,7 +104,7 @@ const CartPage = () => {
 
             <Button asChild size="lg" className="gradient-bronze">
 
-              <Link to="/category/divan-beds">Start Shopping</Link>
+              <Link to="/collection">Start Shopping</Link>
 
             </Button>
 
@@ -151,18 +168,22 @@ const CartPage = () => {
 
                           </Link>
 
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            Size: {item.size} | Colour: {item.color}
-                          </p>
+                          {metaLine(item) && (
+                            <p className="mt-1 text-sm text-muted-foreground">{metaLine(item)}</p>
+                          )}
                           {item.dimension && (
-                            <p className="text-sm text-muted-foreground">Dimension: {item.dimension}</p>
+                            <p className="text-sm text-muted-foreground">
+                              Dimension: {sanitize(item.dimension)}
+                            </p>
                           )}
                           {item.dimension_details && (
-                            <p className="text-xs text-muted-foreground">{item.dimension_details}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {sanitize(item.dimension_details)}
+                            </p>
                           )}
                           {item.fabric && (
                             <p className="text-sm text-muted-foreground">
-                              Fabric: {item.fabric}
+                              Fabric: {sanitize(item.fabric)}
                             </p>
                           )}
                           {Array.isArray(item.mattresses) && item.mattresses.length > 0 ? (

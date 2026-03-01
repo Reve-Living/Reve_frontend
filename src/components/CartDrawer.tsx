@@ -17,6 +17,9 @@ const getVariantsKey = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  mattresses?: { id: number; position?: 'top' | 'bottom' | 'both' | null }[];
+  mattress_id?: number | null;
+  mattress_position?: 'top' | 'bottom' | 'both' | null;
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
@@ -25,6 +28,9 @@ const getVariantsKey = (item: {
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    mattresses: (item.mattresses || []).map((m) => ({ id: m.id, position: m.position || null })),
+    mattress_id: item.mattress_id || null,
+    mattress_position: item.mattress_position || null,
   });
 
 
@@ -164,7 +170,7 @@ const CartDrawer = () => {
 
                   <Button onClick={closeCart} asChild>
 
-                    <Link to="/category/divan-beds">Shop Now</Link>
+                    <Link to="/collection">Shop Now</Link>
 
                   </Button>
 
