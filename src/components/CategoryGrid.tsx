@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { apiGet } from '@/lib/api';
 import { Category, Product } from '@/lib/types';
 
 const CategoryGrid = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<Category[]>([]);
 
   const resolveImageUrl = useMemo(
@@ -78,15 +79,13 @@ const CategoryGrid = () => {
           </div>
           
           <div>
-            <Button 
-              asChild 
+            <Button
               size="lg"
               className="group gradient-bronze text-base font-semibold"
+              onClick={() => navigate('/categories')}
             >
-              <Link to="/categories">
-                View All Categories
-                <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Link>
+              View All Categories
+              <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           </div>
         </div>

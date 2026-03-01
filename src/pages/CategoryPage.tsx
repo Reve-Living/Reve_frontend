@@ -50,6 +50,52 @@ const toBackgroundImageValue = (value?: string): string => {
   return `url("${encodeURI(resolved)}")`;
 };
 
+const normalizeSizeName = (raw?: string): string => {
+  const value = (raw || '').trim();
+  if (!value) return '';
+
+  const key = value.replace(/\s+/g, '').toLowerCase();
+
+  const canonicalMap: Record<string, string> = {
+    '2ft6': '2ft6 Small Single',
+    '2ft6smallsingle': '2ft6 Small Single',
+    'smallingle': '2ft6 Small Single',
+    'smallsingle': '2ft6 Small Single',
+    'small single': '2ft6 Small Single',
+
+    '3ft': '3ft Single',
+    '3ftsingle': '3ft Single',
+    'single': '3ft Single',
+
+    '4ft': '4ft Small Double',
+    '4ftsmalldouble': '4ft Small Double',
+    'threequarter': '4ft Small Double',
+    'threequarters': '4ft Small Double',
+    'small double': '4ft Small Double',
+
+    '4ft6': '4ft6 Double',
+    '4ft6double': '4ft6 Double',
+    'double': '4ft6 Double',
+
+    '5ft': '5ft King',
+    '5ftking': '5ft King',
+    'king': '5ft King',
+
+    '6ft': '6ft Superking',
+    '6ftsuperking': '6ft Superking',
+    '6ftsuperking': '6ft Superking',
+    '6ftsuper king': '6ft Superking',
+    'superking': '6ft Superking',
+    'super king': '6ft Superking',
+  };
+
+  const canonical = canonicalMap[key];
+  if (canonical) return canonical;
+
+  // default: collapse multiple spaces and add a space after 'ft' if missing
+  return value.replace(/ft(\d)/gi, 'ft $1').replace(/\s+/g, ' ').trim();
+};
+
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
@@ -222,14 +268,16 @@ const CategoryPage = () => {
 
   const allSizes = useMemo(() => {
     if (!showSizeFilter) return [];
-    const sizeSet = new Set<string>();
+    const map = new Map<string, string>(); // key -> display label
     allProducts.forEach((p) =>
       (p.sizes || []).forEach((s) => {
-        const value = s.name.trim();
-        if (value) sizeSet.add(value);
+        const label = normalizeSizeName(s.name);
+        if (!label) return;
+        const key = label.replace(/\s+/g, '').toLowerCase();
+        if (!map.has(key)) map.set(key, label);
       })
     );
-    return Array.from(sizeSet).sort((a, b) => a.localeCompare(b));
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [allProducts, showSizeFilter]);
 
   // Clear size selections when size filter not applicable
@@ -251,7 +299,10 @@ const CategoryPage = () => {
     // Size filter for beds
     if (showSizeFilter && selectedSizes.length > 0) {
       products = products.filter((p) =>
-        (p.sizes || []).some((size) => selectedSizes.includes(size.name))
+        (p.sizes || []).some((size) => {
+          const label = normalizeSizeName(size.name);
+          return selectedSizes.includes(label);
+        })
       );
     }
 
