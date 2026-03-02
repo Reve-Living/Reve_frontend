@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/media/(.*)",
+      "destination": "https://reve-backend.onrender.com/media/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
