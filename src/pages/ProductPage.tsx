@@ -458,6 +458,49 @@ const svgMarkupToDataUrl = (svgMarkup: string): string => {
 
 };
 
+// Normalize size labels to a canonical form for reliable matching.
+const normalizeSizeName = (raw?: string): string => {
+  const value = (raw || '').trim();
+  if (!value) return '';
+
+  const key = value.replace(/\s+/g, '').toLowerCase();
+
+  const canonicalMap: Record<string, string> = {
+    '2ft6': '2ft6 Small Single',
+    '2ft6smallsingle': '2ft6 Small Single',
+    'smallingle': '2ft6 Small Single',
+    'smallsingle': '2ft6 Small Single',
+    'small single': '2ft6 Small Single',
+
+    '3ft': '3ft Single',
+    '3ftsingle': '3ft Single',
+    'single': '3ft Single',
+
+    '4ft': '4ft Small Double',
+    '4ftsmalldouble': '4ft Small Double',
+    'threequarter': '4ft Small Double',
+    'threequarters': '4ft Small Double',
+    'small double': '4ft Small Double',
+
+    '4ft6': '4ft6 Double',
+    '4ft6double': '4ft6 Double',
+    'double': '4ft6 Double',
+
+    '5ft': '5ft King',
+    '5ftking': '5ft King',
+    'king': '5ft King',
+    'kingsize': '5ft King',
+    'king size': '5ft King',
+
+    '6ft': '6ft Super King',
+    '6ftsuperking': '6ft Super King',
+    'superking': '6ft Super King',
+    'super king': '6ft Super King',
+  };
+
+  if (canonicalMap[key]) return canonicalMap[key];
+  return value.replace(/\s+/g, ' ').replace(/\s*-\s*/g, ' ').trim();
+};
 // Normalizes features so we only create bullets for actual bullet separators (line breaks or •),
 // never for commas inside the text.
 const normalizeFeatures = (features: unknown): string[] => {
@@ -543,6 +586,7 @@ const ProductPage = () => {
   type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | 'both' | null };
   const [selectedMattresses, setSelectedMattresses] = useState<SelectedMattressPick[]>([]);
   const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
+  const [mattressOptions, setMattressOptions] = useState<ProductMattress[]>([]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(false);
   const [selectedFabric, setSelectedFabric] = useState('');
@@ -561,6 +605,29 @@ const ProductPage = () => {
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const showDimensionsTable = (product as Product | undefined)?.show_dimensions_table !== false;
+
+  // Exclude placeholder mattresses globally.
+  const EXCLUDED_MATTRESS_NAMES = useMemo(
+    () => ['winwood mattress', 'kingsize mattress'],
+    []
+  );
+  const filterOutExcludedMattresses = useCallback(
+    (list: ProductMattress[]) =>
+      list.filter((m) => {
+        const name = (m?.name || '').trim().toLowerCase();
+        return name && !EXCLUDED_MATTRESS_NAMES.includes(name);
+      }),
+    [EXCLUDED_MATTRESS_NAMES]
+  );
+
+  const isIncludedMattress = useCallback((m: ProductMattress | null | undefined) => {
+    if (!m) return false;
+    const base = Number(m.price ?? 0);
+    const top = Number(m.price_top ?? 0);
+    const bottom = Number(m.price_bottom ?? 0);
+    const both = Number(m.price_both ?? 0);
+    return base === 0 && top === 0 && bottom === 0 && both === 0;
+  }, []);
 
   const fetchReviews = async (productId: number) => {
     setIsLoadingReviews(true);
@@ -765,6 +832,87 @@ const ProductPage = () => {
 
   }, [slug, loadSeriesProducts]);
 
+
+
+  // Keep mattress options aligned with the selected bed size (for bed products).
+  useEffect(() => {
+    const baseMattresses: ProductMattress[] = Array.isArray(product?.mattresses)
+      ? (product.mattresses as ProductMattress[])
+      : [];
+    const filteredBase = filterOutExcludedMattresses(baseMattresses);
+
+    const normalizedSize = normalizeSizeName(selectedSize);
+    const categorySlug = (product?.category_slug || '').toLowerCase();
+    const isMattressCategory = categorySlug === 'mattress' || categorySlug === 'mattresses';
+
+    if (!normalizedSize || isMattressCategory) {
+      setMattressOptions(filteredBase);
+      return;
+    }
+
+    const loadMatchingMattresses = async () => {
+      try {
+        // Try both common slugs to maximise matches.
+        const [res1, res2] = await Promise.all([
+          apiGet<Product[] | { results?: Product[] }>(`/products/?category=mattresses`),
+          apiGet<Product[] | { results?: Product[] }>(`/products/?category=mattress`),
+        ]);
+        const normalizeRes = (res: Product[] | { results?: Product[] }) =>
+          Array.isArray(res)
+            ? res
+            : Array.isArray((res as { results?: Product[] }).results)
+            ? ((res as { results: Product[] }).results)
+            : [];
+        const products = [...normalizeRes(res1), ...normalizeRes(res2)];
+
+        const target = (normalizeSizeName(normalizedSize) || normalizedSize).toLowerCase();
+
+        const matches: ProductMattress[] = products
+          .filter((p) =>
+            (p.sizes || []).some((s) => {
+              const sizeKey = normalizeSizeName(s.name).toLowerCase();
+              return sizeKey && (sizeKey === target || sizeKey.includes(target) || target.includes(sizeKey));
+            })
+          )
+          .map((p) => {
+            const parsedSizes = (p.sizes || []).map((size, index) =>
+              parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+            );
+            const matchedSize = parsedSizes.find(
+              (opt) => normalizeSizeName(opt.label).toLowerCase() === target
+            );
+            const sizeDelta = matchedSize?.delta ?? 0;
+            return {
+              id: p.id,
+              name: p.name,
+              description: p.short_description || p.description,
+              image_url: p.images?.[0]?.url || '',
+              price: Number(p.price ?? 0) + sizeDelta,
+              source_product: p.id,
+            } as ProductMattress;
+          });
+
+        const filteredMatches = filterOutExcludedMattresses(matches);
+        const freeBase = filteredBase.filter(isIncludedMattress);
+
+        const combined = [...freeBase, ...filteredMatches];
+
+        if (combined.length === 0) {
+          setMattressOptions(filteredBase);
+        } else {
+          const map = new Map<number, ProductMattress>();
+          combined.forEach((m) => {
+            if (m?.id && !map.has(m.id)) map.set(m.id, m);
+          });
+          setMattressOptions(Array.from(map.values()).slice(0, 12));
+        }
+      } catch {
+        setMattressOptions(filteredBase);
+      }
+    };
+
+    loadMatchingMattresses();
+  }, [product?.mattresses, product?.category_slug, selectedSize, filterOutExcludedMattresses]);
 
 
   const productImages = product?.images || [];
@@ -1154,18 +1302,30 @@ const ProductPage = () => {
 
   const mattressMap = useMemo(() => {
     const map: Record<number, ProductMattress> = {};
-    (product?.mattresses || []).forEach((m) => {
-      if (m.id) map[m.id] = m;
+    (mattressOptions || []).forEach((m) => {
+      if (m?.id) map[m.id] = m;
     });
     if (externalMattress?.id) {
       map[externalMattress.id] = externalMattress;
     }
     return map;
-  }, [product?.mattresses, externalMattress]);
+  }, [mattressOptions, externalMattress]);
 
-  const mattresses: ProductMattress[] = Array.isArray(product?.mattresses)
-    ? (product?.mattresses as ProductMattress[])
-    : [];
+  const mattresses: ProductMattress[] = useMemo(() => {
+    const map = new Map<number, ProductMattress>();
+    filterOutExcludedMattresses(mattressOptions || []).forEach((m) => {
+      if (m?.id) map.set(m.id, m);
+    });
+    if (externalMattress?.id && !map.has(externalMattress.id)) {
+      map.set(externalMattress.id, externalMattress);
+    }
+    return Array.from(map.values());
+  }, [mattressOptions, externalMattress, filterOutExcludedMattresses]);
+
+  useEffect(() => {
+    if (!mattresses.length) return;
+    setSelectedMattresses((prev) => prev.filter((sel) => mattresses.some((m) => m.id === sel.id)));
+  }, [mattresses]);
   const getMattressById = (id: number) => mattressMap[id] || null;
   const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null) => {
     if (!m) return 0;
@@ -1221,8 +1381,8 @@ const ProductPage = () => {
   const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
 
   const bunkMattressRulesEnabled = useMemo(
-    () => (product?.mattresses || []).some((m) => m.enable_bunk_positions),
-    [product?.mattresses]
+    () => mattresses.some((m) => m.enable_bunk_positions),
+    [mattresses]
   );
 
   const getBunkOccupancy = useCallback(
@@ -2646,6 +2806,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   Number(mattress.price_bottom ?? 0) === 0 &&
                   Number(mattress.price_both ?? 0) === 0;
 
+                const displaySizeLabel = normalizeSizeName(selectedSize) || selectedSize || '';
+
                 return (
                   <button
                     key={mattress.id}
@@ -2702,6 +2864,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           <p className="text-base font-semibold text-foreground leading-snug line-clamp-2">
                             {mattress.name || 'Mattress'}
                           </p>
+                          {displaySizeLabel && (
+                            <p className="text-[11px] font-medium text-muted-foreground">
+                              Size: {displaySizeLabel}
+                            </p>
+                          )}
                           <div className="text-right">
                             <span className="text-sm font-semibold text-espresso whitespace-nowrap">
                               {formatPrice(Number(mattress.price ?? 0))}
@@ -2893,4 +3060,5 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 export default ProductPage;
+
 
