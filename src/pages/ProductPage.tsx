@@ -520,22 +520,33 @@ const normalizeFeatures = (features: unknown): string[] => {
 
 
 
+const resolveMediaUrl = (url?: string) => {
+  if (!url) return url;
+  const trimmed = url.trim();
+  if (/^(data|blob):/i.test(trimmed)) return trimmed;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.startsWith("//")) return `https:${trimmed}`;
+  const API_BASE_URL =
+    (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
+    "https://reve-backend.onrender.com/api";
+  const backendBase = API_BASE_URL.replace(/\/api\/?$/, "");
+  const normalizedPath = trimmed.startsWith("/media/")
+    ? trimmed
+    : `/media/${trimmed.replace(/^\/+/, "")}`;
+  return `${backendBase}${normalizedPath}`;
+};
+
 const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; className: string }) => {
-
   if (isInlineSvgMarkup(icon)) {
-
     return <img src={svgMarkupToDataUrl((icon || '').trim())} alt={alt} className={className} />;
-
   }
 
-  if (icon) {
-
-    return <img src={icon} alt={alt} className={className} />;
-
+  const resolved = resolveMediaUrl(icon);
+  if (resolved) {
+    return <img src={resolved} alt={alt} className={className} />;
   }
 
   return <BedDouble className="h-5 w-5 text-muted-foreground" />;
-
 };
 
 const reassuranceItems = [
