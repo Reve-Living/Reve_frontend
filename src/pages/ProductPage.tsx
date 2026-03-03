@@ -2811,6 +2811,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   mattress.enable_bunk_positions && isSelected
                     ? selectedPick?.position || 'both'
                     : null;
+                const visiblePosition = mattress.enable_bunk_positions
+                  ? currentPosition || 'top'
+                  : null;
                 const isIncluded =
                   Number(mattress.price ?? 0) === 0 &&
                   Number(mattress.price_top ?? 0) === 0 &&
@@ -2818,6 +2821,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   Number(mattress.price_both ?? 0) === 0;
 
                 const displaySizeLabel = normalizeSizeName(selectedSize) || selectedSize || '';
+                const priceDisplay = mattress.enable_bunk_positions
+                  ? priceForPosition(mattress, visiblePosition)
+                  : Number(mattress.price ?? 0);
 
                 return (
                   <button
@@ -2826,26 +2832,29 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     onClick={() => {
                       setSelectedMattresses((prev) => {
                         const existing = prev.find((m) => m.id === mattress.id);
-                        let next: SelectedMattressPick[];
+
                         if (existing) {
-                          next = prev.filter((m) => m.id !== mattress.id);
-                        } else {
-                          let defaultPosition: 'top' | 'bottom' | 'both' | null = null;
-                          if (mattress.enable_bunk_positions) {
-                            const { topTaken, bottomTaken } = getBunkOccupancy(prev);
-                            if (!topTaken) defaultPosition = 'top';
-                            else if (!bottomTaken) defaultPosition = 'bottom';
-                            else defaultPosition = 'both';
-                          }
-                          next = [
-                            ...prev,
-                            {
-                              id: mattress.id,
-                              position: mattress.enable_bunk_positions ? defaultPosition : null,
-                            },
-                          ];
+                          setExternalMattress(null);
+                          return [];
                         }
-                        return normalizeBunkMattressSelections(next);
+
+                        let defaultPosition: 'top' | 'bottom' | 'both' | null = null;
+                        if (mattress.enable_bunk_positions) {
+                          const { topTaken, bottomTaken } = getBunkOccupancy([]);
+                          if (!topTaken) defaultPosition = 'top';
+                          else if (!bottomTaken) defaultPosition = 'bottom';
+                          else defaultPosition = 'both';
+                        }
+
+                        const normalized = normalizeBunkMattressSelections([
+                          {
+                            id: mattress.id,
+                            position: mattress.enable_bunk_positions ? defaultPosition : null,
+                          },
+                        ]);
+
+                        setExternalMattress(mattress);
+                        return normalized;
                       });
                     }}
                     className={`w-full rounded-2xl border p-4 text-left shadow-sm transition hover:shadow-md ${
@@ -2853,12 +2862,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     }`}
                   >
                     <div className="flex gap-4">
-                      <span
-                        className={`mt-2 h-4 w-4 shrink-0 rounded-full border-2 ${
-                          isSelected ? 'border-primary bg-primary/80 ring-2 ring-primary/30' : 'border-muted-foreground/40 bg-white'
-                        }`}
-                        aria-hidden="true"
-                      />
                       {mattress.image_url ? (
                         <img
                           src={mattress.image_url}
@@ -2882,7 +2885,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           )}
                           <div className="text-right">
                             <span className="text-sm font-semibold text-espresso whitespace-nowrap">
-                              {formatPrice(Number(mattress.price ?? 0))}
+                              {formatPrice(priceDisplay)}
                             </span>
                             <div
                               className={`text-[11px] font-semibold ${
@@ -2897,7 +2900,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           <p className="text-xs text-muted-foreground line-clamp-2">{mattress.description}</p>
                         )}
 
-                        {mattress.enable_bunk_positions && isSelected && (
+                        {mattress.enable_bunk_positions && (
                           <div className="mt-3">
                             <div className="text-[11px] font-semibold text-muted-foreground mb-2">Position</div>
                             <div className="grid grid-cols-3 gap-0 overflow-hidden rounded-lg border border-primary/50">
@@ -2906,24 +2909,27 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                   key={pos}
                                   type="button"
                                   className={`flex flex-col items-center justify-center gap-1 px-4 py-2 text-sm transition ${
-                                    currentPosition === pos
+                                    visiblePosition === pos
                                       ? 'bg-primary/10 text-primary font-semibold'
                                       : 'bg-white text-foreground hover:bg-primary/5'
                                   } ${pos === 'top' ? 'rounded-l-lg' : pos === 'both' ? 'rounded-r-lg' : ''}`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedMattresses((prev) => {
-                                      const next = prev.map((m) =>
-                                        m.id === mattress.id ? { ...m, position: pos } : m
-                                      );
-                                      return normalizeBunkMattressSelections(next);
-                                    });
+                                    setSelectedMattresses(() =>
+                                      normalizeBunkMattressSelections([
+                                        {
+                                          id: mattress.id,
+                                          position: pos,
+                                        },
+                                      ])
+                                    );
+                                    setExternalMattress(mattress);
                                   }}
                                 >
                                   <span className="flex items-center gap-2 capitalize">
                                     <span
                                       className={`h-2.5 w-2.5 rounded-full border ${
-                                        currentPosition === pos
+                                        visiblePosition === pos
                                           ? 'border-primary bg-primary/80'
                                           : 'border-muted-foreground/60 bg-white'
                                       }`}
