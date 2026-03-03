@@ -2808,12 +2808,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 const selectedPick = selectedMattresses.find((m) => m.id === mattress.id);
                 const isSelected = Boolean(selectedPick);
                 const currentPosition =
-                  mattress.enable_bunk_positions && isSelected
-                    ? selectedPick?.position || 'both'
-                    : null;
-                const visiblePosition = mattress.enable_bunk_positions
-                  ? currentPosition || 'top'
-                  : null;
+                  mattress.enable_bunk_positions && isSelected ? selectedPick?.position || 'both' : null;
+
+                const occupancyWithoutCurrent = getBunkOccupancy(
+                  selectedMattresses.filter((sel) => sel.id !== mattress.id)
+                );
+
+                const visiblePosition = mattress.enable_bunk_positions ? currentPosition : null;
                 const isIncluded =
                   Number(mattress.price ?? 0) === 0 &&
                   Number(mattress.price_top ?? 0) === 0 &&
@@ -2822,8 +2823,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                 const displaySizeLabel = normalizeSizeName(selectedSize) || selectedSize || '';
                 const priceDisplay = mattress.enable_bunk_positions
-                  ? priceForPosition(mattress, visiblePosition)
+                  ? visiblePosition
+                    ? priceForPosition(mattress, visiblePosition)
+                    : 0
                   : Number(mattress.price ?? 0);
+
+                const statusLabel = currentPosition
+                  ? isIncluded
+                    ? 'Included'
+                    : 'Upgrade'
+                  : 'Not selected';
 
                 return (
                   <button
@@ -2831,22 +2840,28 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     type="button"
                     onClick={() => {
                       setSelectedMattresses((prev) => {
-                        const existing = prev.find((m) => m.id === mattress.id);
+                        const withoutCurrent = prev.filter((m) => m.id !== mattress.id);
 
-                        if (existing) {
+                        // Toggle off if already selected
+                        if (currentPosition) {
                           setExternalMattress(null);
-                          return [];
+                          return withoutCurrent;
                         }
 
                         let defaultPosition: 'top' | 'bottom' | 'both' | null = null;
                         if (mattress.enable_bunk_positions) {
-                          const { topTaken, bottomTaken } = getBunkOccupancy([]);
+                          const { topTaken, bottomTaken } = getBunkOccupancy(withoutCurrent);
                           if (!topTaken) defaultPosition = 'top';
                           else if (!bottomTaken) defaultPosition = 'bottom';
-                          else defaultPosition = 'both';
+                          else defaultPosition = null; // no slots left
+                        }
+
+                        if (mattress.enable_bunk_positions && defaultPosition === null) {
+                          return prev; // nothing available
                         }
 
                         const normalized = normalizeBunkMattressSelections([
+                          ...withoutCurrent,
                           {
                             id: mattress.id,
                             position: mattress.enable_bunk_positions ? defaultPosition : null,
@@ -2889,10 +2904,14 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             </span>
                             <div
                               className={`text-[11px] font-semibold ${
-                                isIncluded ? 'text-green-700' : 'text-primary'
+                                statusLabel === 'Included'
+                                  ? 'text-green-700'
+                                  : statusLabel === 'Upgrade'
+                                    ? 'text-primary'
+                                    : 'text-muted-foreground'
                               }`}
                             >
-                              {isIncluded ? 'Included' : 'Upgrade'}
+                              {statusLabel}
                             </div>
                           </div>
                         </div>
@@ -2908,22 +2927,57 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                 <button
                                   key={pos}
                                   type="button"
+                                  disabled={
+                                    pos === 'top'
+                                      ? occupancyWithoutCurrent.topTaken && currentPosition !== 'top'
+                                      : pos === 'bottom'
+                                        ? occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom'
+                                        : (occupancyWithoutCurrent.topTaken || occupancyWithoutCurrent.bottomTaken) &&
+                                          currentPosition !== 'both'
+                                  }
                                   className={`flex flex-col items-center justify-center gap-1 px-4 py-2 text-sm transition ${
                                     visiblePosition === pos
                                       ? 'bg-primary/10 text-primary font-semibold'
                                       : 'bg-white text-foreground hover:bg-primary/5'
-                                  } ${pos === 'top' ? 'rounded-l-lg' : pos === 'both' ? 'rounded-r-lg' : ''}`}
+                                  } ${pos === 'top' ? 'rounded-l-lg' : pos === 'both' ? 'rounded-r-lg' : ''} ${
+                                    (pos === 'top' && occupancyWithoutCurrent.topTaken && currentPosition !== 'top') ||
+                                    (pos === 'bottom' && occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom') ||
+                                    (pos === 'both' &&
+                                      (occupancyWithoutCurrent.topTaken || occupancyWithoutCurrent.bottomTaken) &&
+                                      currentPosition !== 'both')
+                                      ? 'opacity-40 cursor-not-allowed'
+                                      : ''
+                                  }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    setSelectedMattresses(() =>
-                                      normalizeBunkMattressSelections([
+                                    setSelectedMattresses((prev) => {
+                                      const withoutCurrent = prev.filter((m) => m.id !== mattress.id);
+
+                                      // clicking the active position deselects this mattress
+                                      const wasCurrent = currentPosition === pos;
+                                      if (wasCurrent) {
+                                        setExternalMattress(null);
+                                        return withoutCurrent;
+                                      }
+
+                                      const disabled =
+                                        (pos === 'top' && occupancyWithoutCurrent.topTaken && currentPosition !== 'top') ||
+                                        (pos === 'bottom' && occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom') ||
+                                        (pos === 'both' &&
+                                          (occupancyWithoutCurrent.topTaken || occupancyWithoutCurrent.bottomTaken) &&
+                                          currentPosition !== 'both');
+                                      if (disabled) return prev;
+
+                                      const updated = normalizeBunkMattressSelections([
+                                        ...withoutCurrent,
                                         {
                                           id: mattress.id,
                                           position: pos,
                                         },
-                                      ])
-                                    );
-                                    setExternalMattress(mattress);
+                                      ]);
+                                      setExternalMattress(mattress);
+                                      return updated;
+                                    });
                                   }}
                                 >
                                   <span className="flex items-center gap-2 capitalize">
