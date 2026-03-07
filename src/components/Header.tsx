@@ -7,7 +7,6 @@ import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import type { Category, SubCategory } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
-import logoTextOnly from '@/assets/Logo wordmark.svg';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -89,19 +88,23 @@ const Header = () => {
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-1 md:gap-2">
               <img
                 src={logoLettersOnly}
                 alt="RL monogram"
-                className="h-20 w-auto"
+                className="h-16 md:h-20 lg:h-24 w-auto"
                 style={{ mixBlendMode: 'multiply' }} // blend white background into header backdrop
               />
-              <img
-                src={logoTextOnly}
-                alt="Reve Living"
-                className="h-20 w-auto"
-                style={{ filter: 'drop-shadow(0 0 0 transparent)' }}
-              />
+              <span 
+                className="text-2xl md:text-3xl lg:text-4xl pt-2"
+                style={{ 
+                  fontFamily: '"Great Vibes", cursive', 
+                  color: '#602e17',
+                  lineHeight: 1
+                }}
+              >
+                Reve Living
+              </span>
             </Link>
 
             {/* Desktop Navigation */}

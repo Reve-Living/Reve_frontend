@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
-import logoTextOnly from '@/assets/Logo wordmark.svg';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -33,18 +32,23 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="lg:col-span-4">
             <Link to="/" className="mb-4 inline-block">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 md:gap-2">
                 <img
                   src={logoLettersOnly}
                   alt="RL monogram"
-                  className="h-16 w-auto"
-                  style={{ mixBlendMode: 'multiply' }}
+                  className="h-12 md:h-14 lg:h-16 w-auto brightness-0 invert" // Make monogram white for footer
+                  style={{ mixBlendMode: 'normal' }}
                 />
-                <img
-                  src={logoTextOnly}
-                  alt="Reve Living wordmark"
-                  className="h-16 w-auto"
-                />
+                <span 
+                  className="text-xl md:text-2xl lg:text-3xl pt-1"
+                  style={{ 
+                    fontFamily: '"Great Vibes", cursive', 
+                    color: 'var(--cream)',
+                    lineHeight: 1
+                  }}
+                >
+                  Reve Living
+                </span>
               </div>
             </Link>
             <p className="mb-5 max-w-xs text-sm text-cream/80">

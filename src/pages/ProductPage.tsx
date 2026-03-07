@@ -1561,14 +1561,10 @@ const ProductPage = () => {
     [bunkMattressRulesEnabled, mattressMap]
   );
 
-  // Default to the included bunk mattress (Both) so it shows as selected until the user changes it.
+  // Default to the included mattress (Both when bunk positions exist) so it shows as selected until the user changes it.
   useEffect(() => {
     if (hasAutoSelectedIncludedMattress.current) return;
     if (!mattresses.length) return;
-
-    // Only auto-select the included mattress for bunk/divan beds or when bunk positions are present.
-    const hasBunkPositions = mattresses.some((m) => m.enable_bunk_positions);
-    if (!isBunkOrDivanCategory && !hasBunkPositions) return;
 
     // If a mattress is already selected (e.g., from a pre-select flow), don't override it.
     if (selectedMattresses.length > 0) {
@@ -1579,8 +1575,8 @@ const ProductPage = () => {
     // Prefer the Semi-Orthopaedic included option when available.
     const included =
       mattresses.find((m) => isIncludedMattress(m) && /semi[-\s]?orth/i.test(m.name || '')) ||
-      mattresses.find((m) => isIncludedMattress(m));
-    if (!included) return;
+      mattresses.find((m) => isIncludedMattress(m)) ||
+      mattresses[0]; // fallback: first option so bunk/divan beds always show a default
 
     const normalized = normalizeBunkMattressSelections([
       {
