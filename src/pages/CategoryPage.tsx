@@ -391,7 +391,7 @@ const CategoryPage = () => {
 
       {/* Compact heading */}
       <section className="border-b border-border/50 bg-card/60">
-        <div className="container mx-auto px-4 py-8 md:py-10">
+        <div className="w-full px-4 md:px-8 lg:px-12 py-8 md:py-10">
           <nav className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
             <Link to="/" className="hover:text-primary">Home</Link>
             <ChevronRight className="h-4 w-4" />
@@ -408,27 +408,29 @@ const CategoryPage = () => {
         </div>
       </section>
 
-      <section className="container mx-auto px-4 py-12">
-        <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
+      <section className="w-full px-4 md:px-8 lg:px-12 py-12">
+        <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)]">
           <aside className="hidden lg:block sticky top-24 h-fit self-start">
-            <FilterContent
-              priceRange={priceRange}
-              setPriceRange={setPriceRange}
-              priceBounds={priceBounds}
-              allSizes={allSizes}
-              selectedSizes={selectedSizes}
-              toggleSize={toggleSize}
-              availableFilters={availableFilters}
-              isFilterSelected={isFilterSelected}
-              toggleFilterOption={toggleFilterOption}
-              isLoading={isLoading}
-              clearFilters={clearFilters}
-              showSizeFilter={showSizeFilter}
-            />
+            <div className="rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.08)] border border-border/60 p-6 space-y-8">
+              <FilterContent
+                priceRange={priceRange}
+                setPriceRange={setPriceRange}
+                priceBounds={priceBounds}
+                allSizes={allSizes}
+                selectedSizes={selectedSizes}
+                toggleSize={toggleSize}
+                availableFilters={availableFilters}
+                isFilterSelected={isFilterSelected}
+                toggleFilterOption={toggleFilterOption}
+                isLoading={isLoading}
+                clearFilters={clearFilters}
+                showSizeFilter={showSizeFilter}
+              />
+            </div>
           </aside>
 
           <div className="space-y-10">
-            <div className="space-y-3 text-left max-w-5xl lg:max-w-6xl">
+            <div className="space-y-3 text-left lg:max-w-none">
               <motion.h1
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -441,7 +443,7 @@ const CategoryPage = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.05 }}
-                  className="text-base leading-7 text-muted-foreground max-w-3xl"
+                  className="text-base leading-7 text-muted-foreground"
                 >
                   {heroDescription}
                 </motion.p>
@@ -466,7 +468,7 @@ const CategoryPage = () => {
               )}
             </div>
 
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/60 pb-4">
               <p className="text-muted-foreground">
                 Showing {filteredProducts.length} of {allProducts.length} products
               </p>
@@ -610,8 +612,8 @@ const FilterContent = ({
           className="mb-4"
         />
         <div className="flex items-center justify-between text-sm">
-          <span>Â£{priceRange[0]}</span>
-          <span>Â£{priceRange[1]}</span>
+          <span>£{priceRange[0]}</span>
+          <span>£{priceRange[1]}</span>
         </div>
       </div>
 
