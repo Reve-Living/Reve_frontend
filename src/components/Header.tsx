@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import type { Category, SubCategory } from '@/lib/types';
-import logoWordmark from '@/assets/logo with wordmark.svg';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 import logoTextOnly from '@/assets/Logo wordmark.svg';
 
@@ -92,9 +91,16 @@ const Header = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
               <img
+                src={logoLettersOnly}
+                alt="RL monogram"
+                className="h-20 w-auto"
+                style={{ mixBlendMode: 'multiply' }} // blend white background into header backdrop
+              />
+              <img
                 src={logoTextOnly}
                 alt="Reve Living"
                 className="h-20 w-auto"
+                style={{ filter: 'drop-shadow(0 0 0 transparent)' }}
               />
             </Link>
 

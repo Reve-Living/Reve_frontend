@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
-import logo from '@/assets/logo.png';
+import logoLettersOnly from '@/assets/Logo letters only.svg';
+import logoTextOnly from '@/assets/Logo wordmark.svg';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -33,8 +34,17 @@ const Footer = () => {
           <div className="lg:col-span-4">
             <Link to="/" className="mb-4 inline-block">
               <div className="flex items-center gap-3">
-                <img src={logo} alt="Reve Living" className="h-14 w-auto rounded" />
-                <span className="font-serif text-xl font-semibold">Reve Living</span>
+                <img
+                  src={logoLettersOnly}
+                  alt="RL monogram"
+                  className="h-16 w-auto"
+                  style={{ mixBlendMode: 'multiply' }}
+                />
+                <img
+                  src={logoTextOnly}
+                  alt="Reve Living wordmark"
+                  className="h-16 w-auto"
+                />
               </div>
             </Link>
             <p className="mb-5 max-w-xs text-sm text-cream/80">
