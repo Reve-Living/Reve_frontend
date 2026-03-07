@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+﻿import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
@@ -83,7 +83,6 @@ const normalizeSizeName = (raw?: string): string => {
 
     '6ft': '6ft Superking',
     '6ftsuperking': '6ft Superking',
-    '6ftsuperking': '6ft Superking',
     '6ftsuper king': '6ft Superking',
     'superking': '6ft Superking',
     'super king': '6ft Superking',
@@ -92,7 +91,6 @@ const normalizeSizeName = (raw?: string): string => {
   const canonical = canonicalMap[key];
   if (canonical) return canonical;
 
-  // default: collapse multiple spaces and add a space after 'ft' if missing
   return value.replace(/ft(\d)/gi, 'ft $1').replace(/\s+/g, ' ').trim();
 };
 
@@ -115,12 +113,11 @@ const CategoryPage = () => {
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
-  const isMattressCategory = (slug: string | undefined) => 
-    slug === 'mattress' || slug === 'mattresses';
-  
+  const isMattressCategory = (s: string | undefined) => s === 'mattress' || s === 'mattresses';
+
   const showSizeFilter = category?.slug === 'beds';
   const showBedSizeFilter = isMattressCategory(category?.slug) && !!linkedBedSize;
-  // Track which filter option slugs actually exist on products currently in view (after category/subcategory selection)
+
   const activeOptionSlugs = useMemo(() => {
     const present = new Set<string>();
     allProducts.forEach((p) =>
@@ -144,12 +141,10 @@ const CategoryPage = () => {
         return;
       }
       try {
-        // Attempt primary slug, then common aliases (e.g., mattress ↔ mattresses), then name match fallback.
-        const tryFetchBySlug = async (slugCandidate: string) =>
-          apiGet<Category[]>(`/categories/?slug=${slugCandidate}`).catch(() => []);
+        const tryFetchBySlug = async (candidate: string) =>
+          apiGet<Category[]>(`/categories/?slug=${candidate}`).catch(() => []);
 
-        const aliasSlug =
-          slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
+        const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
 
         let categoryRes = await tryFetchBySlug(slug);
         if ((!categoryRes || categoryRes.length === 0) && aliasSlug) {
@@ -158,24 +153,19 @@ const CategoryPage = () => {
 
         let categoryItem = categoryRes?.[0] || null;
 
-        // Final fallback: search all categories by name match when slug lookup fails.
         if (!categoryItem) {
           const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
           categoryItem =
-            allCategories.find(
-              (c) => c.name?.trim().toLowerCase() === slug.replace(/-/g, ' ').toLowerCase()
-            ) || null;
+            allCategories.find((c) => c.name?.trim().toLowerCase() === slug.replace(/-/g, ' ').toLowerCase()) ||
+            null;
         }
 
         const resolvedSlug = categoryItem?.slug || slug;
 
         setCategory(categoryItem);
 
-        // Fetch subcategories, products, and filters in parallel to reduce perceived latency.
         const [subcategoryRes, productsRes, filtersRes] = await Promise.allSettled([
-          categoryItem?.id
-            ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`)
-            : Promise.resolve([]),
+          categoryItem?.id ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`) : Promise.resolve([]),
           apiGet<Product[] | { results?: Product[] }>(
             subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
           ),
@@ -207,7 +197,6 @@ const CategoryPage = () => {
         });
         setAllProducts(orderedProducts);
 
-        // Filters
         if (filtersRes.status === 'fulfilled' && Array.isArray(filtersRes.value?.filters)) {
           setAvailableFilters(filtersRes.value.filters);
         } else {
@@ -231,7 +220,6 @@ const CategoryPage = () => {
     load();
   }, [slug, subSlug]);
 
-  // Drop selections that no longer exist when filter definitions change
   useEffect(() => {
     if (availableFilters.length === 0) {
       setSelectedFilters({});
@@ -242,7 +230,7 @@ const CategoryPage = () => {
       const valid = new Set(availableFilters.map((f) => f.slug));
       availableFilters.forEach((f) => {
         const options = new Set(f.options.map((o) => o.slug));
-        const selected = (prev[f.slug] || []).filter((slug) => options.has(slug));
+        const selected = (prev[f.slug] || []).filter((s) => options.has(s));
         if (selected.length) next[f.slug] = selected;
       });
       return next;
@@ -250,9 +238,7 @@ const CategoryPage = () => {
   }, [availableFilters]);
 
   const selectedSubcategory = useMemo(() => {
-    if (!subSlug) {
-      return null;
-    }
+    if (!subSlug) return null;
     return (
       subcategories.find((sub) => sub.slug === subSlug) ||
       category?.subcategories?.find((sub) => sub.slug === subSlug) ||
@@ -263,18 +249,12 @@ const CategoryPage = () => {
   const heroName = selectedSubcategory?.name || category?.name || '';
   const heroDescription = selectedSubcategory?.description || category?.description || '';
   const fallbackProductImage = allProducts[0]?.images?.[0]?.url || '';
-  const heroImage = resolveImageUrl(
-    selectedSubcategory?.image || category?.image || fallbackProductImage || ''
-  );
+  const heroImage = resolveImageUrl(selectedSubcategory?.image || category?.image || fallbackProductImage || '');
   const heroBackgroundImage = toBackgroundImageValue(heroImage);
 
   const priceBounds = useMemo(() => {
-    const prices = allProducts
-      .map((p) => Number(p.price))
-      .filter((value) => !Number.isNaN(value));
-    if (prices.length === 0) {
-      return { min: 0, max: 1500 };
-    }
+    const prices = allProducts.map((p) => Number(p.price)).filter((v) => !Number.isNaN(v));
+    if (prices.length === 0) return { min: 0, max: 1500 };
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     const roundedMin = Math.max(0, Math.floor(min / 50) * 50);
@@ -288,7 +268,7 @@ const CategoryPage = () => {
 
   const allSizes = useMemo(() => {
     if (!showSizeFilter) return [];
-    const map = new Map<string, string>(); // key -> display label
+    const map = new Map<string, string>();
     allProducts.forEach((p) =>
       (p.sizes || []).forEach((s) => {
         const label = normalizeSizeName(s.name);
@@ -300,23 +280,17 @@ const CategoryPage = () => {
     return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [allProducts, showSizeFilter]);
 
-  // Clear size selections when size filter not applicable
   useEffect(() => {
     if (!showSizeFilter && selectedSizes.length > 0) {
       setSelectedSizes([]);
     }
   }, [showSizeFilter, selectedSizes.length]);
 
-  // Filter and sort products
   const filteredProducts = useMemo(() => {
     let products = [...allProducts];
 
-    // Price filter
-    products = products.filter(
-      (p) => p.price >= priceRange[0] && p.price <= priceRange[1]
-    );
+    products = products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
-    // Size filter for beds
     if (showSizeFilter && selectedSizes.length > 0) {
       products = products.filter((p) =>
         (p.sizes || []).some((size) => {
@@ -326,25 +300,20 @@ const CategoryPage = () => {
       );
     }
 
-    // Bed size filter for mattresses (when linked from a bed product)
     if (showBedSizeFilter && linkedBedSize) {
       products = products.filter((p) =>
         (p.sizes || []).some((size) => size.name.toLowerCase().includes(linkedBedSize.toLowerCase()))
       );
     }
 
-    // Dynamic filters (category/subcategory specific)
     Object.entries(selectedFilters).forEach(([filterSlug, optionSlugs]) => {
       if (!optionSlugs.length) return;
       products = products.filter((p) => {
         const values = p.filter_values || [];
-        return optionSlugs.every((opt) =>
-          values.some((v) => v.filter_type === filterSlug && v.option === opt)
-        );
+        return optionSlugs.every((opt) => values.some((v) => v.filter_type === filterSlug && v.option === opt));
       });
     });
 
-    // Sort
     switch (sortBy) {
       case 'price-low':
         products.sort((a, b) => a.price - b.price);
@@ -364,9 +333,7 @@ const CategoryPage = () => {
   }, [allProducts, priceRange, selectedSizes, selectedFilters, sortBy]);
 
   const toggleSize = (size: string) => {
-    setSelectedSizes((prev) =>
-      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
-    );
+    setSelectedSizes((prev) => (prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]));
   };
 
   const toggleFilterOption = (filterSlug: string, optionSlug: string) => {
@@ -393,7 +360,7 @@ const CategoryPage = () => {
   if (!hasData && !isLoading && loadError) {
     return (
       <div className="min-h-screen bg-background">
-<Header />
+        <Header />
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
           <div className="text-center">
             <h1 className="mb-4 font-serif text-3xl font-bold">Category Not Found</h1>
@@ -409,7 +376,7 @@ const CategoryPage = () => {
   if (!hasData && isLoading) {
     return (
       <div className="min-h-screen bg-background">
-<Header />
+        <Header />
         <div className="container mx-auto flex min-h-[50vh] items-center justify-center px-4">
           <div className="text-center text-muted-foreground">Loading category...</div>
         </div>
@@ -420,16 +387,16 @@ const CategoryPage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-<Header />
+      <Header />
 
-      {/* Compact heading instead of full hero */}
+      {/* Compact heading */}
       <section className="border-b border-border/50 bg-card/60">
         <div className="container mx-auto px-4 py-8 md:py-10">
           <nav className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
             <Link to="/" className="hover:text-primary">Home</Link>
             <ChevronRight className="h-4 w-4" />
-            <Link to={`/category/${category.slug}`} className="hover:text-primary">
-              {category.name}
+            <Link to={`/category/${category?.slug}`} className="hover:text-primary">
+              {category?.name}
             </Link>
             {selectedSubcategory && (
               <>
@@ -438,84 +405,12 @@ const CategoryPage = () => {
               </>
             )}
           </nav>
-          <div className="space-y-3 text-left max-w-5xl lg:max-w-6xl mx-auto">
-            <motion.h1
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="font-serif text-3xl font-bold md:text-4xl text-foreground"
-            >
-              {heroName}
-            </motion.h1>
-            {heroDescription && (
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 }}
-                className="text-base leading-7 text-muted-foreground max-w-3xl"
-              >
-                {heroDescription}
-              </motion.p>
-            )}
-            {showBedSizeFilter && linkedBedSize && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="rounded-lg bg-primary/8 border border-primary/30 px-4 py-2 inline-block"
-              >
-                <p className="text-sm font-medium text-primary">
-                  Showing {linkedBedSize} size mattresses
-                  <Link 
-                    to={`/category/${slug}`}
-                    className="ml-2 underline underline-offset-2 hover:no-underline"
-                  >
-                    View all →
-                  </Link>
-                </p>
-              </motion.div>
-            )}
-          </div>
         </div>
-
       </section>
 
-      <div className="container mx-auto px-4 py-12">
-        {/* Toolbar */}
-        <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <p className="text-muted-foreground">
-            Showing {filteredProducts.length} of {allProducts.length} products
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4">
-            {/* Mobile Filter Toggle */}
-            <Button
-              variant="outline"
-              onClick={() => setIsFilterOpen(!isFilterOpen)}
-              className="gap-2 border-accent md:hidden"
-            >
-              <SlidersHorizontal className="h-4 w-4" />
-              Filters
-            </Button>
-
-            {/* Sort */}
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-48 border-accent">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Featured</SelectItem>
-                <SelectItem value="price-low">Price: Low to High</SelectItem>
-                <SelectItem value="price-high">Price: High to Low</SelectItem>
-                <SelectItem value="rating">Highest Rated</SelectItem>
-                <SelectItem value="newest">Newest</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-
-        <div className="flex gap-8">
-          {/* Filters Sidebar - Desktop & Tablet */}
-          <aside className="hidden w-64 flex-shrink-0 md:block">
+      <section className="container mx-auto px-4 py-12">
+        <div className="grid gap-10 lg:grid-cols-[280px_1fr]">
+          <aside className="hidden lg:block sticky top-24 h-fit self-start">
             <FilterContent
               priceRange={priceRange}
               setPriceRange={setPriceRange}
@@ -532,82 +427,147 @@ const CategoryPage = () => {
             />
           </aside>
 
-          {/* Mobile Filters */}
-          {isFilterOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-50 bg-espresso/50 backdrop-blur-sm lg:hidden"
-              onClick={() => setIsFilterOpen(false)}
-            >
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '-100%' }}
-                onClick={(e) => e.stopPropagation()}
-                className="h-full w-80 overflow-y-auto bg-background p-6"
+          <div className="space-y-10">
+            <div className="space-y-3 text-left max-w-5xl lg:max-w-6xl">
+              <motion.h1
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-serif text-3xl font-bold md:text-4xl text-foreground"
               >
-                <div className="mb-6 flex items-center justify-between">
-                  <h3 className="font-serif text-xl font-semibold">Filters</h3>
-                  <button onClick={() => setIsFilterOpen(false)}>
-                    <X className="h-5 w-5" />
-                  </button>
-                </div>
-                <FilterContent
-                  priceRange={priceRange}
-                  setPriceRange={setPriceRange}
-                  priceBounds={priceBounds}
-                  allSizes={allSizes}
-                  selectedSizes={selectedSizes}
-                  toggleSize={toggleSize}
-                  availableFilters={availableFilters}
-                  isFilterSelected={isFilterSelected}
-                  toggleFilterOption={toggleFilterOption}
-                  isLoading={isLoading}
-                  clearFilters={clearFilters}
-                  showSizeFilter={showSizeFilter}
-                />
-              </motion.div>
-            </motion.div>
-          )}
-
-          {/* Products Grid */}
-          <div className="flex-1">
-            {filteredProducts.length === 0 ? (
-              <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
-                <div className="text-center">
-                  <p className="mb-4 text-lg text-muted-foreground">
-                    No products match your filters
+                {heroName}
+              </motion.h1>
+              {heroDescription && (
+                <motion.p
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className="text-base leading-7 text-muted-foreground max-w-3xl"
+                >
+                  {heroDescription}
+                </motion.p>
+              )}
+              {showBedSizeFilter && linkedBedSize && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                  className="rounded-lg bg-primary/8 border border-primary/30 px-4 py-2 inline-block"
+                >
+                  <p className="text-sm font-medium text-primary">
+                    Showing {linkedBedSize} size mattresses
+                    <Link
+                      to={`/category/${slug}`}
+                      className="ml-2 underline underline-offset-2 hover:no-underline"
+                    >
+                      View all â†’
+                    </Link>
                   </p>
-                  <Button onClick={clearFilters} variant="outline">
-                    Clear Filters
-                  </Button>
-                </div>
+                </motion.div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <p className="text-muted-foreground">
+                Showing {filteredProducts.length} of {allProducts.length} products
+              </p>
+
+              <div className="flex flex-wrap items-center gap-4">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsFilterOpen(!isFilterOpen)}
+                  className="gap-2 border-accent lg:hidden"
+                >
+                  <SlidersHorizontal className="h-4 w-4" />
+                  Filters
+                </Button>
+
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="w-48 border-accent">
+                    <SelectValue placeholder="Sort by" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="featured">Featured</SelectItem>
+                    <SelectItem value="price-low">Price: Low to High</SelectItem>
+                    <SelectItem value="price-high">Price: High to Low</SelectItem>
+                    <SelectItem value="rating">Highest Rated</SelectItem>
+                    <SelectItem value="newest">Newest</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            ) : (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredProducts.map((product, index) => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={product} 
-                    index={index}
-                    fromBedProduct={linkedBedProduct}
-                    selectedBedSize={linkedBedSize}
+            </div>
+
+            {isFilterOpen && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-50 bg-espresso/50 backdrop-blur-sm lg:hidden"
+                onClick={() => setIsFilterOpen(false)}
+              >
+                <motion.div
+                  initial={{ x: '-100%' }}
+                  animate={{ x: 0 }}
+                  exit={{ x: '-100%' }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-full w-80 overflow-y-auto bg-background p-6"
+                >
+                  <div className="mb-6 flex items-center justify-between">
+                    <h3 className="font-serif text-xl font-semibold">Filters</h3>
+                    <button onClick={() => setIsFilterOpen(false)}>
+                      <X className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <FilterContent
+                    priceRange={priceRange}
+                    setPriceRange={setPriceRange}
+                    priceBounds={priceBounds}
+                    allSizes={allSizes}
+                    selectedSizes={selectedSizes}
+                    toggleSize={toggleSize}
+                    availableFilters={availableFilters}
+                    isFilterSelected={isFilterSelected}
+                    toggleFilterOption={toggleFilterOption}
+                    isLoading={isLoading}
+                    clearFilters={clearFilters}
+                    showSizeFilter={showSizeFilter}
                   />
-                ))}
-              </div>
+                </motion.div>
+              </motion.div>
             )}
+
+            <div className="flex-1">
+              {filteredProducts.length === 0 ? (
+                <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
+                  <div className="text-center">
+                    <p className="mb-4 text-lg text-muted-foreground">No products match your filters</p>
+                    <Button onClick={clearFilters} variant="outline">
+                      Clear Filters
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {filteredProducts.map((product, index) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      index={index}
+                      fromBedProduct={linkedBedProduct}
+                      selectedBedSize={linkedBedSize}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      </section>
 
       <Footer />
     </div>
   );
 };
 
-// Filter Content Component
 interface FilterContentProps {
   priceRange: number[];
   setPriceRange: (range: number[]) => void;
@@ -639,7 +599,6 @@ const FilterContent = ({
 }: FilterContentProps) => {
   return (
     <div className="space-y-8">
-      {/* Price Range */}
       <div>
         <h4 className="mb-4 font-serif text-lg font-semibold">Price Range</h4>
         <Slider
@@ -651,12 +610,11 @@ const FilterContent = ({
           className="mb-4"
         />
         <div className="flex items-center justify-between text-sm">
-          <span>£{priceRange[0]}</span>
-          <span>£{priceRange[1]}</span>
+          <span>Â£{priceRange[0]}</span>
+          <span>Â£{priceRange[1]}</span>
         </div>
       </div>
 
-      {/* Sizes (Beds only) */}
       {showSizeFilter && (isLoading || allSizes.length > 0) && (
         <div>
           <h4 className="mb-4 font-serif text-lg font-semibold">Size</h4>
@@ -685,7 +643,6 @@ const FilterContent = ({
         </div>
       )}
 
-      {/* Category/Subcategory Filters */}
       {availableFilters.length > 0 && (
         <div className="space-y-6">
           {availableFilters.map((filter) => (
@@ -725,12 +682,7 @@ const FilterContent = ({
         </div>
       )}
 
-      {/* Clear Filters */}
-      <Button
-        variant="outline"
-        onClick={clearFilters}
-        className="w-full border-accent"
-      >
+      <Button variant="outline" onClick={clearFilters} className="w-full border-accent">
         Clear All Filters
       </Button>
     </div>
@@ -738,4 +690,3 @@ const FilterContent = ({
 };
 
 export default CategoryPage;
-
