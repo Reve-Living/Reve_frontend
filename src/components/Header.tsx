@@ -88,15 +88,15 @@ const Header = () => {
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-1 md:gap-2">
+            <Link to="/" className="flex items-center gap-1 md:gap-2 leading-none">
               <img
                 src={logoLettersOnly}
                 alt="RL monogram"
-                className="h-16 md:h-20 lg:h-24 w-auto"
+                className="block h-12 md:h-14 lg:h-16 w-auto object-contain"
                 style={{ mixBlendMode: 'multiply' }} // blend white background into header backdrop
               />
               <span 
-                className="text-2xl md:text-3xl lg:text-4xl pt-2"
+                className="block text-2xl md:text-3xl lg:text-4xl leading-none"
                 style={{ 
                   fontFamily: '"Great Vibes", cursive', 
                   color: '#602e17',

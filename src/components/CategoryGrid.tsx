@@ -3,11 +3,20 @@ import { ArrowUpRight, ArrowRight } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiGet } from '@/lib/api';
-import { Category, Product } from '@/lib/types';
+import { Category, SubCategory, Product } from '@/lib/types';
 
 const CategoryGrid = () => {
   const navigate = useNavigate();
-  const [categories, setCategories] = useState<Category[]>([]);
+  type GridItem = {
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    image: string;
+    isSubcategory?: boolean;
+    parentSlug?: string;
+  };
+  const [categories, setCategories] = useState<GridItem[]>([]);
 
   const resolveImageUrl = useMemo(
     () => (value?: string) => {
@@ -31,28 +40,60 @@ const CategoryGrid = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await apiGet<Category[]>('/categories/');
-        const topCategories = data.slice(0, 4);
+        const [categoryData, subcategoryData] = await Promise.all([
+          apiGet<Category[]>('/categories/'),
+          apiGet<SubCategory[]>('/subcategories/'),
+        ]);
 
-        const withImages = await Promise.all(
-          topCategories.map(async (category, index) => {
-            let image = resolveImageUrl(category.image);
+        // Identify the main bed category so we can split its subcategories into their own cards.
+        const bedCategory = categoryData.find((c) => (c.slug || '').toLowerCase().includes('bed'));
+        const otherCategories = categoryData.filter((c) => c.id !== bedCategory?.id);
+        const bedSubcategories = bedCategory
+          ? subcategoryData.filter((sub) => sub.category === bedCategory.id)
+          : [];
 
-            if (!image) {
-              try {
-                const products = await apiGet<Product[]>(`/products/?category=${category.slug}`);
-                image = resolveImageUrl(products?.[0]?.images?.[0]?.url);
-              } catch {
-                image = '';
-              }
+        const buildCard = async (
+          item: Category | SubCategory,
+          parentSlug?: string,
+          index = 0,
+          isSubcategory = false
+        ): Promise<GridItem | null> => {
+          let image = resolveImageUrl((item as Category).image || (item as SubCategory).image);
+
+          if (!image) {
+            try {
+              const endpoint = isSubcategory
+                ? `/products/?subcategory=${item.slug}`
+                : `/products/?category=${item.slug}`;
+              const products = await apiGet<Product[]>(endpoint);
+              image = resolveImageUrl(products?.[0]?.images?.[0]?.url);
+            } catch {
+              image = '';
             }
+          }
 
-            if (!image) return null;
-            return { ...category, image, id: category.id ?? index };
-          })
+          if (!image) return null;
+
+          return {
+            id: item.id ?? index,
+            name: item.name,
+            slug: item.slug,
+            description: (item as Category).description || (item as SubCategory).description || '',
+            image,
+            isSubcategory,
+            parentSlug,
+          };
+        };
+
+        const bedCards = await Promise.all(
+          bedSubcategories.map((sub, idx) => buildCard(sub, bedCategory?.slug, idx, true))
         );
 
-        const valid = withImages.filter((c): c is Category => Boolean(c));
+        const otherCards = await Promise.all(
+          otherCategories.map((category, idx) => buildCard(category, undefined, idx))
+        );
+
+        const valid = [...bedCards, ...otherCards].filter((c): c is GridItem => Boolean(c));
         setCategories(valid);
       } catch {
         setCategories([]);
@@ -98,7 +139,11 @@ const CategoryGrid = () => {
               key={category.id}
             >
               <Link
-                to={`/category/${category.slug || 'divan-beds'}`}
+                to={
+                  category.isSubcategory && category.parentSlug
+                    ? `/category/${category.parentSlug}?sub=${category.slug}`
+                    : `/category/${category.slug || 'divan-beds'}`
+                }
                 className="group relative flex h-full w-full overflow-hidden rounded-2xl"
               >
                 {/* Image with Parallax Effect */}

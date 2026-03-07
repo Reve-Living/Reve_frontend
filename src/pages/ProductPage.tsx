@@ -368,7 +368,7 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
 
       if (typeof option === 'string') {
 
-        const label = option.trim();
+        const label = option.trim();origin
 
         return label ? { label } : null;
 
@@ -617,6 +617,13 @@ const ProductPage = () => {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const hasAutoSelectedIncludedMattress = useRef(false);
   const preloadedAssets = useRef(new Set<string>());
+
+  // Reset mattress selection/autoselect state when navigating to a different product
+  useEffect(() => {
+    setSelectedMattresses([]);
+    setExternalMattress(null);
+    hasAutoSelectedIncludedMattress.current = false;
+  }, [product?.id]);
 
   const isBunkOrDivanCategory = useMemo(() => {
     const slug = (product?.category_slug || '').toLowerCase();
@@ -1918,7 +1925,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 lg:px-8 py-8">
 
         <nav className="mb-8 flex items-center gap-2 text-sm text-muted-foreground">
 
@@ -1948,13 +1955,12 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 
-        <div className="grid gap-12 lg:grid-cols-2">
+        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] items-start">
 
-          <div className="space-y-4 lg:sticky lg:top-24 self-start">
+          <div className="space-y-6 lg:sticky lg:top-24 self-start px-0 sm:px-2 max-w-[660px] w-full mx-auto">
 
             <motion.div
-
-              className="relative aspect-square cursor-zoom-in overflow-hidden rounded-lg bg-card"
+              className="relative aspect-square max-h-[520px] w-full mx-auto cursor-zoom-in overflow-hidden rounded-2xl bg-card shadow-md"
 
               onClick={() => setIsZoomed(!isZoomed)}
 
@@ -1978,7 +1984,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   transition={{ duration: 0.3 }}
 
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover bg-[#f7f3ef]"
 
                 />
 
@@ -1994,7 +2000,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       e.stopPropagation();
                       openGallery();
                     }}
-                    className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-black/70 px-4 py-2 text-sm font-medium text-white backdrop-blur"
+                    className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-medium text-white backdrop-blur shadow-lg"
                     aria-label="Open full gallery"
                   >
                     <Maximize2 className="h-4 w-4" />
@@ -2084,7 +2090,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 
-          <div className="space-y-6 lg:pr-2">
+          <div className="space-y-6 lg:pr-2 w-full max-w-[660px] mx-auto">
 
             <div className="space-y-3">
 
