@@ -125,7 +125,10 @@ const CheckoutPage = () => {
     if (success === '1' || paypalToken) {
       const lastOrderId = localStorage.getItem('last_order_id');
       if (lastOrderId) {
-        apiPost(`/orders/${lastOrderId}/mark_paid/`, {});
+        apiPost(`/orders/${lastOrderId}/mark_paid/`, {
+          payment_method: 'paypal',
+          payment_id: paypalToken || 'paypal',
+        });
       }
       setStep('confirmation');
       clearCart();
