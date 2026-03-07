@@ -2286,7 +2286,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     <span
                                       className="absolute inset-0 rounded-md"
                                       style={{
-                                        backgroundColor: option.icon_url ? 'transparent' : option.color_code || '#f3f4f6',
+                                        // Show the color immediately while the swatch image loads to avoid blank states.
+                                        backgroundColor: option.color_code || '#f3f4f6',
                                         backgroundImage: option.icon_url ? `url(${option.icon_url})` : undefined,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',

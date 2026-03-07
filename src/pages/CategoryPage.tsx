@@ -106,6 +106,7 @@ const CategoryPage = () => {
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   const [sortBy, setSortBy] = useState('featured');
   const [priceRange, setPriceRange] = useState([0, 1500]);
@@ -133,6 +134,7 @@ const CategoryPage = () => {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
+      setLoadError(false);
       if (!slug) {
         setCategory(null);
         setSubcategories([]);
@@ -168,20 +170,35 @@ const CategoryPage = () => {
         const resolvedSlug = categoryItem?.slug || slug;
 
         setCategory(categoryItem);
-        if (categoryItem) {
-          const subcategoryRes = await apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`);
-          setSubcategories(subcategoryRes);
+
+        // Fetch subcategories, products, and filters in parallel to reduce perceived latency.
+        const [subcategoryRes, productsRes, filtersRes] = await Promise.allSettled([
+          categoryItem?.id
+            ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`)
+            : Promise.resolve([]),
+          apiGet<Product[] | { results?: Product[] }>(
+            subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
+          ),
+          apiGet<{ filters: FilterType[] }>(
+            `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
+          ),
+        ]);
+
+        if (subcategoryRes.status === 'fulfilled' && Array.isArray(subcategoryRes.value)) {
+          setSubcategories(subcategoryRes.value);
         } else {
           setSubcategories([]);
         }
-        const productsRes = subSlug
-          ? await apiGet<Product[]>(`/products/?subcategory=${subSlug}`)
-          : await apiGet<Product[]>(`/products/?category=${resolvedSlug}`);
-        const normalizedProducts = Array.isArray(productsRes)
-          ? productsRes
-          : Array.isArray((productsRes as unknown as { results?: Product[] })?.results)
-          ? (productsRes as unknown as { results: Product[] }).results
-          : [];
+
+        const normalizedProducts =
+          productsRes.status === 'fulfilled'
+            ? Array.isArray(productsRes.value)
+              ? productsRes.value
+              : Array.isArray((productsRes.value as { results?: Product[] })?.results)
+              ? (productsRes.value as { results: Product[] }).results
+              : []
+            : [];
+
         const orderedProducts = [...normalizedProducts].sort((a, b) => {
           const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : 0;
           const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : 0;
@@ -190,21 +207,24 @@ const CategoryPage = () => {
         });
         setAllProducts(orderedProducts);
 
-        // Fetch filter definitions for this category/subcategory
-        try {
-          const filtersRes = await apiGet<{ filters: FilterType[] }>(
-            `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
-          );
-          setAvailableFilters(Array.isArray(filtersRes?.filters) ? filtersRes.filters : []);
-        } catch {
+        // Filters
+        if (filtersRes.status === 'fulfilled' && Array.isArray(filtersRes.value?.filters)) {
+          setAvailableFilters(filtersRes.value.filters);
+        } else {
           setAvailableFilters([]);
         }
+
+        if (!categoryItem && orderedProducts.length === 0) {
+          setLoadError(true);
+        }
+
         setIsLoading(false);
       } catch {
         setCategory(null);
         setSubcategories([]);
         setAllProducts([]);
         setAvailableFilters([]);
+        setLoadError(true);
         setIsLoading(false);
       }
     };
@@ -368,7 +388,9 @@ const CategoryPage = () => {
     setSelectedFilters({});
   };
 
-  if (!category && !isLoading) {
+  const hasData = Boolean(category) || allProducts.length > 0;
+
+  if (!hasData && !isLoading && loadError) {
     return (
       <div className="min-h-screen bg-background">
 <Header />
@@ -384,7 +406,7 @@ const CategoryPage = () => {
       </div>
     );
   }
-  if (!category && isLoading) {
+  if (!hasData && isLoading) {
     return (
       <div className="min-h-screen bg-background">
 <Header />
