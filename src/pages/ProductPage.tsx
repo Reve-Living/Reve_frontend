@@ -3010,8 +3010,19 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           },
                         ]);
 
+                        let next = normalized;
+
+                        // When selecting a paid/upgrade mattress, drop any zero-price included mattress selections.
+                        if (!isIncluded) {
+                          next = normalized.filter((sel) => {
+                            const mSel = mattressMap[normalizeId(sel.id)];
+                            if (!mSel) return true;
+                            return !isIncludedMattress(mSel) || sel.id === mattress.id;
+                          });
+                        }
+
                         setExternalMattress(mattress);
-                        return normalized;
+                        return next;
                       });
                     }}
                     className={`w-full rounded-2xl border p-4 text-left shadow-sm transition hover:shadow-md ${
