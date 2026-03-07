@@ -136,7 +136,7 @@ const CategoryGrid = () => {
           <div className="grid gap-4 md:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 auto-rows-[240px] md:auto-rows-[260px]">
             {categories.map((category) => (
             <div 
-              key={category.id}
+              key={`${category.isSubcategory ? 'sub' : 'cat'}-${category.slug || category.id}`}
             >
               <Link
                 to={

@@ -658,10 +658,12 @@ const ProductPage = () => {
 
   const isIncludedMattress = useCallback((m: ProductMattress | null | undefined) => {
     if (!m) return false;
-    const base = Number(m.price ?? 0);
-    const top = Number(m.price_top ?? 0);
-    const bottom = Number(m.price_bottom ?? 0);
-    const both = Number(m.price_both ?? 0);
+    const toZero = (val: number | null | undefined) =>
+      val === null || val === undefined ? 0 : Number(val);
+    const base = toZero(m.price);
+    const top = toZero(m.price_top);
+    const bottom = toZero(m.price_bottom);
+    const both = toZero(m.price_both);
     return base === 0 && top === 0 && bottom === 0 && both === 0;
   }, []);
 
@@ -746,6 +748,7 @@ const ProductPage = () => {
         setSelectedMattresses([]);
         setExternalMattress(null);
         setActiveVariantGroupKey('');
+        hasAutoSelectedIncludedMattress.current = false;
         setEnabledGroups({});
         hasAutoSelectedIncludedMattress.current = false;
 
@@ -770,6 +773,7 @@ const ProductPage = () => {
         setIsZoomed(false);
         setActiveInfoTab(null);
         setSelectedMattresses([]);
+        hasAutoSelectedIncludedMattress.current = false;
         
         // Pre-select mattress if coming from a mattress selection flow
         const preSelectMattressId = searchParams.get('pre-select-mattress');
@@ -1416,6 +1420,11 @@ const ProductPage = () => {
     }
     return Array.from(map.values());
   }, [mattressOptions, externalMattress, filterOutExcludedMattresses]);
+
+  // Allow auto-select to rerun when the mattresses list refreshes
+  useEffect(() => {
+    hasAutoSelectedIncludedMattress.current = false;
+  }, [mattresses.length]);
 
   useEffect(() => {
     if (!mattresses.length) return;
