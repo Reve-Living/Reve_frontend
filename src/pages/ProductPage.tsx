@@ -1178,6 +1178,8 @@ const ProductPage = () => {
 
           color_code: color.hex_code,
           icon_url: resolveMediaUrl(color.image_url),
+          // Fallback texture placeholder to avoid black flash while image streams in.
+          placeholder: color.hex_code || '#f3f4f6',
 
           price_delta: 0,
 
@@ -2298,19 +2300,21 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             >
                                 {group.kind === 'color' ? (
                                   <>
-                                    <span
-                                      className="absolute inset-0 rounded-md"
-                                      style={{
-                                        // Show the color immediately while the swatch image loads to avoid blank states.
-                                        backgroundColor: option.color_code || '#f3f4f6',
-                                        backgroundImage: option.icon_url
-                                          ? `url(${resolveMediaUrl(option.icon_url)})`
-                                          : undefined,
-                                        backgroundSize: 'cover',
-                                        backgroundPosition: 'center',
-                                        backgroundRepeat: 'no-repeat',
-                                      }}
-                                    />
+                                    {option.icon_url ? (
+                                      <img
+                                        src={resolveMediaUrl(option.icon_url)}
+                                        alt={formatOptionLabel(option.label)}
+                                        className="absolute inset-0 h-full w-full object-cover rounded-md"
+                                      />
+                                    ) : (
+                                      <span
+                                        className="absolute inset-0 rounded-md"
+                                        style={{
+                                          backgroundColor:
+                                            option.color_code || (option as any).placeholder || '#f3f4f6',
+                                        }}
+                                      />
+                                    )}
                                     <span className="sr-only">{formatOptionLabel(option.label)}</span>
                                   </>
                                 ) : (

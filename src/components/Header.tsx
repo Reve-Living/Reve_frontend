@@ -6,7 +6,9 @@ import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import type { Category, SubCategory } from '@/lib/types';
-import logo from '@/assets/logo.png';
+import logoWordmark from '@/assets/logo with wordmark.svg';
+import logoLettersOnly from '@/assets/Logo letters only.svg';
+import logoTextOnly from '@/assets/Logo wordmark.svg';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -90,13 +92,10 @@ const Header = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3">
               <img
-                src={logo}
+                src={logoTextOnly}
                 alt="Reve Living"
-                className="h-20 w-auto rounded mt-2"
+                className="h-20 w-auto"
               />
-              <span className="hidden font-serif text-xl font-semibold text-foreground sm:block">
-                Reve Living
-              </span>
             </Link>
 
             {/* Desktop Navigation */}

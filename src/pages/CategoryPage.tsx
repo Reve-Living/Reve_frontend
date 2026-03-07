@@ -438,7 +438,7 @@ const CategoryPage = () => {
               </>
             )}
           </nav>
-          <div className="space-y-3 text-left max-w-4xl md:max-w-5xl lg:max-w-6xl">
+          <div className="space-y-3 text-center max-w-4xl md:max-w-5xl lg:max-w-6xl mx-auto">
             <motion.h1
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
