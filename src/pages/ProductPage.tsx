@@ -1018,11 +1018,13 @@ const ProductPage = () => {
   useEffect(() => {
     const urls: string[] = [];
     (product?.colors || []).forEach((c) => {
-      if (c.image_url) urls.push(c.image_url);
+      const resolved = resolveMediaUrl(c.image_url);
+      if (resolved) urls.push(resolved);
     });
     (product?.fabrics || []).forEach((fabric) =>
       (fabric.colors || []).forEach((c) => {
-        if (c.image_url) urls.push(c.image_url);
+        const resolved = resolveMediaUrl(c.image_url);
+        if (resolved) urls.push(resolved);
       })
     );
     urls.forEach((url) => {
@@ -1032,6 +1034,19 @@ const ProductPage = () => {
       preloadedAssets.current.add(url);
     });
   }, [product?.colors, product?.fabrics]);
+
+  // Also preload current display colors (handles fabric switches promptly)
+  useEffect(() => {
+    const urls = displayColors
+      .map((c) => resolveMediaUrl(c.image_url))
+      .filter((u): u is string => Boolean(u));
+    urls.forEach((url) => {
+      if (preloadedAssets.current.has(url)) return;
+      const img = new Image();
+      img.src = url;
+      preloadedAssets.current.add(url);
+    });
+  }, [displayColors]);
 
   const openGallery = () => {
     if (!totalImages) return;
@@ -1162,7 +1177,7 @@ const ProductPage = () => {
           label: color.name,
 
           color_code: color.hex_code,
-          icon_url: color.image_url,
+          icon_url: resolveMediaUrl(color.image_url),
 
           price_delta: 0,
 
@@ -2288,7 +2303,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                       style={{
                                         // Show the color immediately while the swatch image loads to avoid blank states.
                                         backgroundColor: option.color_code || '#f3f4f6',
-                                        backgroundImage: option.icon_url ? `url(${option.icon_url})` : undefined,
+                                        backgroundImage: option.icon_url
+                                          ? `url(${resolveMediaUrl(option.icon_url)})`
+                                          : undefined,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
                                         backgroundRepeat: 'no-repeat',
