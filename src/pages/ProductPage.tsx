@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import type { CSSProperties } from 'react';
 
 import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
@@ -615,6 +615,24 @@ const ProductPage = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const hasAutoSelectedIncludedMattress = useRef(false);
+  const preloadedAssets = useRef(new Set<string>());
+
+  const isBunkOrDivanCategory = useMemo(() => {
+    const slug = (product?.category_slug || '').toLowerCase();
+    const subSlug = (product?.subcategory_slug || '').toLowerCase();
+    const name = (product?.name || '').toLowerCase();
+    const catName = (product?.category_name || '').toLowerCase();
+    const subName = (product?.subcategory_name || '').toLowerCase();
+    const match = /bunk|divan/;
+    return (
+      match.test(slug) ||
+      match.test(subSlug) ||
+      match.test(name) ||
+      match.test(catName) ||
+      match.test(subName)
+    );
+  }, [product?.category_slug, product?.subcategory_slug, product?.name, product?.category_name, product?.subcategory_name]);
   const showDimensionsTable = (product as Product | undefined)?.show_dimensions_table !== false;
 
   // Exclude placeholder mattresses globally.
@@ -710,6 +728,19 @@ const ProductPage = () => {
       }
 
       try {
+        // Clear previous product to prevent stale options flashing while new product loads
+        setProduct(null);
+        setCategory(null);
+        setSelectedImage(0);
+        setSelectedSize('');
+        setSelectedColor('');
+        setSelectedStyles({});
+        setSelectedFabric('');
+        setSelectedMattresses([]);
+        setExternalMattress(null);
+        setActiveVariantGroupKey('');
+        setEnabledGroups({});
+        hasAutoSelectedIncludedMattress.current = false;
 
         const productRes = await apiGet<Product[]>(`/products/?slug=${slug}`);
 
@@ -982,6 +1013,25 @@ const ProductPage = () => {
       setSelectedColor('');
     }
   }, [fabricColors, availableColors, displayColors, selectedColor]);
+
+  // Preload color and fabric swatch images so UI shows the final image immediately
+  useEffect(() => {
+    const urls: string[] = [];
+    (product?.colors || []).forEach((c) => {
+      if (c.image_url) urls.push(c.image_url);
+    });
+    (product?.fabrics || []).forEach((fabric) =>
+      (fabric.colors || []).forEach((c) => {
+        if (c.image_url) urls.push(c.image_url);
+      })
+    );
+    urls.forEach((url) => {
+      if (!url || preloadedAssets.current.has(url)) return;
+      const img = new Image();
+      img.src = url;
+      preloadedAssets.current.add(url);
+    });
+  }, [product?.colors, product?.fabrics]);
 
   const openGallery = () => {
     if (!totalImages) return;
@@ -1311,13 +1361,19 @@ const ProductPage = () => {
     return filtered.length > 0 ? filtered : dimensionImages;
   }, [dimensionImages, selectedDimension]);
 
+  const normalizeId = (val: number | string | null | undefined) => Number(val);
+
   const mattressMap = useMemo(() => {
     const map: Record<number, ProductMattress> = {};
     (mattressOptions || []).forEach((m) => {
-      if (m?.id) map[m.id] = m;
+      if (m?.id !== undefined && m?.id !== null) {
+        const idNum = normalizeId(m.id);
+        if (!Number.isNaN(idNum)) map[idNum] = m;
+      }
     });
     if (externalMattress?.id) {
-      map[externalMattress.id] = externalMattress;
+      const idNum = normalizeId(externalMattress.id);
+      if (!Number.isNaN(idNum)) map[idNum] = externalMattress;
     }
     return map;
   }, [mattressOptions, externalMattress]);
@@ -1325,28 +1381,35 @@ const ProductPage = () => {
   const mattresses: ProductMattress[] = useMemo(() => {
     const map = new Map<number, ProductMattress>();
     filterOutExcludedMattresses(mattressOptions || []).forEach((m) => {
-      if (m?.id) map.set(m.id, m);
+      if (m?.id !== undefined && m?.id !== null) {
+        const idNum = normalizeId(m.id);
+        if (!Number.isNaN(idNum)) map.set(idNum, m);
+      }
     });
     if (externalMattress?.id && !map.has(externalMattress.id)) {
-      map.set(externalMattress.id, externalMattress);
+      const idNum = normalizeId(externalMattress.id);
+      if (!Number.isNaN(idNum)) map.set(idNum, externalMattress);
     }
     return Array.from(map.values());
   }, [mattressOptions, externalMattress, filterOutExcludedMattresses]);
 
   useEffect(() => {
     if (!mattresses.length) return;
-    setSelectedMattresses((prev) => prev.filter((sel) => mattresses.some((m) => m.id === sel.id)));
+    setSelectedMattresses((prev) =>
+      prev.filter((sel) => mattresses.some((m) => normalizeId(m.id) === normalizeId(sel.id)))
+    );
   }, [mattresses]);
-  const getMattressById = (id: number) => mattressMap[id] || null;
+  const getMattressById = (id: number) => mattressMap[normalizeId(id)] || null;
   const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null) => {
     if (!m) return 0;
     const base = m.price !== undefined && m.price !== null ? Number(m.price) : 0;
     const top = m.price_top !== undefined && m.price_top !== null ? Number(m.price_top) : base;
     const bottom = m.price_bottom !== undefined && m.price_bottom !== null ? Number(m.price_bottom) : base;
+    const defaultBoth = Number.isFinite(base) ? base * 2 : top + bottom;
     const both =
-      m.price_both !== undefined && m.price_both !== null
+      m.price_both !== undefined && m.price_both !== null && Number(m.price_both) > 0
         ? Number(m.price_both)
-        : top + bottom;
+        : defaultBoth;
     if (!m.enable_bunk_positions || !pos) return base;
     if (pos === 'top') return top;
     if (pos === 'bottom') return bottom;
@@ -1480,6 +1543,51 @@ const ProductPage = () => {
     },
     [bunkMattressRulesEnabled, mattressMap]
   );
+
+  // Default to the included bunk mattress (Both) so it shows as selected until the user changes it.
+  useEffect(() => {
+    if (hasAutoSelectedIncludedMattress.current) return;
+    if (!mattresses.length) return;
+
+    // Only auto-select the included mattress for bunk/divan beds or when bunk positions are present.
+    const hasBunkPositions = mattresses.some((m) => m.enable_bunk_positions);
+    if (!isBunkOrDivanCategory && !hasBunkPositions) return;
+
+    // If a mattress is already selected (e.g., from a pre-select flow), don't override it.
+    if (selectedMattresses.length > 0) {
+      hasAutoSelectedIncludedMattress.current = true;
+      return;
+    }
+
+    // Prefer the Semi-Orthopaedic included option when available.
+    const included =
+      mattresses.find((m) => isIncludedMattress(m) && /semi[-\s]?orth/i.test(m.name || '')) ||
+      mattresses.find((m) => isIncludedMattress(m));
+    if (!included) return;
+
+    const normalized = normalizeBunkMattressSelections([
+      {
+        id: normalizeId(included.id),
+        position: included.enable_bunk_positions ? 'both' : null,
+      },
+    ]);
+    setSelectedMattresses(normalized);
+    setExternalMattress(included);
+    hasAutoSelectedIncludedMattress.current = true;
+  }, [
+    mattresses,
+    selectedMattresses.length,
+    isIncludedMattress,
+    normalizeBunkMattressSelections,
+    isBunkOrDivanCategory,
+  ]);
+
+  // Allow re-attempting auto-select if the user cleared selections or a new mattress list arrived.
+  useEffect(() => {
+    if (selectedMattresses.length === 0) {
+      hasAutoSelectedIncludedMattress.current = false;
+    }
+  }, [selectedMattresses.length, mattresses.length]);
 
   // Apply pre-selected mattress when returning from the mattress listing
   useEffect(() => {
@@ -2150,7 +2258,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                           ? 'border-black ring-2 ring-black/40'
                                           : 'border-black/60 hover:border-black'
                                       }`
-                                    : isFabricGroup
+                                  : isFabricGroup
                                     ? `relative inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition ${
                                         disabled
                                           ? 'cursor-not-allowed opacity-40'
@@ -2178,10 +2286,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     <span
                                       className="absolute inset-0 rounded-md"
                                       style={{
-                                        backgroundColor: option.color_code || '#f3f4f6',
+                                        backgroundColor: option.icon_url ? 'transparent' : option.color_code || '#f3f4f6',
                                         backgroundImage: option.icon_url ? `url(${option.icon_url})` : undefined,
                                         backgroundSize: 'cover',
                                         backgroundPosition: 'center',
+                                        backgroundRepeat: 'no-repeat',
                                       }}
                                     />
                                     <span className="sr-only">{formatOptionLabel(option.label)}</span>
@@ -2828,10 +2937,10 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     : 0
                   : Number(mattress.price ?? 0);
 
-                const statusLabel = currentPosition
+                const statusLabel = isSelected
                   ? isIncluded
                     ? 'Included'
-                    : 'Upgrade'
+                    : 'Selected'
                   : 'Not selected';
 
                 return (
@@ -2843,7 +2952,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         const withoutCurrent = prev.filter((m) => m.id !== mattress.id);
 
                         // Toggle off if already selected
-                        if (currentPosition) {
+                        if (currentPosition || (!mattress.enable_bunk_positions && isSelected)) {
                           setExternalMattress(null);
                           return withoutCurrent;
                         }
