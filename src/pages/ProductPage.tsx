@@ -905,9 +905,14 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     const baseMattresses: ProductMattress[] = Array.isArray(product?.mattresses)
       ? (product.mattresses as ProductMattress[])
       : [];
-    const filteredBase = filterOutExcludedMattresses(baseMattresses);
+    const filteredBase = filterOutExcludedMattresses(baseMattresses).filter((m) => {
+      const catIds = (m as any).categories as number[] | undefined;
+      if (!catIds || catIds.length === 0) return true;
+      const productCatId = (product as any)?.category;
+      return productCatId && catIds.includes(productCatId);
+    });
     setMattressOptions(filteredBase);
-  }, [product?.mattresses, filterOutExcludedMattresses]);
+  }, [product?.mattresses, filterOutExcludedMattresses, product?.category]);
 
 
   const productImages = product?.images || [];
