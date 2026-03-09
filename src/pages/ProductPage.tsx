@@ -3047,7 +3047,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                           : 'border-muted-foreground/60 bg-white'
                                       }`}
                                   />
-                                    {pos === 'top' ? 'Top' : pos === 'bottom' ? 'Bottom' : 'Both'}
+                                    {pos === 'top' ? 'Top' : 'Bottom'}
                                   </span>
                                   <span className="text-[11px] text-muted-foreground">
                                     {formatPrice(priceForPosition(mattress, pos, selectedSize))}
