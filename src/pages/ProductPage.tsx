@@ -910,14 +910,16 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
       const subIds = (m as any).subcategories as number[] | undefined;
       const productCatId = (product as any)?.category;
       const productSubId = (product as any)?.subcategory;
-      // If categories are set, require match; else if subcategories set, require match; otherwise allow.
-      if (catIds && catIds.length > 0) {
-        return productCatId && catIds.includes(productCatId);
+      // Only show mattresses scoped to bed categories; if none set, allow all.
+      const allowAll = (!catIds || catIds.length === 0) && (!subIds || subIds.length === 0);
+      if (allowAll) return true;
+      if (catIds && catIds.length > 0 && productCatId) {
+        if (catIds.includes(productCatId)) return true;
       }
-      if (subIds && subIds.length > 0) {
-        return productSubId && subIds.includes(productSubId);
+      if (subIds && subIds.length > 0 && productSubId) {
+        if (subIds.includes(productSubId)) return true;
       }
-      return true;
+      return false;
     });
     setMattressOptions(filteredBase);
   }, [product?.mattresses, filterOutExcludedMattresses, product?.category]);
@@ -2973,9 +2975,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     }`}
                   >
                     <div className="flex gap-4">
-                      {mattress.image_url ? (
+                      {resolveMediaUrl(mattress.image_url) ? (
                         <img
-                          src={mattress.image_url}
+                          src={resolveMediaUrl(mattress.image_url)}
                           alt={mattress.name || 'Mattress option'}
                           className="h-20 w-24 rounded-md object-cover ring-1 ring-border"
                         />
