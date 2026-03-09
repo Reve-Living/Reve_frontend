@@ -656,18 +656,29 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     [EXCLUDED_MATTRESS_NAMES]
   );
 
-  const isIncludedMattress = useCallback((m: ProductMattress | null | undefined) => {
-    if (!m) return false;
-    const toZero = (val: number | null | undefined) =>
-      val === null || val === undefined ? 0 : Number(val);
-    const base = toZero(m.price);
-    const top = toZero(m.price_top);
-    const bottom = toZero(m.price_bottom);
-    // Included = explicitly free (all prices zero) OR free base with no bunk pricing defined.
-    const allZero = base === 0 && top === 0 && bottom === 0;
-    const noBunkPrices = m.enable_bunk_positions && top === 0 && bottom === 0;
-    return allZero || (!m.enable_bunk_positions && base === 0) || noBunkPrices;
-  }, []);
+  const isIncludedMattress = useCallback(
+    (m: ProductMattress | null | undefined, sizeLabel?: string) => {
+      if (!m) return false;
+      const normSize = normalizeSizeName(sizeLabel || selectedSize || "");
+      const matchedSize = (m.prices || []).find(
+        (p) => normalizeSizeName(p.size_label).toLowerCase() === normSize.toLowerCase()
+      );
+      const toZero = (val: number | null | undefined) =>
+        val === null || val === undefined ? 0 : Number(val);
+      const base = toZero(m.price);
+      const top = toZero(m.price_top);
+      const bottom = toZero(m.price_bottom);
+      const sizePrice = matchedSize ? toZero(matchedSize.price) : base;
+      const sizeTop = matchedSize ? toZero(matchedSize.price_top) : top;
+      const sizeBottom = matchedSize ? toZero(matchedSize.price_bottom) : bottom;
+      // Included if all relevant prices for this size are zero.
+      const bunkFree = m.enable_bunk_positions
+        ? sizeTop === 0 && sizeBottom === 0
+        : true;
+      return sizePrice === 0 && bunkFree;
+    },
+    [selectedSize]
+  );
 
   const fetchReviews = async (productId: number) => {
     setIsLoadingReviews(true);
@@ -1502,8 +1513,8 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
     // Prefer the Semi-Orthopaedic included option when available; otherwise any free mattress; otherwise none.
     const included =
-      mattresses.find((m) => isIncludedMattress(m) && /semi[-\s]?orth/i.test(m.name || '')) ||
-      mattresses.find((m) => isIncludedMattress(m));
+      mattresses.find((m) => isIncludedMattress(m, selectedSize) && /semi[-\s]?orth/i.test(m.name || '')) ||
+      mattresses.find((m) => isIncludedMattress(m, selectedSize));
 
     if (included) {
       const normalized = normalizeBunkMattressSelections([
@@ -1522,6 +1533,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     isIncludedMattress,
     normalizeBunkMattressSelections,
     isBunkOrDivanCategory,
+    selectedSize,
   ]);
 
   // Allow re-attempting auto-select if the user cleared selections or a new mattress list arrived.
@@ -2935,7 +2947,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           next = normalized.filter((sel) => {
                             const mSel = mattressMap[normalizeId(sel.id)];
                             if (!mSel) return true;
-                            return !isIncludedMattress(mSel) || sel.id === mattress.id;
+                            return !isIncludedMattress(mSel, selectedSize) || sel.id === mattress.id;
                           });
                         }
 
