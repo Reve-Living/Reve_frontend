@@ -594,7 +594,7 @@ const ProductPage = () => {
 
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({});
-  type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | 'both' | null };
+type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const [selectedMattresses, setSelectedMattresses] = useState<SelectedMattressPick[]>([]);
   const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
   const [mattressOptions, setMattressOptions] = useState<ProductMattress[]>([]);
@@ -787,7 +787,7 @@ const ProductPage = () => {
               normalizeBunkMattressSelections([
                 {
                   id: mattressToSelect.id,
-                  position: mattressToSelect.enable_bunk_positions ? 'both' : null,
+                  position: mattressToSelect.enable_bunk_positions ? 'top' : null,
                 },
               ])
             );
@@ -1362,7 +1362,7 @@ const ProductPage = () => {
     );
   }, [mattresses]);
   const getMattressById = (id: number) => mattressMap[normalizeId(id)] || null;
-  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null, sizeLabel?: string) => {
+  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | null, sizeLabel?: string) => {
     if (!m) return 0;
     const normalized = normalizeSizeName(sizeLabel || '');
     const matchedPrice = (m.prices || []).find(
@@ -1382,21 +1382,21 @@ const ProductPage = () => {
     if (!m.enable_bunk_positions || !pos) return base;
     if (pos === 'top') return top;
     if (pos === 'bottom') return bottom;
-    return both;
+    return base; // both no longer exposed
   };
 
   const selectedMattressDetails = selectedMattresses
     .map((sel) => {
       const m = getMattressById(sel.id);
       if (!m) return null;
-      const position = m.enable_bunk_positions ? sel.position || 'both' : null;
+      const position = m.enable_bunk_positions ? sel.position || 'top' : null;
       return {
         ...m,
         position,
         price_value: priceForPosition(m, position, selectedSize),
       };
     })
-    .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | 'both' | null; price_value: number }>;
+    .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | null; price_value: number }>;
   const totalMattressPrice = selectedMattressDetails.reduce(
     (sum, m) => sum + (Number.isFinite(m.price_value) ? m.price_value : 0),
     0
@@ -1435,11 +1435,8 @@ const ProductPage = () => {
       list.forEach((sel) => {
         const mattress = sel.id ? mattressMap[sel.id] : undefined;
         if (!mattress?.enable_bunk_positions) return;
-        const pos = sel.position || 'both';
-        if (pos === 'both') {
-          topTaken = true;
-          bottomTaken = true;
-        } else if (pos === 'top') {
+        const pos = sel.position || 'top';
+        if (pos === 'top') {
           topTaken = true;
         } else if (pos === 'bottom') {
           bottomTaken = true;
@@ -1457,27 +1454,7 @@ const ProductPage = () => {
       const reversed = [...list].reverse(); // latest selections first
       let topTaken = false;
       let bottomTaken = false;
-      let bothPick: SelectedMattressPick | null = null;
       const kept: SelectedMattressPick[] = [];
-
-      for (const sel of reversed) {
-        const mattress = sel.id ? mattressMap[sel.id] : undefined;
-        const isBunk = Boolean(mattress?.enable_bunk_positions);
-
-        if (isBunk && sel.position === 'both') {
-          bothPick = sel;
-          break; // "both" overrides other bunk selections
-        }
-      }
-
-      if (bothPick) {
-        return list.filter((sel) => {
-          const mattress = sel.id ? mattressMap[sel.id] : undefined;
-          const isBunk = Boolean(mattress?.enable_bunk_positions);
-          if (!isBunk) return true;
-          return sel.id === bothPick!.id && sel.position === 'both';
-        });
-      }
 
       for (const sel of reversed) {
         const mattress = sel.id ? mattressMap[sel.id] : undefined;
@@ -1502,10 +1479,7 @@ const ProductPage = () => {
           kept.push(sel);
           continue;
         }
-
-        if (pos) {
-          kept.push(sel);
-        }
+        // ignore other positions
       }
 
       return kept.reverse();
@@ -1513,7 +1487,7 @@ const ProductPage = () => {
     [bunkMattressRulesEnabled, mattressMap]
   );
 
-  // Default to the included mattress (Both when bunk positions exist) so it shows as selected until the user changes it.
+  // Default to the included mattress (Top when bunk positions exist) so it shows as selected until the user changes it.
   useEffect(() => {
     if (hasAutoSelectedIncludedMattress.current) return;
     if (!mattresses.length) return;
@@ -1533,7 +1507,7 @@ const ProductPage = () => {
     const normalized = normalizeBunkMattressSelections([
       {
         id: normalizeId(included.id),
-        position: included.enable_bunk_positions ? 'both' : null,
+        position: included.enable_bunk_positions ? 'top' : null,
       },
     ]);
     setSelectedMattresses(normalized);
@@ -1570,7 +1544,7 @@ const ProductPage = () => {
         normalizeBunkMattressSelections([
           {
             id: Number(mattress.id),
-            position: mattress.enable_bunk_positions ? 'both' : null,
+            position: mattress.enable_bunk_positions ? 'top' : null,
           },
         ])
       );
@@ -2886,7 +2860,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 const selectedPick = selectedMattresses.find((m) => m.id === mattress.id);
                 const isSelected = Boolean(selectedPick);
                 const currentPosition =
-                  mattress.enable_bunk_positions && isSelected ? selectedPick?.position || 'both' : null;
+                  mattress.enable_bunk_positions && isSelected ? selectedPick?.position || 'top' : null;
 
                 const occupancyWithoutCurrent = getBunkOccupancy(
                   selectedMattresses.filter((sel) => sel.id !== mattress.id)
@@ -2931,7 +2905,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           return withoutCurrent;
                         }
 
-                        let defaultPosition: 'top' | 'bottom' | 'both' | null = null;
+                        let defaultPosition: 'top' | 'bottom' | null = null;
                         if (mattress.enable_bunk_positions) {
                           const { topTaken, bottomTaken } = getBunkOccupancy(withoutCurrent);
                           if (!topTaken) defaultPosition = 'top';
@@ -3016,29 +2990,23 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         {mattress.enable_bunk_positions && (
                           <div className="mt-3">
                             <div className="text-[11px] font-semibold text-muted-foreground mb-2">Position</div>
-                            <div className="grid grid-cols-3 gap-0 overflow-hidden rounded-lg border border-primary/50">
-                              {(['top', 'bottom', 'both'] as const).map((pos) => (
+                            <div className="grid grid-cols-2 gap-0 overflow-hidden rounded-lg border border-primary/50">
+                              {(['top', 'bottom'] as const).map((pos) => (
                                 <button
                                   key={pos}
                                   type="button"
                                   disabled={
                                     pos === 'top'
                                       ? occupancyWithoutCurrent.topTaken && currentPosition !== 'top'
-                                      : pos === 'bottom'
-                                        ? occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom'
-                                        : (occupancyWithoutCurrent.topTaken || occupancyWithoutCurrent.bottomTaken) &&
-                                          currentPosition !== 'both'
+                                      : occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom'
                                   }
                                   className={`flex flex-col items-center justify-center gap-1 px-4 py-2 text-sm transition ${
                                     visiblePosition === pos
                                       ? 'bg-primary/10 text-primary font-semibold'
                                       : 'bg-white text-foreground hover:bg-primary/5'
-                                  } ${pos === 'top' ? 'rounded-l-lg' : pos === 'both' ? 'rounded-r-lg' : ''} ${
+                                  } ${pos === 'top' ? 'rounded-l-lg' : 'rounded-r-lg'} ${
                                     (pos === 'top' && occupancyWithoutCurrent.topTaken && currentPosition !== 'top') ||
-                                    (pos === 'bottom' && occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom') ||
-                                    (pos === 'both' &&
-                                      (occupancyWithoutCurrent.topTaken || occupancyWithoutCurrent.bottomTaken) &&
-                                      currentPosition !== 'both')
+                                    (pos === 'bottom' && occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom')
                                       ? 'opacity-40 cursor-not-allowed'
                                       : ''
                                   }`}
@@ -3056,10 +3024,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                                       const disabled =
                                         (pos === 'top' && occupancyWithoutCurrent.topTaken && currentPosition !== 'top') ||
-                                        (pos === 'bottom' && occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom') ||
-                                        (pos === 'both' &&
-                                          (occupancyWithoutCurrent.topTaken || occupancyWithoutCurrent.bottomTaken) &&
-                                          currentPosition !== 'both');
+                                        (pos === 'bottom' && occupancyWithoutCurrent.bottomTaken && currentPosition !== 'bottom');
                                       if (disabled) return prev;
 
                                       const updated = normalizeBunkMattressSelections([
