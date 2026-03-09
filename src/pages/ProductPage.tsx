@@ -907,9 +907,17 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
       : [];
     const filteredBase = filterOutExcludedMattresses(baseMattresses).filter((m) => {
       const catIds = (m as any).categories as number[] | undefined;
-      if (!catIds || catIds.length === 0) return true;
+      const subIds = (m as any).subcategories as number[] | undefined;
       const productCatId = (product as any)?.category;
-      return productCatId && catIds.includes(productCatId);
+      const productSubId = (product as any)?.subcategory;
+      // If categories are set, require match; else if subcategories set, require match; otherwise allow.
+      if (catIds && catIds.length > 0) {
+        return productCatId && catIds.includes(productCatId);
+      }
+      if (subIds && subIds.length > 0) {
+        return productSubId && subIds.includes(productSubId);
+      }
+      return true;
     });
     setMattressOptions(filteredBase);
   }, [product?.mattresses, filterOutExcludedMattresses, product?.category]);
