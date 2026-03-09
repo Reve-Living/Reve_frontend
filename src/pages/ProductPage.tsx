@@ -663,8 +663,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     const base = toZero(m.price);
     const top = toZero(m.price_top);
     const bottom = toZero(m.price_bottom);
-    const both = toZero(m.price_both);
-    return base === 0 && top === 0 && bottom === 0 && both === 0;
+    // Included = explicitly free (all prices zero) OR free base with no bunk pricing defined.
+    const allZero = base === 0 && top === 0 && bottom === 0;
+    const noBunkPrices = m.enable_bunk_positions && top === 0 && bottom === 0;
+    return allZero || (!m.enable_bunk_positions && base === 0) || noBunkPrices;
   }, []);
 
   const fetchReviews = async (productId: number) => {
@@ -1487,7 +1489,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     [bunkMattressRulesEnabled, mattressMap]
   );
 
-  // Default to the included mattress (Top when bunk positions exist) so it shows as selected until the user changes it.
+  // Default only when a free (included) mattress exists; otherwise leave unselected.
   useEffect(() => {
     if (hasAutoSelectedIncludedMattress.current) return;
     if (!mattresses.length) return;
@@ -1498,20 +1500,21 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
       return;
     }
 
-    // Prefer the Semi-Orthopaedic included option when available.
+    // Prefer the Semi-Orthopaedic included option when available; otherwise any free mattress; otherwise none.
     const included =
       mattresses.find((m) => isIncludedMattress(m) && /semi[-\s]?orth/i.test(m.name || '')) ||
-      mattresses.find((m) => isIncludedMattress(m)) ||
-      mattresses[0]; // fallback: first option so bunk/divan beds always show a default
+      mattresses.find((m) => isIncludedMattress(m));
 
-    const normalized = normalizeBunkMattressSelections([
-      {
-        id: normalizeId(included.id),
-        position: included.enable_bunk_positions ? 'top' : null,
-      },
-    ]);
-    setSelectedMattresses(normalized);
-    setExternalMattress(included);
+    if (included) {
+      const normalized = normalizeBunkMattressSelections([
+        {
+          id: normalizeId(included.id),
+          position: included.enable_bunk_positions ? 'top' : null,
+        },
+      ]);
+      setSelectedMattresses(normalized);
+      setExternalMattress(included);
+    }
     hasAutoSelectedIncludedMattress.current = true;
   }, [
     mattresses,
