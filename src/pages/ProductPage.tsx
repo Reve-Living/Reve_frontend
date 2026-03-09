@@ -51,7 +51,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 
 import { apiGet, apiPost } from '@/lib/api';
-import { Category, Collection, Product, ProductDimensionRow, Review, ProductMattress } from '@/lib/types';
+import { Category, Collection, Product, ProductDimensionRow, Review, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 
 import { toast } from 'sonner';
@@ -599,7 +599,7 @@ const ProductPage = () => {
   const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
   const [mattressOptions, setMattressOptions] = useState<ProductMattress[]>([]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
-  const [showAllMattresses, setShowAllMattresses] = useState(false);
+  const [showAllMattresses, setShowAllMattresses] = useState(true);
   const [selectedFabric, setSelectedFabric] = useState('');
   const [enabledGroups, setEnabledGroups] = useState<Record<string, boolean>>({});
   const [activeVariantGroupKey, setActiveVariantGroupKey] = useState('');
@@ -887,85 +887,14 @@ const ProductPage = () => {
 
 
 
-  // Keep mattress options aligned with the selected bed size (for bed products).
+  // Keep mattress options aligned with the selected bed size (global options already sized).
   useEffect(() => {
     const baseMattresses: ProductMattress[] = Array.isArray(product?.mattresses)
       ? (product.mattresses as ProductMattress[])
       : [];
     const filteredBase = filterOutExcludedMattresses(baseMattresses);
-
-    const normalizedSize = normalizeSizeName(selectedSize);
-    const categorySlug = (product?.category_slug || '').toLowerCase();
-    const isMattressCategory = categorySlug === 'mattress' || categorySlug === 'mattresses';
-
-    if (!normalizedSize || isMattressCategory) {
-      setMattressOptions(filteredBase);
-      return;
-    }
-
-    const loadMatchingMattresses = async () => {
-      try {
-        // Try both common slugs to maximise matches.
-        const [res1, res2] = await Promise.all([
-          apiGet<Product[] | { results?: Product[] }>(`/products/?category=mattresses`),
-          apiGet<Product[] | { results?: Product[] }>(`/products/?category=mattress`),
-        ]);
-        const normalizeRes = (res: Product[] | { results?: Product[] }) =>
-          Array.isArray(res)
-            ? res
-            : Array.isArray((res as { results?: Product[] }).results)
-            ? ((res as { results: Product[] }).results)
-            : [];
-        const products = [...normalizeRes(res1), ...normalizeRes(res2)];
-
-        const target = (normalizeSizeName(normalizedSize) || normalizedSize).toLowerCase();
-
-        const matches: ProductMattress[] = products
-          .filter((p) =>
-            (p.sizes || []).some((s) => {
-              const sizeKey = normalizeSizeName(s.name).toLowerCase();
-              return sizeKey && (sizeKey === target || sizeKey.includes(target) || target.includes(sizeKey));
-            })
-          )
-          .map((p) => {
-            const parsedSizes = (p.sizes || []).map((size, index) =>
-              parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
-            );
-            const matchedSize = parsedSizes.find(
-              (opt) => normalizeSizeName(opt.label).toLowerCase() === target
-            );
-            const sizeDelta = matchedSize?.delta ?? 0;
-            return {
-              id: p.id,
-              name: p.name,
-              description: p.short_description || p.description,
-              image_url: p.images?.[0]?.url || '',
-              price: Number(p.price ?? 0) + sizeDelta,
-              source_product: p.id,
-            } as ProductMattress;
-          });
-
-        const filteredMatches = filterOutExcludedMattresses(matches);
-        const freeBase = filteredBase.filter(isIncludedMattress);
-
-        const combined = [...freeBase, ...filteredMatches];
-
-        if (combined.length === 0) {
-          setMattressOptions(filteredBase);
-        } else {
-          const map = new Map<number, ProductMattress>();
-          combined.forEach((m) => {
-            if (m?.id && !map.has(m.id)) map.set(m.id, m);
-          });
-          setMattressOptions(Array.from(map.values()).slice(0, 12));
-        }
-      } catch {
-        setMattressOptions(filteredBase);
-      }
-    };
-
-    loadMatchingMattresses();
-  }, [product?.mattresses, product?.category_slug, selectedSize, filterOutExcludedMattresses]);
+    setMattressOptions(filteredBase);
+  }, [product?.mattresses, filterOutExcludedMattresses]);
 
 
   const productImages = product?.images || [];
@@ -1433,16 +1362,23 @@ const ProductPage = () => {
     );
   }, [mattresses]);
   const getMattressById = (id: number) => mattressMap[normalizeId(id)] || null;
-  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null) => {
+  const priceForPosition = (m: ProductMattress | null, pos: 'top' | 'bottom' | 'both' | null, sizeLabel?: string) => {
     if (!m) return 0;
-    const base = m.price !== undefined && m.price !== null ? Number(m.price) : 0;
-    const top = m.price_top !== undefined && m.price_top !== null ? Number(m.price_top) : base;
-    const bottom = m.price_bottom !== undefined && m.price_bottom !== null ? Number(m.price_bottom) : base;
+    const normalized = normalizeSizeName(sizeLabel || '');
+    const matchedPrice = (m.prices || []).find(
+      (p) => normalizeSizeName(p.size_label).toLowerCase() === normalized.toLowerCase()
+    );
+    const pick = (field: keyof MattressOptionPrice | keyof ProductMattress, fallback?: number | null) => {
+      const fromSize = matchedPrice ? (matchedPrice as any)[field] : undefined;
+      const fromBase = (m as any)[field];
+      const val = fromSize ?? fromBase ?? fallback;
+      return val !== undefined && val !== null ? Number(val) : fallback ?? 0;
+    };
+    const base = pick("price", 0);
+    const top = pick("price_top", base);
+    const bottom = pick("price_bottom", base);
     const defaultBoth = Number.isFinite(base) ? base * 2 : top + bottom;
-    const both =
-      m.price_both !== undefined && m.price_both !== null && Number(m.price_both) > 0
-        ? Number(m.price_both)
-        : defaultBoth;
+    const both = pick("price_both", defaultBoth);
     if (!m.enable_bunk_positions || !pos) return base;
     if (pos === 'top') return top;
     if (pos === 'bottom') return bottom;
@@ -1457,7 +1393,7 @@ const ProductPage = () => {
       return {
         ...m,
         position,
-        price_value: priceForPosition(m, position),
+        price_value: priceForPosition(m, position, selectedSize),
       };
     })
     .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | 'both' | null; price_value: number }>;
@@ -2966,9 +2902,14 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 const displaySizeLabel = normalizeSizeName(selectedSize) || selectedSize || '';
                 const priceDisplay = mattress.enable_bunk_positions
                   ? visiblePosition
-                    ? priceForPosition(mattress, visiblePosition)
+                    ? priceForPosition(mattress, visiblePosition, selectedSize)
                     : 0
-                  : Number(mattress.price ?? 0);
+                  : Number(
+                      (mattress.prices || []).find(
+                        (p) =>
+                          normalizeSizeName(p.size_label).toLowerCase() === normalizeSizeName(selectedSize).toLowerCase()
+                      )?.price ?? mattress.price ?? 0
+                    );
 
                 const statusLabel = isSelected
                   ? isIncluded
@@ -3140,11 +3081,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                           ? 'border-primary bg-primary/80'
                                           : 'border-muted-foreground/60 bg-white'
                                       }`}
-                                    />
+                                  />
                                     {pos === 'top' ? 'Top' : pos === 'bottom' ? 'Bottom' : 'Both'}
                                   </span>
                                   <span className="text-[11px] text-muted-foreground">
-                                    {formatPrice(priceForPosition(mattress, pos))}
+                                    {formatPrice(priceForPosition(mattress, pos, selectedSize))}
                                   </span>
                                 </button>
                               ))}
@@ -3157,16 +3098,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 );
               })}
 
-              {!showAllMattresses && mattresses.length > 0 && (
-                <Link
-                  to={`/category/mattresses?from=${encodeURIComponent(product.slug)}${
-                    selectedSize ? `&bed-size=${encodeURIComponent(selectedSize)}` : ''
-                  }`}
-                  className="flex w-full items-center justify-center rounded-lg border border-dashed border-primary/60 px-4 py-2 text-sm font-semibold text-primary hover:bg-primary/5 transition"
-                >
-                  View all mattresses
-                </Link>
-              )}
             </div>
 
             <div className="border-t border-border px-5 py-4 bg-white">
