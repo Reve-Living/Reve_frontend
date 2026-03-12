@@ -358,9 +358,11 @@ const formatOptionLabel = (label: string) => {
   let res = (label || '').trim();
   // Convert slug-like labels to readable text
   res = res.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
-  // Ensure "Crystal diamond buttons" is correctly formatted
-  if (res.toLowerCase().includes('crystal') && res.toLowerCase().includes('diamond')) {
-    res = 'Crystal diamond buttons';
+  const lower = res.toLowerCase();
+  if (lower.includes('matching') && lower.includes('fabric') && lower.includes('button')) {
+    res = 'Fabric buttons';
+  } else if (lower.includes('crystal') && lower.includes('diamond') && lower.includes('button')) {
+    res = 'Crystal buttons';
   }
   return res;
 };
@@ -2145,6 +2147,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     : undefined;
                   const groupEnabled = enabledGroups[group.name] !== false;
                   const showGroupIcon = group.kind !== 'fabric' && group.kind !== 'color';
+                  const useFullWidthGrid = isStorageGroup || group.kind === 'size';
+                  const gridClass = (() => {
+                    if (isHeadboardGroup) return 'grid gap-3';
+                    if (isStyleGroup && optionCount <= 2) return 'grid gap-3 sm:grid-cols-2';
+                    if (useFullWidthGrid) {
+                      if (optionCount <= 2) return 'grid gap-3 sm:grid-cols-2';
+                      return 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3';
+                    }
+                    return 'flex flex-wrap gap-2';
+                  })();
                   return (
                     <div key={group.key} className="space-y-3 border-b border-border/60 pb-4 last:border-0 last:pb-0">
                       <div className="flex items-center justify-between gap-3">
@@ -2169,16 +2181,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         </div>
                       </div>
 
-                                              <div
-                          className={
-                            isStorageGroup
-                              ? "flex flex-wrap gap-3"
-                              : isHeadboardGroup
-                              ? 'grid gap-3'
-                              : 'flex flex-wrap gap-2'
-                          }
-                          style={headboardGridStyle}
-                        >
+                      <div className={gridClass} style={headboardGridStyle}>
                           {group.options.map((option) => {
                             const isSelected = selected?.key === option.key;
                             const disabled = false;
@@ -2246,7 +2249,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     : `relative flex ${
                                         isHeadboardGroup
                                           ? 'h-32 w-full flex-row items-center justify-start gap-4 px-3 text-left'
-                                          : 'h-24 w-32 sm:w-36 flex-col items-center justify-center gap-0 px-2 py-2 text-center'
+                                          : 'h-24 min-h-[96px] w-full flex-col items-center justify-center gap-0 px-3 py-3 text-center'
                                       } shrink-0 rounded-lg border bg-white transition-all ${
                                         disabled
                                           ? 'cursor-not-allowed opacity-40'
@@ -2285,11 +2288,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                       className={`flex ${
                                         isHeadboardGroup
                                           ? 'flex-row items-center gap-3 text-left'
-                                          : 'flex-col items-center gap-0.5 text-center'
+                                          : 'flex-col items-center gap-1 text-center'
                                       } w-full`}
                                     >
                                       {shouldShowIcon && (
-                                        <div className={isHeadboardGroup ? 'flex h-14 w-14 items-center justify-center shrink-0' : 'flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center'}>
+                                        <div className={isHeadboardGroup ? 'flex h-14 w-14 items-center justify-center shrink-0' : 'flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center'}>
                                           <IconVisual
                                             icon={option.icon_url || group.icon_url}
                                             alt={option.label}
@@ -2303,7 +2306,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                         }
                                       >
                                         <p
-                                          className={`text-[10px] sm:text-[11px] font-semibold text-espresso leading-tight px-1 ${
+                                          className={`text-[11px] sm:text-[12px] font-semibold text-espresso leading-tight px-1 ${
                                             isHeadboardGroup
                                               ? 'text-left line-clamp-2 sm:line-clamp-3 break-words whitespace-normal'
                                               : `text-center min-h-[28px] flex items-center justify-center w-full line-clamp-1 whitespace-nowrap`
@@ -2313,7 +2316,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                           {option.description && ` (${option.description})`}
                                         </p>
                                         <p
-                                          className={`text-[9px] sm:text-[10px] text-muted-foreground leading-tight ${
+                                          className={`text-[10px] sm:text-[11px] text-muted-foreground leading-tight ${
                                             isHeadboardGroup
                                               ? 'text-left'
                                               : 'text-center min-h-[14px] flex items-center justify-center w-full'
