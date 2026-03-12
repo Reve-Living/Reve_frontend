@@ -354,7 +354,16 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
 };
 
-const formatOptionLabel = (label: string) => label.replace(/(\\d)([A-Za-z])/g, '$1 $2').trim();
+const formatOptionLabel = (label: string) => {
+  let res = (label || '').trim();
+  // Convert slug-like labels to readable text
+  res = res.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // Ensure "Crystal diamond buttons" is correctly formatted
+  if (res.toLowerCase().includes('crystal') && res.toLowerCase().includes('diamond')) {
+    res = 'Crystal diamond buttons';
+  }
+  return res;
+};
 
 
 
@@ -2163,7 +2172,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                               <div
                           className={
                             isStorageGroup
-                              ? 'grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                              ? "flex flex-wrap gap-3"
                               : isHeadboardGroup
                               ? 'grid gap-3'
                               : 'flex flex-wrap gap-2'
@@ -2237,9 +2246,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     : `relative flex ${
                                         isHeadboardGroup
                                           ? 'h-32 w-full flex-row items-center justify-start gap-4 px-3 text-left'
-                                          : isStorageGroup
-                                          ? 'h-28 w-full flex-col items-center justify-center px-3 text-center'
-                                          : 'h-32 w-24 sm:w-28 flex-col items-center justify-center px-2 py-2 text-center'
+                                          : 'h-24 w-32 sm:w-36 flex-col items-center justify-center gap-0 px-2 py-2 text-center'
                                       } shrink-0 rounded-lg border bg-white transition-all ${
                                         disabled
                                           ? 'cursor-not-allowed opacity-40'
@@ -2278,32 +2285,38 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                       className={`flex ${
                                         isHeadboardGroup
                                           ? 'flex-row items-center gap-3 text-left'
-                                          : 'flex-col items-center gap-1.5 text-center'
+                                          : 'flex-col items-center gap-0.5 text-center'
                                       } w-full`}
                                     >
                                       {shouldShowIcon && (
-                                        <IconVisual
-                                          icon={option.icon_url || group.icon_url}
-                                          alt={option.label}
-                                          className={isHeadboardGroup ? 'h-10 w-10 sm:h-14 sm:w-14 object-contain shrink-0' : 'h-14 w-14 object-contain'}
-                                        />
+                                        <div className={isHeadboardGroup ? 'flex h-14 w-14 items-center justify-center shrink-0' : 'flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center'}>
+                                          <IconVisual
+                                            icon={option.icon_url || group.icon_url}
+                                            alt={option.label}
+                                            className={isHeadboardGroup ? 'h-10 w-10 sm:h-14 sm:w-14 object-contain' : 'h-8 w-8 sm:h-10 sm:w-10 object-contain'}
+                                          />
+                                        </div>
                                       )}
                                       <div
                                         className={
-                                          isHeadboardGroup ? 'flex flex-col gap-1 min-w-0 flex-1' : 'flex flex-col items-center gap-1 text-center'
+                                          isHeadboardGroup ? 'flex flex-col gap-1 min-w-0 flex-1' : 'flex flex-col items-center gap-0 text-center'
                                         }
                                       >
                                         <p
-                                          className={`text-[11px] sm:text-xs font-semibold text-espresso leading-tight break-words line-clamp-2 sm:line-clamp-3 ${
-                                            isHeadboardGroup ? 'text-left' : 'text-center'
+                                          className={`text-[10px] sm:text-[11px] font-semibold text-espresso leading-tight px-1 ${
+                                            isHeadboardGroup
+                                              ? 'text-left line-clamp-2 sm:line-clamp-3 break-words whitespace-normal'
+                                              : `text-center min-h-[28px] flex items-center justify-center w-full line-clamp-1 whitespace-nowrap`
                                           }`}
                                         >
                                           {formatOptionLabel(option.label)}
                                           {option.description && ` (${option.description})`}
                                         </p>
                                         <p
-                                          className={`text-[10px] sm:text-[11px] text-muted-foreground leading-tight ${
-                                            isHeadboardGroup ? 'text-left' : 'text-center'
+                                          className={`text-[9px] sm:text-[10px] text-muted-foreground leading-tight ${
+                                            isHeadboardGroup
+                                              ? 'text-left'
+                                              : 'text-center min-h-[14px] flex items-center justify-center w-full'
                                           }`}
                                         >
                                           {Number(option.price_delta || 0) > 0
@@ -3210,5 +3223,3 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 export default ProductPage;
-
-

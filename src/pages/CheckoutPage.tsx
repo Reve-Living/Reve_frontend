@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, CreditCard, Wallet, Banknote, Check } from 'lucide-react';
+import { ChevronRight, CreditCard, Wallet, Banknote, Check, Image as ImageIcon, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -113,7 +114,11 @@ const CheckoutPage = () => {
     phone: '',
     saveInfo: false,
     termsAccepted: false,
+    specialNotes: '',
   });
+  const [referenceImages, setReferenceImages] = useState<
+    { id: string; previewUrl: string; dataUrl: string; name: string }[]
+  >([]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -137,6 +142,39 @@ const CheckoutPage = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setFormData({ ...formData, specialNotes: e.target.value });
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    files.forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        setReferenceImages((prev) => [
+          ...prev,
+          {
+            id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+            previewUrl: URL.createObjectURL(file),
+            dataUrl: reader.result as string,
+            name: file.name,
+          },
+        ]);
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = '';
+  };
+
+  const removeImage = (id: string) => {
+    setReferenceImages((prev) => {
+      const target = prev.find((img) => img.id === id);
+      if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((img) => img.id !== id);
+    });
   };
 
   const handleContinue = () => {
@@ -190,6 +228,8 @@ const CheckoutPage = () => {
           extras_total: item.extras_total || 0,
           include_dimension: item.include_dimension !== false,
         })),
+        special_notes: formData.specialNotes.trim() || undefined,
+        reference_images: referenceImages.map((img) => img.dataUrl),
       };
 
       const orderRes = await apiPost<{ id: number }>('/orders/', orderPayload);
@@ -417,6 +457,72 @@ const CheckoutPage = () => {
                       <Label htmlFor="saveInfo" className="text-sm">
                         Save this information for next time
                       </Label>
+                    </div>
+
+                    <div className="mt-6 rounded-lg border border-border bg-muted/20 p-4">
+                      <div className="flex items-center gap-2">
+                        <ImageIcon className="h-5 w-5 text-primary" />
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">Special notes & reference images (optional)</p>
+                          <p className="text-xs text-muted-foreground">
+                            Tell us about custom requests and attach inspiration photos. Both fields are optional.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="mt-3 space-y-3">
+                        <div>
+                          <Label htmlFor="specialNotes" className="text-sm">Special notes</Label>
+                          <Textarea
+                            id="specialNotes"
+                            name="specialNotes"
+                            value={formData.specialNotes}
+                            onChange={handleNotesChange}
+                            placeholder="e.g., Please match buttons to swatch attached. Deliver after 5pm."
+                            className="mt-1 border-accent"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="referenceImages" className="text-sm">Reference images</Label>
+                          <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <Input
+                              id="referenceImages"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={handleImageUpload}
+                              className="border-accent"
+                            />
+                            <p className="text-xs text-muted-foreground sm:ml-2">
+                              Optional. You can add multiple images (JPG, PNG, WEBP).
+                            </p>
+                          </div>
+                          {referenceImages.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-3">
+                              {referenceImages.map((img) => (
+                                <div
+                                  key={img.id}
+                                  className="relative h-20 w-20 overflow-hidden rounded-md border border-border bg-white"
+                                >
+                                  <img
+                                    src={img.previewUrl}
+                                    alt={img.name || 'Reference'}
+                                    className="h-full w-full object-cover"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeImage(img.id)}
+                                    className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white"
+                                    aria-label="Remove image"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </motion.div>
