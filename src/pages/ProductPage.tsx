@@ -1981,7 +1981,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               )}
 
 
-              <div className="absolute right-4 top-4 flex flex-col gap-2 items-end">
+              <div className="absolute left-4 top-4 flex flex-col gap-2 items-start">
 
                 {product.is_bestseller && (
 
@@ -1995,17 +1995,10 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                 )}
 
-                {savingsPerUnit > 0 && (
-                  <>
-                    <Badge className="bg-bronze text-white shadow-md font-semibold">
-                      SAVE {formatPrice(savingsPerUnit)}
-                    </Badge>
-                    {discountPercentage > 0 && (
-                      <Badge className="bg-black text-white shadow-md font-semibold">
-                        SALE {discountPercentage}%
-                      </Badge>
-                    )}
-                  </>
+                {discountPercentage > 0 && (
+                  <Badge className="bg-black text-white shadow-md font-semibold">
+                    SALE -{discountPercentage}%
+                  </Badge>
                 )}
 
               </div>
@@ -2119,24 +2112,19 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
               <div className="flex flex-wrap items-center gap-3">
 
-                <span className="text-3xl font-bold text-primary">{formatPrice(unitPrice)}</span>
-
                 {unitOriginalPrice && unitOriginalPrice > unitPrice && (
 
                   <span className="text-lg text-muted-foreground line-through">{formatPrice(unitOriginalPrice)}</span>
 
                 )}
 
-                {savingsPerUnit > 0 && (
-                  <div className="flex gap-2">
-                    <Badge className="bg-bronze text-white text-sm font-semibold">
-                      SAVE {formatPrice(savingsPerUnit)}
+                <span className="text-3xl font-bold text-primary">{formatPrice(unitPrice)}</span>
+
+                {discountPercentage > 0 && (
+                  <div className="ml-8 sm:ml-12">
+                    <Badge className="bg-black text-white text-sm font-semibold">
+                      {discountPercentage}% OFF
                     </Badge>
-                    {discountPercentage > 0 && (
-                      <Badge className="bg-black text-white text-sm font-semibold">
-                        SALE {discountPercentage}%
-                      </Badge>
-                    )}
                   </div>
                 )}
 
