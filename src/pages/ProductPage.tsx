@@ -2002,7 +2002,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     </Badge>
                     {discountPercentage > 0 && (
                       <Badge className="bg-black text-white shadow-md font-semibold">
-                        SALE -{discountPercentage}%
+                        SALE {discountPercentage}%
                       </Badge>
                     )}
                   </>
@@ -2134,7 +2134,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     </Badge>
                     {discountPercentage > 0 && (
                       <Badge className="bg-black text-white text-sm font-semibold">
-                        SALE -{discountPercentage}%
+                        SALE {discountPercentage}%
                       </Badge>
                     )}
                   </div>
