@@ -16,6 +16,8 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
   const savings = product.original_price ? product.original_price - product.price : 0;
   const imageUrl = product.images?.[0]?.url || "";
   const shortText = (product.short_description || product.description || "").trim();
+  const isDentonReclinerCard = product.name.trim().toLowerCase() === 'denton recliner with footstool - pu & pvc'.toLowerCase();
+  const hasMultipleSizePrices = Array.isArray(product.sizes) && product.sizes.length > 1;
   const gbpFormatter = new Intl.NumberFormat('en-GB', {
     style: 'currency',
     currency: 'GBP',
@@ -44,6 +46,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
             src={imageUrl}
             alt={product.name}
             className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+            style={isDentonReclinerCard ? { objectPosition: 'center 30%' } : undefined}
           />
           
           {/* Badges */}
@@ -100,7 +103,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              From {gbpFormatter.format(product.price)}
+              {hasMultipleSizePrices ? `From ${gbpFormatter.format(product.price)}` : gbpFormatter.format(product.price)}
             </p>
             {product.original_price && product.original_price > product.price && (
               <p className="text-sm text-muted-foreground line-through">
