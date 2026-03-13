@@ -1461,6 +1461,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const totalPrice = unitPrice * quantity;
 
   const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
+  const discountPercentage = unitOriginalPrice && unitOriginalPrice > unitPrice ? Math.round((savingsPerUnit / unitOriginalPrice) * 100) : 0;
 
   const bunkMattressRulesEnabled = useMemo(
     () => mattresses.some((m) => m.enable_bunk_positions),
@@ -1995,7 +1996,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 )}
 
                 {savingsPerUnit > 0 && (
-                  <Badge className="bg-bronze text-white shadow-md">Save {formatPrice(savingsPerUnit)}</Badge>
+                  <>
+                    <Badge className="bg-bronze text-white shadow-md font-semibold">
+                      SAVE {formatPrice(savingsPerUnit)}
+                    </Badge>
+                    {discountPercentage > 0 && (
+                      <Badge className="bg-black text-white shadow-md font-semibold">
+                        SALE -{discountPercentage}%
+                      </Badge>
+                    )}
+                  </>
                 )}
 
               </div>
@@ -2118,9 +2128,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 )}
 
                 {savingsPerUnit > 0 && (
-                  <Badge className="bg-bronze text-white text-sm">
-                    Save {formatPrice(savingsPerUnit)}
-                  </Badge>
+                  <div className="flex gap-2">
+                    <Badge className="bg-bronze text-white text-sm font-semibold">
+                      SAVE {formatPrice(savingsPerUnit)}
+                    </Badge>
+                    {discountPercentage > 0 && (
+                      <Badge className="bg-black text-white text-sm font-semibold">
+                        SALE -{discountPercentage}%
+                      </Badge>
+                    )}
+                  </div>
                 )}
 
               </div>

@@ -58,9 +58,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
                 New
               </Badge>
             )}
-            {savings > 0 && (
-              <Badge className="bg-white text-card-foreground shadow">
-                Save {gbpFormatter.format(savings)}
+            {savings > 0 && product.original_price && (
+              <Badge className="bg-white text-card-foreground shadow font-semibold">
+                Sale -{Math.round((savings / product.original_price) * 100)}%
               </Badge>
             )}
           </div>
