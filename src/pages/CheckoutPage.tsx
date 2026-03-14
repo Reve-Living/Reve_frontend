@@ -91,6 +91,47 @@ const getVariantSummary = (item: {
   return parts.join(' | ');
 };
 
+const getStyleSummary = (item: {
+  selectedVariants?: Record<string, string>;
+  mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
+  fabric?: string;
+  mattress_name?: string | null;
+}) => {
+  const parts: string[] = [];
+  const seen = new Set<string>();
+  const addPart = (text?: string) => {
+    const cleaned = (text || '').trim();
+    if (!cleaned) return;
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    parts.push(cleaned);
+  };
+
+  const hasExplicitMattress =
+    (item.mattresses && item.mattresses.length > 0) || Boolean(item.mattress_name);
+
+  Object.entries(item.selectedVariants || {}).forEach(([group, value]) => {
+    const lowerGroup = group.trim().toLowerCase();
+    if (hasExplicitMattress && lowerGroup.includes('mattress')) return;
+    addPart(`${group}: ${value}`);
+  });
+
+  if (item.fabric) addPart(`Fabric: ${item.fabric}`);
+
+  if (Array.isArray(item.mattresses) && item.mattresses.length > 0) {
+    addPart(
+      `Mattress${item.mattresses.length > 1 ? 'es' : ''}: ${item.mattresses
+        .map((m) => `${m.name || 'Mattress'}${m.position ? ` (${m.position})` : ''}`)
+        .join(', ')}`
+    );
+  } else if (item.mattress_name) {
+    addPart(`Mattress: ${item.mattress_name}`);
+  }
+
+  return parts.join(' | ');
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { state, totalPrice, clearCart } = useCart();
@@ -221,7 +262,7 @@ const CheckoutPage = () => {
           price: item.unit_price ?? item.product.price,
           size: item.size,
           color: item.color,
-          style: getVariantSummary(item),
+          style: getStyleSummary(item),
           dimension: item.dimension,
           dimension_details: item.dimension_details,
           selected_variants: item.selectedVariants || {},
