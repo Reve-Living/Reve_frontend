@@ -8,6 +8,7 @@ import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
 import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 import ComingSoonGate from "@/components/ComingSoonGate";
+import WhatsAppButton from "@/components/WhatsAppButton";
 import Index from "./pages/Index";
 import CategoryPage from "./pages/CategoryPage";
 import ProductPage from "./pages/ProductPage";
@@ -39,6 +40,7 @@ const App = () => (
             <CartDrawer />
             <ScrollToTop />
             <ScrollToTopOnNavigate />
+            <WhatsAppButton />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/category/:slug" element={<CategoryPage />} />
