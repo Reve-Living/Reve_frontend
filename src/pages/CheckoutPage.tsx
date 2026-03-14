@@ -12,9 +12,30 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { apiPost } from '@/lib/api';
+import type { ProductStyle } from '@/lib/types';
 import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
+
+const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
+
+const resolveVariantValue = (styles: ProductStyle[] | undefined, rawValue: string) => {
+  const value = (rawValue || '').trim();
+  if (!value) return value;
+
+  const match = STYLE_OPTION_KEY_RE.exec(value);
+  if (!match || !styles?.length) return value;
+
+  const styleId = Number(match[1]);
+  const optionIndex = Number(match[2]);
+  const styleGroup = styles.find((style) => Number(style.id) === styleId);
+  if (!styleGroup || !Array.isArray(styleGroup.options)) return value;
+
+  const option = styleGroup.options[optionIndex];
+  if (!option || typeof option === 'string') return value;
+
+  return option.label || value;
+};
 
 const getVariantsKey = (item: {
   selectedVariants?: Record<string, string>;
@@ -38,6 +59,7 @@ const getVariantsKey = (item: {
   });
 
 const getVariantSummary = (item: {
+  product?: { styles?: ProductStyle[] };
   selectedVariants?: Record<string, string>;
   mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
@@ -65,7 +87,7 @@ const getVariantSummary = (item: {
   Object.entries(item.selectedVariants || {}).forEach(([group, value]) => {
     const lowerGroup = group.trim().toLowerCase();
     if (hasExplicitMattress && lowerGroup.includes('mattress')) return;
-    addPart(`${group}: ${value}`);
+    addPart(`${group}: ${resolveVariantValue(item.product?.styles, String(value))}`);
   });
 
   if (item.fabric) addPart(`Fabric: ${item.fabric}`);
@@ -92,6 +114,7 @@ const getVariantSummary = (item: {
 };
 
 const getStyleSummary = (item: {
+  product?: { styles?: ProductStyle[] };
   selectedVariants?: Record<string, string>;
   mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
@@ -114,7 +137,7 @@ const getStyleSummary = (item: {
   Object.entries(item.selectedVariants || {}).forEach(([group, value]) => {
     const lowerGroup = group.trim().toLowerCase();
     if (hasExplicitMattress && lowerGroup.includes('mattress')) return;
-    addPart(`${group}: ${value}`);
+    addPart(`${group}: ${resolveVariantValue(item.product?.styles, String(value))}`);
   });
 
   if (item.fabric) addPart(`Fabric: ${item.fabric}`);
