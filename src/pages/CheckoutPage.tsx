@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, CreditCard, Wallet, Banknote, Check, Image as ImageIcon, X } from 'lucide-react';
+import { ChevronRight, CreditCard, Wallet, Banknote, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -18,6 +18,26 @@ import { toast } from 'sonner';
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
+
+const splitFullName = (fullName: string) => {
+  const parts = fullName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  if (parts.length === 0) {
+    return { firstName: '', lastName: '' };
+  }
+
+  if (parts.length === 1) {
+    return { firstName: parts[0], lastName: parts[0] };
+  }
+
+  return {
+    firstName: parts.slice(0, -1).join(' '),
+    lastName: parts[parts.length - 1],
+  };
+};
 
 const resolveVariantValue = (styles: ProductStyle[] | undefined, rawValue: string) => {
   const value = (rawValue || '').trim();
@@ -169,14 +189,14 @@ const CheckoutPage = () => {
   const orderTotal = totalPrice + deliveryFee;
 
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
-    firstName: '',
-    lastName: '',
+    alternatePhone: '',
     address: '',
     city: '',
     postcode: '',
+    floorNumber: '',
     phone: '',
-    saveInfo: false,
     termsAccepted: false,
     specialNotes: '',
   });
@@ -245,8 +265,7 @@ const CheckoutPage = () => {
     if (step === 'information') {
       if (
         !formData.email ||
-        !formData.firstName ||
-        !formData.lastName ||
+        !formData.fullName ||
         !formData.address ||
         !formData.city ||
         !formData.postcode ||
@@ -268,14 +287,18 @@ const CheckoutPage = () => {
   const handlePlaceOrder = async () => {
     setIsProcessing(true);
     try {
+      const { firstName, lastName } = splitFullName(formData.fullName);
+
       const orderPayload = {
-        first_name: formData.firstName,
-        last_name: formData.lastName,
+        first_name: firstName,
+        last_name: lastName,
         email: formData.email,
         phone: formData.phone,
+        alternative_phone: formData.alternatePhone.trim(),
         address: formData.address,
         city: formData.city,
         postal_code: formData.postcode,
+        floor_number: formData.floorNumber.trim(),
         total_amount: orderTotal,
         delivery_charges: deliveryFee,
         payment_method: paymentMethod,
@@ -368,6 +391,14 @@ const CheckoutPage = () => {
     return null;
   }
 
+  const deliveryInstructions = useMemo(
+    () => [
+      'Standard delivery is to ground floor only.',
+      'Upper floors: £10 per floor, payable to the driver upon delivery.',
+    ],
+    []
+  );
+
   return (
     <div className="min-h-screen bg-background">
 <Header />
@@ -428,164 +459,166 @@ const CheckoutPage = () => {
                   animate={{ opacity: 1, x: 0 }}
                   className="rounded-lg bg-card p-6 shadow-luxury"
                 >
-                  <h2 className="mb-6 font-serif text-2xl font-semibold">Contact Information</h2>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-muted-foreground">
+                    Specification
+                  </p>
+                  <h2 className="mb-6 font-serif text-2xl font-semibold">
+                    1. Customer Order Form (Website)
+                  </h2>
                   <div className="space-y-4">
-                    <div>
-                      <Label htmlFor="email">Email</Label>
-                      <Input
-                        id="email"
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        placeholder="your@email.com"
-                        className="mt-1 border-accent"
-                      />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-3">
+                      <h3 className="text-base font-semibold italic">Customer Details</h3>
                       <div>
-                        <Label htmlFor="firstName">First Name</Label>
+                        <Label htmlFor="fullName">Full Name</Label>
                         <Input
-                          id="firstName"
-                          name="firstName"
-                          value={formData.firstName}
+                          id="fullName"
+                          name="fullName"
+                          value={formData.fullName}
                           onChange={handleInputChange}
                           className="mt-1 border-accent"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="lastName">Last Name</Label>
+                        <Label htmlFor="phone">Phone Number</Label>
                         <Input
-                          id="lastName"
-                          name="lastName"
-                          value={formData.lastName}
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={formData.phone}
                           onChange={handleInputChange}
+                          placeholder="+44"
                           className="mt-1 border-accent"
                         />
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="address">Delivery Address</Label>
-                      <Input
-                        id="address"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        placeholder="Street address"
-                        className="mt-1 border-accent"
-                      />
-                    </div>
-                    <div className="grid gap-4 sm:grid-cols-2">
                       <div>
-                        <Label htmlFor="city">City</Label>
+                        <Label htmlFor="alternatePhone">Alternative Phone Number (Optional)</Label>
                         <Input
-                          id="city"
-                          name="city"
-                          value={formData.city}
+                          id="alternatePhone"
+                          name="alternatePhone"
+                          type="tel"
+                          value={formData.alternatePhone}
                           onChange={handleInputChange}
                           className="mt-1 border-accent"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="postcode">Postcode</Label>
+                        <Label htmlFor="email">Email Address</Label>
                         <Input
-                          id="postcode"
-                          name="postcode"
-                          value={formData.postcode}
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
                           onChange={handleInputChange}
+                          placeholder="your@email.com"
                           className="mt-1 border-accent"
                         />
                       </div>
-                    </div>
-                    <div>
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input
-                        id="phone"
-                        name="phone"
-                        type="tel"
-                        value={formData.phone}
-                        onChange={handleInputChange}
-                        placeholder="+44"
-                        className="mt-1 border-accent"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="saveInfo"
-                        checked={formData.saveInfo}
-                        onCheckedChange={(checked) =>
-                          setFormData({ ...formData, saveInfo: checked as boolean })
-                        }
-                      />
-                      <Label htmlFor="saveInfo" className="text-sm">
-                        Save this information for next time
-                      </Label>
                     </div>
 
-                    <div className="mt-6 rounded-lg border border-border bg-muted/20 p-4">
-                      <div className="flex items-center gap-2">
-                        <ImageIcon className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">Special notes & reference images (optional)</p>
-                          <p className="text-xs text-muted-foreground">
-                            Tell us about custom requests and attach inspiration photos. Both fields are optional.
-                          </p>
-                        </div>
+                    <div className="space-y-3 pt-4">
+                      <h3 className="text-base font-semibold italic">Delivery Address</h3>
+                      <div>
+                        <Label htmlFor="address">House / Street Address</Label>
+                        <Input
+                          id="address"
+                          name="address"
+                          value={formData.address}
+                          onChange={handleInputChange}
+                          placeholder="Street address"
+                          className="mt-1 border-accent"
+                        />
                       </div>
-                      <div className="mt-3 space-y-3">
+                      <div className="grid gap-4 sm:grid-cols-2">
                         <div>
-                          <Label htmlFor="specialNotes" className="text-sm">Special notes</Label>
-                          <Textarea
-                            id="specialNotes"
-                            name="specialNotes"
-                            value={formData.specialNotes}
-                            onChange={handleNotesChange}
-                            placeholder="e.g., Please match buttons to swatch attached. Deliver after 5pm."
+                          <Label htmlFor="city">City</Label>
+                          <Input
+                            id="city"
+                            name="city"
+                            value={formData.city}
+                            onChange={handleInputChange}
                             className="mt-1 border-accent"
-                            rows={3}
                           />
                         </div>
                         <div>
-                          <Label htmlFor="referenceImages" className="text-sm">Reference images</Label>
-                          <div className="mt-1 flex flex-col gap-2 sm:flex-row sm:items-center">
-                            <Input
-                              id="referenceImages"
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={handleImageUpload}
-                              className="border-accent"
-                            />
-                            <p className="text-xs text-muted-foreground sm:ml-2">
-                              Optional. You can add multiple images (JPG, PNG, WEBP).
-                            </p>
-                          </div>
-                          {referenceImages.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-3">
-                              {referenceImages.map((img) => (
-                                <div
-                                  key={img.id}
-                                  className="relative h-20 w-20 overflow-hidden rounded-md border border-border bg-white"
-                                >
-                                  <img
-                                    src={img.previewUrl}
-                                    alt={img.name || 'Reference'}
-                                    className="h-full w-full object-cover"
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => removeImage(img.id)}
-                                    className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white"
-                                    aria-label="Remove image"
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          <Label htmlFor="postcode">Postcode</Label>
+                          <Input
+                            id="postcode"
+                            name="postcode"
+                            value={formData.postcode}
+                            onChange={handleInputChange}
+                            className="mt-1 border-accent"
+                          />
                         </div>
                       </div>
+                      <div>
+                        <Label htmlFor="floorNumber">Floor Number</Label>
+                        <Input
+                          id="floorNumber"
+                          name="floorNumber"
+                          value={formData.floorNumber}
+                          onChange={handleInputChange}
+                          className="mt-1 border-accent"
+                        />
+                      </div>
+                      <div className="space-y-1 text-sm text-muted-foreground">
+                        {deliveryInstructions.map((instruction) => (
+                          <p key={instruction}>{instruction}</p>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-4">
+                      <h3 className="text-base font-semibold italic">Delivery / Order Notes (Optional)</h3>
+                      <div>
+                        <Label htmlFor="specialNotes" className="sr-only">
+                          Delivery or order notes
+                        </Label>
+                        <Textarea
+                          id="specialNotes"
+                          name="specialNotes"
+                          value={formData.specialNotes}
+                          onChange={handleNotesChange}
+                          placeholder="Add any delivery preferences or special instructions here."
+                          className="mt-1 min-h-28 border-accent"
+                          rows={4}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-4">
+                      <h3 className="text-base font-semibold italic">Image Upload (Optional)</h3>
+                      <Input
+                        id="referenceImages"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="border-accent"
+                      />
+                      {referenceImages.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-3">
+                          {referenceImages.map((img) => (
+                            <div
+                              key={img.id}
+                              className="relative h-20 w-20 overflow-hidden rounded-md border border-border bg-white"
+                            >
+                              <img
+                                src={img.previewUrl}
+                                alt={img.name || 'Reference'}
+                                className="h-full w-full object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeImage(img.id)}
+                                className="absolute right-1 top-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white"
+                                aria-label="Remove image"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>

@@ -4,6 +4,9 @@ export interface Category {
   slug: string;
   description: string;
   image: string;
+  image_alt_text?: string;
+  meta_title?: string;
+  meta_description?: string;
   subcategories?: SubCategory[];
 }
 
@@ -14,6 +17,9 @@ export interface SubCategory {
   slug: string;
   description: string;
   image: string;
+  image_alt_text?: string;
+  meta_title?: string;
+  meta_description?: string;
 }
 
 export interface Collection {
@@ -50,6 +56,7 @@ export interface ProductImage {
   id: number;
   url: string;
   color_name?: string;
+  alt_text?: string;
 }
 
 export interface ProductVideo {
@@ -170,6 +177,8 @@ export interface Product {
   id: number;
   name: string;
   slug: string;
+  meta_title?: string;
+  meta_description?: string;
   category: number;
   category_name?: string;
   subcategory?: number | null;

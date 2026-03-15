@@ -251,6 +251,26 @@ const CategoryPage = () => {
   const fallbackProductImage = allProducts[0]?.images?.[0]?.url || '';
   const heroImage = resolveImageUrl(selectedSubcategory?.image || category?.image || fallbackProductImage || '');
   const heroBackgroundImage = toBackgroundImageValue(heroImage);
+  const seoTitle =
+    selectedSubcategory?.meta_title ||
+    category?.meta_title ||
+    (heroName ? `${heroName} | Reve Living` : 'Reve Living');
+  const seoDescription =
+    selectedSubcategory?.meta_description ||
+    category?.meta_description ||
+    heroDescription ||
+    'Discover premium furniture and made-to-order pieces from Reve Living.';
+
+  useEffect(() => {
+    document.title = seoTitle;
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', seoDescription);
+  }, [seoDescription, seoTitle]);
 
   const priceBounds = useMemo(() => {
     const prices = allProducts.map((p) => Number(p.price)).filter((v) => !Number.isNaN(v));

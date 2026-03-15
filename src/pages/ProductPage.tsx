@@ -609,6 +609,23 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const [selectedMattresses, setSelectedMattresses] = useState<SelectedMattressPick[]>([]);
   const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
   const [mattressOptions, setMattressOptions] = useState<ProductMattress[]>([]);
+
+  useEffect(() => {
+    const seoTitle = product?.meta_title || (product?.name ? `${product.name} | Reve Living` : 'Reve Living');
+    const seoDescription =
+      product?.meta_description ||
+      product?.short_description ||
+      'Explore handcrafted furniture and made-to-order pieces from Reve Living.';
+
+    document.title = seoTitle;
+    let meta = document.querySelector('meta[name="description"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'description');
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute('content', seoDescription);
+  }, [product?.meta_description, product?.meta_title, product?.name, product?.short_description]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(true);
   const [selectedFabric, setSelectedFabric] = useState('');
@@ -1935,7 +1952,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   src={displayImages[selectedImage]?.url}
 
-                  alt={product.name}
+                  alt={displayImages[selectedImage]?.alt_text || product.name}
 
                   initial={{ opacity: 0 }}
 
@@ -2035,7 +2052,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                       src={img.url}
 
-                      alt={`${product.name} ${index + 1}`}
+                      alt={img.alt_text || `${product.name} ${index + 1}`}
 
                       className="h-full w-full object-cover"
 
@@ -2807,7 +2824,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             </button>
             <img
               src={displayImages[selectedImage]?.url}
-              alt={`${product.name} large view`}
+              alt={displayImages[selectedImage]?.alt_text || `${product.name} large view`}
               className="h-full w-full max-h-[80vh] rounded-lg bg-black/20 object-contain"
             />
             {totalImages > 1 && (
@@ -2866,7 +2883,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         >
                           <img
                             src={img.url}
-                            alt={`${product.name} thumb ${idx + 1}`}
+                            alt={img.alt_text || `${product.name} thumb ${idx + 1}`}
                             className="h-full w-full object-cover"
                           />
                         </button>
