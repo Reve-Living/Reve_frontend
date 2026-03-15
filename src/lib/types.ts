@@ -4,6 +4,7 @@ export interface Category {
   slug: string;
   description: string;
   image: string;
+  sort_order?: number;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
@@ -17,6 +18,7 @@ export interface SubCategory {
   slug: string;
   description: string;
   image: string;
+  sort_order?: number;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;

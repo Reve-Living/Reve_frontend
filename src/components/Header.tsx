@@ -8,6 +8,8 @@ import { apiGet } from '@/lib/api';
 import type { Category, SubCategory } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 
+const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -36,10 +38,12 @@ const Header = () => {
           apiGet<SubCategory[]>('/subcategories/'),
         ]);
 
-        // Keep navigation predictable: sort categories and subcategories alphabetically
-        const sortedCategories = [...categories].sort((a, b) =>
-          a.name.localeCompare(b.name)
-        );
+        // Respect admin display order first, then fall back to name for ties.
+        const sortedCategories = [...categories].sort((a, b) => {
+          const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
+          if (orderDiff !== 0) return orderDiff;
+          return a.name.localeCompare(b.name);
+        });
         const subsByCategory = subcategories.reduce<Record<number, SubCategory[]>>(
           (acc, sub) => {
             acc[sub.category] = acc[sub.category] || [];
@@ -50,7 +54,11 @@ const Header = () => {
         );
 
         Object.values(subsByCategory).forEach((list) =>
-          list.sort((a, b) => a.name.localeCompare(b.name))
+          list.sort((a, b) => {
+            const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
+            if (orderDiff !== 0) return orderDiff;
+            return a.name.localeCompare(b.name);
+          })
         );
 
         const dynamicLinks = sortedCategories.map((cat) => {
