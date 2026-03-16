@@ -145,6 +145,15 @@ const DIMENSION_SIZE_COLUMNS = [
   '6ft Super King',
 ];
 
+const SIZE_DISPLAY_ORDER = [
+  '2ft6 Small Single',
+  '3ft Single',
+  '4ft Small Double',
+  '4ft6 Double',
+  '5ft King',
+  '6ft Super King',
+] as const;
+
 const DEFAULT_DIMENSION_ROWS: ProductDimensionRow[] = [
   {
     measurement: 'Length',
@@ -512,6 +521,19 @@ const normalizeSizeName = (raw?: string): string => {
   if (canonicalMap[key]) return canonicalMap[key];
   return value.replace(/\s+/g, ' ').replace(/\s*-\s*/g, ' ').trim();
 };
+
+const getSizeDisplayOrderIndex = (raw?: string): number => {
+  const normalized = normalizeSizeName(raw);
+  const index = SIZE_DISPLAY_ORDER.findIndex((size) => size === normalized);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+};
+
+const sortParsedSizeOptions = (sizes: ParsedSizeOption[]): ParsedSizeOption[] =>
+  [...sizes].sort((a, b) => {
+    const orderDiff = getSizeDisplayOrderIndex(a.label) - getSizeDisplayOrderIndex(b.label);
+    if (orderDiff !== 0) return orderDiff;
+    return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' });
+  });
 // Normalizes features so we only create bullets for actual bullet separators (line breaks or •),
 // never for commas inside the text.
 const normalizeFeatures = (features: unknown): string[] => {
@@ -860,8 +882,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
       }
 
       if (fetched?.sizes?.length) {
-        const parsedSizes = fetched.sizes.map((size, index) =>
-          parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+        const parsedSizes = sortParsedSizeOptions(
+          fetched.sizes.map((size, index) =>
+            parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+          )
         );
         const normalizedLinkedSize = (linkedBedSize || '').trim().toLowerCase();
         const matchedSize = normalizedLinkedSize
@@ -1062,8 +1086,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     setSelectedImage((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
-  const sizeOptions = productSizes.map((size, index) =>
-    parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+  const sizeOptions = sortParsedSizeOptions(
+    productSizes.map((size, index) =>
+      parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+    )
   );
 
 

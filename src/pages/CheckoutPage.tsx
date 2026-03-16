@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
+const REFERENCE_IMAGE_ACCEPT = 'image/webp,image/*';
 
 const splitFullName = (fullName: string) => {
   const parts = fullName
@@ -590,11 +591,12 @@ const CheckoutPage = () => {
                       <Input
                         id="referenceImages"
                         type="file"
-                        accept="image/*"
+                        accept={REFERENCE_IMAGE_ACCEPT}
                         multiple
                         onChange={handleImageUpload}
                         className="border-accent"
                       />
+                      <p className="text-sm text-muted-foreground">WebP is supported and recommended for smaller uploads.</p>
                       {referenceImages.length > 0 && (
                         <div className="mt-3 flex flex-wrap gap-3">
                           {referenceImages.map((img) => (
