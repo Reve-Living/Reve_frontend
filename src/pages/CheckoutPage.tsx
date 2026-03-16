@@ -89,6 +89,24 @@ const isDisplayableOrderPart = (text?: string) => {
   return true;
 };
 
+const getOrderPartRank = (text?: string) => {
+  const lower = (text || '').trim().toLowerCase();
+  if (lower.startsWith('size:')) return 1;
+  if (lower.startsWith('colour:') || lower.startsWith('color:')) return 2;
+  if (lower.startsWith('fabric:')) return 3;
+  if (lower.includes('storage')) return 4;
+  if (lower.includes('headboard')) return 5;
+  if (lower.startsWith('mattress')) return 6;
+  return 99;
+};
+
+const sortOrderParts = (parts: string[]) =>
+  [...parts].sort((a, b) => {
+    const rankDiff = getOrderPartRank(a) - getOrderPartRank(b);
+    if (rankDiff !== 0) return rankDiff;
+    return a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true });
+  });
+
 const getVariantSummary = (item: {
   product?: { styles?: ProductStyle[] };
   selectedVariants?: Record<string, string>;
@@ -142,7 +160,7 @@ const getVariantSummary = (item: {
     addPart(`Mattress: ${item.mattress_name}`);
   }
 
-  return parts.join(' | ');
+  return sortOrderParts(parts).join(' | ');
 };
 
 const getStyleSummary = (item: {
@@ -185,7 +203,7 @@ const getStyleSummary = (item: {
     addPart(`Mattress: ${item.mattress_name}`);
   }
 
-  return parts.join(' | ');
+  return sortOrderParts(parts).join(' | ');
 };
 
 const CheckoutPage = () => {
