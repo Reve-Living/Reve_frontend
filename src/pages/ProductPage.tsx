@@ -986,6 +986,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     return matched.length > 0 ? matched : productImages;
   }, [productImages, selectedColor]);
   const totalImages = displayImages.length;
+  const hasDisplayImages = totalImages > 0;
 
   useEffect(() => {
     if (selectedImage >= totalImages) {
@@ -1948,8 +1949,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] items-start">
+        <div className={`grid gap-10 items-start ${hasDisplayImages ? 'lg:grid-cols-[1.05fr_0.95fr]' : 'lg:grid-cols-1'}`}>
 
+          {hasDisplayImages && (
           <div className="space-y-6 lg:sticky lg:top-24 self-start px-0 sm:px-2 max-w-[660px] w-full mx-auto">
 
             <motion.div
@@ -2082,6 +2084,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             )}
 
           </div>
+          )}
 
 
 

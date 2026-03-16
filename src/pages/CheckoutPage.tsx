@@ -770,18 +770,27 @@ const CheckoutPage = () => {
                       key={`${item.product.id}-${item.size}-${item.color}-${getVariantsKey(item)}`}
                       className="flex gap-3"
                     >
-                      <div className="relative">
-                        <img
-                          src={item.product.images[0]?.url}
-                          alt={item.product.name}
-                          className="h-16 w-16 rounded-md object-cover"
-                        />
-                        <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                          {item.quantity}
-                        </span>
-                      </div>
+                      {item.product.images[0]?.url && (
+                        <div className="relative">
+                          <img
+                            src={item.product.images[0]?.url}
+                            alt={item.product.name}
+                            className="h-16 w-16 rounded-md object-cover"
+                          />
+                          <span className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                            {item.quantity}
+                          </span>
+                        </div>
+                      )}
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{item.product.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{item.product.name}</p>
+                          {!item.product.images[0]?.url && (
+                            <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs text-primary-foreground">
+                              {item.quantity}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {item.size} / {item.color}
                         </p>
