@@ -651,6 +651,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(true);
   const [selectedFabric, setSelectedFabric] = useState('');
+  const [previewFabric, setPreviewFabric] = useState('');
   const [enabledGroups, setEnabledGroups] = useState<Record<string, boolean>>({});
   const [activeVariantGroupKey, setActiveVariantGroupKey] = useState('');
   const [activeInfoTab, setActiveInfoTab] = useState<string | null>(null);
@@ -672,6 +673,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   useEffect(() => {
     setSelectedMattresses([]);
     setExternalMattress(null);
+    setPreviewFabric('');
     hasAutoSelectedIncludedMattress.current = false;
   }, [product?.id]);
 
@@ -896,15 +898,16 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
         const firstFabricWithColors = (fetched?.fabrics || []).find((f) => (f.colors || []).length > 0);
         if (firstFabricWithColors) {
-          const firstWithImage =
-            firstFabricWithColors.colors.find((c) => c.image_url) || firstFabricWithColors.colors[0];
-          setSelectedFabric(firstFabricWithColors.name);
-          setSelectedColor(firstWithImage?.name || '');
+          setSelectedFabric('');
+          setPreviewFabric('');
+          setSelectedColor('');
         } else if (fetched?.colors?.length) {
           setSelectedColor('');
           setSelectedFabric('');
+          setPreviewFabric('');
         } else {
           setSelectedFabric('');
+          setPreviewFabric('');
         }
 
         const initialStyles: Record<string, string> = {};
@@ -993,12 +996,13 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const productSizes = product?.sizes || [];
   const sizeIconsEnabled = product?.show_size_icons !== false;
 
-  const selectedFabricObj = (product?.fabrics || []).find((f) => f.name === selectedFabric);
+  const activeFabricForColors = previewFabric || selectedFabric;
+  const selectedFabricObj = (product?.fabrics || []).find((f) => f.name === activeFabricForColors);
 
   const fabricColors = selectedFabricObj?.colors || [];
 
   const availableColors =
-    product?.fabrics?.length && selectedFabric
+    product?.fabrics?.length && activeFabricForColors
       ? fabricColors
       : product?.fabrics?.length
       ? []
@@ -1024,10 +1028,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   useEffect(() => {
     // Keep selections stable while browsing; if the current color no longer exists, pick a sensible fallback.
     const names = new Set(displayColors.map((c) => c.name).concat(availableColors.map((c) => c.name)));
-    if (selectedColor && !names.has(selectedColor)) {
+    if (!previewFabric && selectedColor && !names.has(selectedColor)) {
       setSelectedColor(displayColors[0]?.name || availableColors[0]?.name || '');
     }
-  }, [availableColors, displayColors, selectedColor]);
+  }, [availableColors, displayColors, previewFabric, selectedColor]);
 
   // Preload color and fabric swatch images so UI shows the final image immediately
   useEffect(() => {
@@ -1300,7 +1304,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     }
 
     if (group.kind === 'fabric') {
-      return group.options.find((option) => option.label === selectedFabric) || group.options[0];
+      return group.options.find((option) => option.label === selectedFabric);
     }
 
     if (group.kind === 'size') {
@@ -2228,6 +2232,10 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                               disabled={disabled}
                               onClick={() => {
                                 if (group.kind === 'color') {
+                                  if (product?.fabrics?.length && activeFabricForColors) {
+                                    setSelectedFabric(activeFabricForColors);
+                                    setPreviewFabric('');
+                                  }
                                   setSelectedColor(option.label);
                                   return;
                                 }
@@ -2236,13 +2244,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                   return;
                                 }
                                 if (group.kind === 'fabric') {
-                                  setSelectedFabric(option.label);
-                                  const targetFabric = (product?.fabrics || []).find((fabric) => fabric.name === option.label);
-                                  const targetColors = targetFabric?.colors || [];
-                                  const colorStillValid = targetColors.some((color) => color.name === selectedColor);
-                                  if (!colorStillValid) {
-                                    setSelectedColor(targetColors[0]?.name || '');
-                                  }
+                                  setPreviewFabric(option.label);
                                   return;
                                 }
                                  // Style group selection (allow toggle-off for storage)
