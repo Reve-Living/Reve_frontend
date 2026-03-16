@@ -928,11 +928,6 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
         });
         setSelectedStyles(initialStyles);
         setEnabledGroups((prev) => ({ ...nextEnabled, ...prev }));
-        if (fetched?.fabrics?.length) {
-          setSelectedFabric(fetched.fabrics[0].name);
-        } else {
-          setSelectedFabric('');
-        }
         setIsLoading(false);
 
       } catch {
@@ -1027,12 +1022,12 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   }, [product?.fabrics]);
 
   useEffect(() => {
-    // If current selection no longer exists, clear it instead of auto-selecting first color
+    // Keep selections stable while browsing; if the current color no longer exists, pick a sensible fallback.
     const names = new Set(displayColors.map((c) => c.name).concat(availableColors.map((c) => c.name)));
     if (selectedColor && !names.has(selectedColor)) {
-      setSelectedColor('');
+      setSelectedColor(displayColors[0]?.name || availableColors[0]?.name || '');
     }
-  }, [fabricColors, availableColors, displayColors, selectedColor]);
+  }, [availableColors, displayColors, selectedColor]);
 
   // Preload color and fabric swatch images so UI shows the final image immediately
   useEffect(() => {
@@ -1276,17 +1271,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
         const current = prev[styleName];
 
-        const hasCurrent = group.options.some((o) => o.label === current || o.key === current);
-
         if (!enabled) {
-          // Group is disabled; leave selection cleared
-          if (current) delete next[styleName];
-          return;
-        }
-
-        if (!hasCurrent) {
-          // Keep user-optional groups (all styles) empty when invalid or deselected
-          if (current) delete next[styleName];
           return;
         }
 
@@ -2243,7 +2228,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                               disabled={disabled}
                               onClick={() => {
                                 if (group.kind === 'color') {
-                                  setSelectedColor((prev) => (prev === option.label ? '' : option.label));
+                                  setSelectedColor(option.label);
                                   return;
                                 }
                                 if (group.kind === 'size') {
@@ -2252,30 +2237,22 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                 }
                                 if (group.kind === 'fabric') {
                                   setSelectedFabric(option.label);
-                                  // clear color if it no longer matches selected fabric colors
-                                  setSelectedColor('');
+                                  const targetFabric = (product?.fabrics || []).find((fabric) => fabric.name === option.label);
+                                  const targetColors = targetFabric?.colors || [];
+                                  const colorStillValid = targetColors.some((color) => color.name === selectedColor);
+                                  if (!colorStillValid) {
+                                    setSelectedColor(targetColors[0]?.name || '');
+                                  }
                                   return;
                                 }
                                  // Style group selection (allow toggle-off for storage)
                                  const styleName = group.styleName || group.name;
-                                 const isStorageGroup = /storage/i.test(styleName);
                                  const isStyleGroup = group.kind === 'style';
-                                 const isAlreadySelected = selected?.key === option.key;
 
-                                   if (isStyleGroup && isAlreadySelected) {
-                                     // Allow deselect for any style group (storage, headboard, etc.)
-                                     setSelectedStyles((prev) => {
-                                       const copy = { ...prev };
-                                       delete copy[styleName];
-                                       return copy;
-                                     });
-                                     // Keep group enabled so user can reselect
-                                     setEnabledGroups((prev) => ({ ...prev, [styleName]: true }));
-                                     return;
-                                   }
-
+                                 if (isStyleGroup) {
                                    setSelectedStyles((prev) => ({ ...prev, [styleName]: option.key }));
                                    setEnabledGroups((prev) => ({ ...prev, [styleName]: true }));
+                                 }
                                  }}
                                 className={
                                   group.kind === 'color'

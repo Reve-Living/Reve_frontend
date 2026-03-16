@@ -79,6 +79,16 @@ const getVariantsKey = (item: {
     mattress_id: item.mattress_id || null,
   });
 
+const isDisplayableOrderPart = (text?: string) => {
+  const cleaned = (text || '').trim();
+  if (!cleaned) return false;
+  const lower = cleaned.toLowerCase();
+  if (lower.includes('dimension')) return false;
+  if (/(^|\b)(length|width|height|headboard height|bed height)\s*:/.test(lower)) return false;
+  if (/(cm|inch|inches|\")/.test(lower) && /(length|width|height)/.test(lower)) return false;
+  return true;
+};
+
 const getVariantSummary = (item: {
   product?: { styles?: ProductStyle[] };
   selectedVariants?: Record<string, string>;
@@ -95,6 +105,7 @@ const getVariantSummary = (item: {
   const addPart = (text?: string) => {
     const cleaned = (text || '').trim();
     if (!cleaned) return;
+    if (!isDisplayableOrderPart(cleaned)) return;
     const key = cleaned.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
@@ -146,6 +157,7 @@ const getStyleSummary = (item: {
   const addPart = (text?: string) => {
     const cleaned = (text || '').trim();
     if (!cleaned) return;
+    if (!isDisplayableOrderPart(cleaned)) return;
     const key = cleaned.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
