@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Menu, X, ChevronDown, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
-import type { Category, SubCategory } from '@/lib/types';
+import type { Category, Product, SubCategory } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
@@ -13,7 +13,12 @@ const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Numbe
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const searchRef = useRef<HTMLDivElement | null>(null);
   const [navLinks, setNavLinks] = useState<
     { name: string; href: string; children?: { name: string; href: string }[] }[]
   >([
@@ -23,10 +28,18 @@ const Header = () => {
   ]);
   const { toggleCart, totalItems } = useCart();
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const normalizedSearch = searchQuery.trim().toLowerCase();
+  const shouldShowSearchResults = isSearchOpen && normalizedSearch.length > 0;
+  const limitedSearchResults = useMemo(() => searchResults.slice(0, 6), [searchResults]);
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setActiveDropdown(null);
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
   }, [location]);
 
   useEffect(() => {
@@ -86,6 +99,80 @@ const Header = () => {
     };
     loadNav();
   }, []);
+
+  useEffect(() => {
+    if (!isSearchOpen || allProducts.length > 0 || isLoadingSearch) return;
+
+    const loadProducts = async () => {
+      try {
+        setIsLoadingSearch(true);
+        const products = await apiGet<Product[]>('/products/');
+        setAllProducts(products);
+      } catch {
+        setAllProducts([]);
+      } finally {
+        setIsLoadingSearch(false);
+      }
+    };
+
+    void loadProducts();
+  }, [allProducts.length, isLoadingSearch, isSearchOpen]);
+
+  useEffect(() => {
+    if (!normalizedSearch) {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = allProducts.filter((product) => {
+      const haystack = [
+        product.name,
+        product.category_name,
+        product.subcategory_name,
+        product.short_description,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+
+      return haystack.includes(normalizedSearch);
+    });
+
+    setSearchResults(results);
+  }, [allProducts, normalizedSearch]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!searchRef.current?.contains(event.target as Node)) {
+        setSearchResults([]);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const openSearch = () => {
+    setIsSearchOpen((prev) => !prev);
+    if (isSearchOpen) {
+      setSearchQuery('');
+      setSearchResults([]);
+    }
+  };
+
+  const handleSearchSelect = (slug: string) => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    navigate(`/product/${slug}`);
+  };
+
+  const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (limitedSearchResults[0]) {
+      handleSearchSelect(limitedSearchResults[0].slug);
+    }
+  };
 
   return (
     <>
@@ -162,18 +249,64 @@ const Header = () => {
             <div className="flex items-center gap-4">
               {/* Search */}
               {isSearchOpen && (
-                <div className="hidden md:block">
-                  <Input
-                    placeholder="Search..."
-                    className="w-52 border-accent bg-card"
-                    autoFocus
-                  />
+                <div ref={searchRef} className="relative hidden md:block">
+                  <form onSubmit={handleSearchSubmit}>
+                    <Input
+                      placeholder="Search..."
+                      className="w-52 border-accent bg-card"
+                      autoFocus
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </form>
+
+                  {shouldShowSearchResults && (
+                    <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                      {limitedSearchResults.length > 0 ? (
+                        <div className="max-h-96 overflow-y-auto p-2">
+                          {limitedSearchResults.map((product) => (
+                            <button
+                              key={product.id}
+                              type="button"
+                              onClick={() => handleSearchSelect(product.slug)}
+                              className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
+                            >
+                              {product.images?.[0]?.url ? (
+                                <img
+                                  src={product.images[0].url}
+                                  alt={product.name}
+                                  className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
+                                />
+                              ) : (
+                                <div className="h-14 w-14 flex-shrink-0 rounded-md bg-muted" />
+                              )}
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-foreground">{product.name}</p>
+                                {(product.category_name || product.subcategory_name) && (
+                                  <p className="truncate text-sm text-muted-foreground">
+                                    {[product.category_name, product.subcategory_name].filter(Boolean).join(' / ')}
+                                  </p>
+                                )}
+                                <p className="text-sm font-semibold text-primary">
+                                  £{Number(product.price).toFixed(2)}
+                                </p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="px-4 py-3 text-sm text-muted-foreground">
+                          {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setIsSearchOpen(!isSearchOpen)}
+                onClick={openSearch}
                 className="hover:bg-muted"
               >
                 <Search className="h-5 w-5" />
