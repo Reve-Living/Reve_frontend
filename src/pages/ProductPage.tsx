@@ -1955,7 +1955,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           <div className="space-y-6 lg:sticky lg:top-24 self-start px-0 sm:px-2 max-w-[660px] w-full mx-auto">
 
             <motion.div
-              className="relative aspect-square max-h-[520px] w-full mx-auto cursor-zoom-in overflow-hidden rounded-2xl bg-card shadow-md"
+              className="relative aspect-square max-h-[520px] w-full mx-auto overflow-hidden rounded-2xl bg-card shadow-md"
 
               onClick={() => setIsZoomed(!isZoomed)}
 
@@ -2014,20 +2014,20 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 </>
               )}
 
-              {totalImages > 1 && (
-                <div className="pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openGallery();
-                    }}
-                    className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-medium text-white backdrop-blur shadow-lg"
-                    aria-label="Open full gallery"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                    <span>Click to expand</span>
-                  </button>
+              <div className="pointer-events-none absolute inset-x-0 bottom-4 flex flex-col items-center gap-2">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openGallery();
+                  }}
+                  className="pointer-events-auto inline-flex items-center gap-2 rounded-full bg-black/65 px-4 py-2 text-sm font-medium text-white backdrop-blur shadow-lg"
+                  aria-label="Open full gallery"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                  <span>Click to expand</span>
+                </button>
+                {totalImages > 1 && (
                   <div className="pointer-events-none flex items-center gap-1">
                     {displayImages.map((_, idx) => (
                       <span
@@ -2038,8 +2038,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       />
                     ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
 
 
               <div className="absolute left-4 top-4 flex flex-col gap-2 items-start">
