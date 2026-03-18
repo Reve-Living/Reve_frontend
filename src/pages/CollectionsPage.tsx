@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { Button } from '@/components/ui/button';
 import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Collection } from '@/lib/types';
@@ -32,6 +33,7 @@ const itemVariants = {
 
 const CollectionsPage = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -44,6 +46,25 @@ const CollectionsPage = () => {
     };
     load();
   }, []);
+
+  const featuredCollections = useMemo(
+    () => collections.filter((collection) => collection.is_featured).slice(0, 4),
+    [collections]
+  );
+
+  const visibleCollections = useMemo(() => {
+    if (showAll) {
+      const featuredIds = new Set(featuredCollections.map((collection) => collection.id));
+      return [
+        ...featuredCollections,
+        ...collections.filter((collection) => !featuredIds.has(collection.id)),
+      ];
+    }
+    if (featuredCollections.length > 0) {
+      return featuredCollections;
+    }
+    return collections.slice(0, 4);
+  }, [collections, featuredCollections, showAll]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -71,6 +92,13 @@ const CollectionsPage = () => {
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
               Curated ranges of handcrafted furniture and bedroom essentials.
             </p>
+            {collections.length > visibleCollections.length && !showAll && (
+              <div className="mt-8">
+                <Button onClick={() => setShowAll(true)} size="lg">
+                  View All Collections
+                </Button>
+              </div>
+            )}
           </motion.div>
         </div>
       </section>
@@ -83,7 +111,7 @@ const CollectionsPage = () => {
             animate="visible"
             className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
           >
-            {collections.map((collection) => (
+            {visibleCollections.map((collection) => (
               <motion.div key={collection.id} variants={itemVariants} id={collection.slug}>
                 <div className="group relative flex h-[380px] w-full flex-col overflow-hidden rounded-2xl">
                   <div

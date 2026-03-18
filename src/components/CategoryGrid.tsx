@@ -123,9 +123,9 @@ const CategoryGrid = () => {
             <Button
               size="lg"
               className="group gradient-bronze text-base font-semibold"
-              onClick={() => navigate('/categories')}
+              onClick={() => navigate('/collections')}
             >
-              View All Categories
+              View All Collections
               <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           </div>
