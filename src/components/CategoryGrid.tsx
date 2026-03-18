@@ -45,12 +45,10 @@ const CategoryGrid = () => {
           apiGet<SubCategory[]>('/subcategories/'),
         ]);
 
-        // Identify the main bed category so we can split its subcategories into their own cards.
-        const bedCategory = categoryData.find((c) => (c.slug || '').toLowerCase().includes('bed'));
-        const otherCategories = categoryData.filter((c) => c.id !== bedCategory?.id);
-        const bedSubcategories = bedCategory
-          ? subcategoryData.filter((sub) => sub.category === bedCategory.id)
-          : [];
+        const selectedCategories = categoryData.filter((category) => category.show_in_collections);
+        const selectedSubcategories = subcategoryData.filter((subcategory) => subcategory.show_in_collections);
+
+        const categoryMap = new Map(categoryData.map((category) => [category.id, category]));
 
         const buildCard = async (
           item: Category | SubCategory,
@@ -85,15 +83,19 @@ const CategoryGrid = () => {
           };
         };
 
-        const bedCards = await Promise.all(
-          bedSubcategories.map((sub, idx) => buildCard(sub, bedCategory?.slug, idx, true))
+        const selectedSubcategoryCards = await Promise.all(
+          selectedSubcategories.map((sub, idx) =>
+            buildCard(sub, categoryMap.get(sub.category)?.slug, idx, true)
+          )
         );
 
-        const otherCards = await Promise.all(
-          otherCategories.map((category, idx) => buildCard(category, undefined, idx))
+        const selectedCategoryCards = await Promise.all(
+          selectedCategories.map((category, idx) => buildCard(category, undefined, idx))
         );
 
-        const valid = [...bedCards, ...otherCards].filter((c): c is GridItem => Boolean(c));
+        const valid = [...selectedSubcategoryCards, ...selectedCategoryCards].filter(
+          (c): c is GridItem => Boolean(c)
+        );
         setCategories(valid.slice(0, 4));
       } catch {
         setCategories([]);
