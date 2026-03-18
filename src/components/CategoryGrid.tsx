@@ -94,7 +94,7 @@ const CategoryGrid = () => {
         );
 
         const valid = [...bedCards, ...otherCards].filter((c): c is GridItem => Boolean(c));
-        setCategories(valid);
+        setCategories(valid.slice(0, 4));
       } catch {
         setCategories([]);
       }
