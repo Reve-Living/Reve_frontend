@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,8 @@ const isLightColor = (hexColor: string): boolean => {
 };
 
 const CategoriesPage = () => {
+  const [searchParams] = useSearchParams();
+  const isBestsellerOnly = ['1', 'true', 'yes'].includes((searchParams.get('bestseller') || '').toLowerCase());
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,7 +45,7 @@ const CategoriesPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const productsRes = await apiGet<Product[]>('/products/');
+        const productsRes = await apiGet<Product[]>(isBestsellerOnly ? '/products/?bestseller=1' : '/products/');
         const orderedProducts = Array.isArray(productsRes)
           ? [...productsRes].sort((a, b) => {
               const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : 0;
@@ -60,7 +62,7 @@ const CategoriesPage = () => {
       }
     };
     load();
-  }, []);
+  }, [isBestsellerOnly]);
 
   const priceBounds = useMemo(() => {
     const prices = allProducts
@@ -225,13 +227,15 @@ const CategoriesPage = () => {
               transition={{ delay: 0.2 }}
               className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary"
             >
-              Browse All
+              {isBestsellerOnly ? 'Customer Favorites' : 'Browse All'}
             </motion.span>
             <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl lg:text-6xl">
-              All Products
+              {isBestsellerOnly ? 'All Bestsellers' : 'All Products'}
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Discover our complete range of handcrafted furniture, designed for comfort and built to last
+              {isBestsellerOnly
+                ? 'Explore every bestseller product loved most by our customers.'
+                : 'Discover our complete range of handcrafted furniture, designed for comfort and built to last'}
             </p>
           </motion.div>
         </div>

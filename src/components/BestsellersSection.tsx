@@ -56,7 +56,7 @@ const BestsellersSection = () => {
             <Button
               size="lg"
               className="group gradient-bronze text-base font-semibold"
-              onClick={() => navigate('/category/divan-beds')}
+              onClick={() => navigate('/categories?bestseller=1')}
             >
               View All Bestsellers
               <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
@@ -81,7 +81,7 @@ const BestsellersSection = () => {
             variant="outline"
             size="lg"
             className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            onClick={() => navigate('/category/divan-beds')}
+            onClick={() => navigate('/categories?bestseller=1')}
           >
             View All Bestsellers
             <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />

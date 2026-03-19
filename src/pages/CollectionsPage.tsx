@@ -1,74 +1,130 @@
-import { motion } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { Button } from '@/components/ui/button';
-import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
-import { Collection } from '@/lib/types';
+import type { Category, Product, SubCategory } from '@/lib/types';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-      delayChildren: 0.1,
-    },
-  },
+type CollectionTile = {
+  id: string;
+  name: string;
+  description: string;
+  image: string;
+  href: string;
+  badge: string;
+  sortOrder: number;
 };
 
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.6,
-      ease: [0.22, 1, 0.36, 1],
-    },
-  },
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+const resolveImageUrl = (value?: string): string => {
+  const raw = (value || '').trim();
+  if (!raw) return '';
+  if (raw.startsWith('http://') || raw.startsWith('https://') || raw.startsWith('data:') || raw.startsWith('blob:')) {
+    return raw;
+  }
+  if (raw.startsWith('//')) return `https:${raw}`;
+  if (raw.startsWith('/')) {
+    const base = SUPABASE_URL || API_BASE_URL;
+    try {
+      return base ? new URL(raw, base).toString() : raw;
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
 };
 
 const CollectionsPage = () => {
-  const [collections, setCollections] = useState<Collection[]>([]);
-  const [showAll, setShowAll] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
+      setIsLoading(true);
       try {
-        const data = await apiGet<Collection[]>('/collections/');
-        setCollections(data);
+        const [categoriesRes, subcategoriesRes, productsRes] = await Promise.all([
+          apiGet<Category[]>('/categories/'),
+          apiGet<SubCategory[]>('/subcategories/'),
+          apiGet<Product[]>('/products/'),
+        ]);
+
+        setCategories(Array.isArray(categoriesRes) ? categoriesRes : []);
+        setSubcategories(Array.isArray(subcategoriesRes) ? subcategoriesRes : []);
+        setProducts(Array.isArray(productsRes) ? productsRes : []);
       } catch {
-        setCollections([]);
+        setCategories([]);
+        setSubcategories([]);
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
       }
     };
-    load();
+
+    void load();
   }, []);
 
-  const featuredCollections = useMemo(
-    () => collections.filter((collection) => collection.is_featured).slice(0, 4),
-    [collections]
-  );
+  const tiles = useMemo<CollectionTile[]>(() => {
+    const categoryMap = new Map(categories.map((category) => [category.id, category]));
 
-  const visibleCollections = useMemo(() => {
-    if (showAll) {
-      const featuredIds = new Set(featuredCollections.map((collection) => collection.id));
-      return [
-        ...featuredCollections,
-        ...collections.filter((collection) => !featuredIds.has(collection.id)),
-      ];
-    }
-    if (featuredCollections.length > 0) {
-      return featuredCollections;
-    }
-    return collections.slice(0, 4);
-  }, [collections, featuredCollections, showAll]);
+    const categoryTiles = categories
+      .filter((category) => category.show_in_collections)
+      .map((category) => {
+        const categoryProducts = products.filter((product) => product.category_slug === category.slug);
+        const image =
+          resolveImageUrl(category.image) ||
+          resolveImageUrl(categoryProducts[0]?.images?.[0]?.url) ||
+          '';
+
+        return {
+          id: `category-${category.id}`,
+          name: category.name,
+          description: category.description || '',
+          image,
+          href: `/category/${category.slug}`,
+          badge: 'Category',
+          sortOrder: Number(category.sort_order) || 0,
+        };
+      });
+
+    const subcategoryTiles = subcategories
+      .filter((subcategory) => subcategory.show_in_collections)
+      .map((subcategory) => {
+        const parent = categoryMap.get(subcategory.category);
+        const subcategoryProducts = products.filter((product) => product.subcategory_slug === subcategory.slug);
+        const image =
+          resolveImageUrl(subcategory.image) ||
+          resolveImageUrl(subcategoryProducts[0]?.images?.[0]?.url) ||
+          resolveImageUrl(parent?.image) ||
+          '';
+
+        return {
+          id: `subcategory-${subcategory.id}`,
+          name: subcategory.name,
+          description: subcategory.description || '',
+          image,
+          href: parent ? `/category/${parent.slug}?sub=${subcategory.slug}` : `/categories`,
+          badge: parent ? parent.name : 'Subcategory',
+          sortOrder: Number(subcategory.sort_order) || 0,
+        };
+      });
+
+    return [...subcategoryTiles, ...categoryTiles]
+      .filter((tile) => tile.image)
+      .sort((a, b) => {
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return a.name.localeCompare(b.name);
+      });
+  }, [categories, products, subcategories]);
 
   return (
     <div className="min-h-screen bg-background">
-<Header />
+      <Header />
 
       <section className="relative bg-card py-16 md:py-24">
         <div className="container mx-auto px-4">
@@ -90,63 +146,62 @@ const CollectionsPage = () => {
               All Collections
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Curated ranges of handcrafted furniture and bedroom essentials.
+              Browse every featured category and subcategory selected from the admin panel.
             </p>
-            {collections.length > visibleCollections.length && !showAll && (
-              <div className="mt-8">
-                <Button onClick={() => setShowAll(true)} size="lg">
-                  View All Collections
-                </Button>
-              </div>
-            )}
           </motion.div>
         </div>
       </section>
 
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="grid gap-8 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {visibleCollections.map((collection) => (
-              <motion.div key={collection.id} variants={itemVariants} id={collection.slug}>
-                <div className="group relative flex h-[380px] w-full flex-col overflow-hidden rounded-2xl">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-out group-hover:scale-105"
-                    style={{ backgroundImage: `url(${collection.image})` }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-espresso/95 via-espresso/50 to-espresso/20 transition-all duration-500" />
-                  <div className="relative z-10 flex h-full flex-col justify-end p-6 md:p-8">
-                    <motion.div
-                      className="absolute right-6 top-6 flex h-12 w-12 items-center justify-center rounded-full bg-cream/10 text-cream backdrop-blur-sm transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground"
-                      whileHover={{ rotate: 45 }}
-                    >
-                      <ArrowUpRight className="h-5 w-5" />
-                    </motion.div>
-                    <div className="space-y-3">
-                      <h2 className="font-serif text-3xl font-bold text-cream md:text-4xl transition-transform duration-300 group-hover:translate-x-2">
-                        {collection.name}
-                      </h2>
-                      <p className="text-cream/80">
-                        {collection.description}
-                      </p>
-                    </div>
-                  </div>
-                </div>
+          {isLoading ? (
+            <div className="text-center text-muted-foreground">Loading collections...</div>
+          ) : tiles.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {tiles.map((tile, index) => (
+                <motion.div
+                  key={tile.id}
+                  initial={{ opacity: 0, y: 24 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: index * 0.04 }}
+                >
+                  <Link
+                    to={tile.href}
+                    className="group relative flex h-[380px] w-full flex-col overflow-hidden rounded-2xl"
+                  >
+                    <div
+                      className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-out group-hover:scale-105"
+                      style={{ backgroundImage: `url(${tile.image})` }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-espresso/95 via-espresso/50 to-espresso/20 transition-all duration-500" />
+                    <div className="relative z-10 flex h-full flex-col justify-between p-6 md:p-8">
+                      <div className="flex items-start justify-between">
+                        <span className="rounded-full bg-cream/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-cream backdrop-blur-sm">
+                          {tile.badge}
+                        </span>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cream/10 text-cream backdrop-blur-sm transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
+                          <ArrowUpRight className="h-5 w-5" />
+                        </div>
+                      </div>
 
-                {(collection.products_data || []).length > 0 && (
-                  <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                    {(collection.products_data || []).map((product, index) => (
-                      <ProductCard key={product.id} product={product} index={index} />
-                    ))}
-                  </div>
-                )}
-              </motion.div>
-            ))}
-          </motion.div>
+                      <div className="space-y-3">
+                        <h2 className="font-serif text-3xl font-bold text-cream md:text-4xl transition-transform duration-300 group-hover:translate-x-2">
+                          {tile.name}
+                        </h2>
+                        <p className="line-clamp-3 text-cream/80">
+                          {tile.description || `Browse our ${tile.name.toLowerCase()} range.`}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground">
+              No collections are selected yet.
+            </div>
+          )}
         </div>
       </section>
 
@@ -156,4 +211,3 @@ const CollectionsPage = () => {
 };
 
 export default CollectionsPage;
-

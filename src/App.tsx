@@ -11,6 +11,7 @@ import ComingSoonGate from "@/components/ComingSoonGate";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Index from "./pages/Index";
 import CategoryPage from "./pages/CategoryPage";
+import CategorySubcategoriesPage from "./pages/CategorySubcategoriesPage";
 import ProductPage from "./pages/ProductPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -43,6 +44,7 @@ const App = () => (
             <WhatsAppButton />
             <Routes>
               <Route path="/" element={<Index />} />
+              <Route path="/category/:slug/subcategories" element={<CategorySubcategoriesPage />} />
               <Route path="/category/:slug" element={<CategoryPage />} />
               <Route path="/product/:slug" element={<ProductPage />} />
               <Route path="/cart" element={<CartPage />} />

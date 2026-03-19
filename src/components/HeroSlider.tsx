@@ -158,12 +158,11 @@ const HeroSlider = () => {
             subtitle: slide.subtitle?.trim() || 'Discover our latest arrivals curated for you.',
             cta: slide.cta_text?.trim() || (slide.category_name ? `Shop ${slide.category_name}` : 'Shop Now'),
             link:
-              slide.cta_link?.trim() ||
               (slide.subcategory_slug && slide.category_slug
                 ? `/category/${slide.category_slug}?sub=${slide.subcategory_slug}`
                 : slide.category_slug
-                ? `/category/${slide.category_slug}`
-                : '/categories'),
+                ? `/category/${slide.category_slug}/subcategories`
+                : slide.cta_link?.trim() || '/categories'),
           }))
           .filter((slide) => slide.image);
 
