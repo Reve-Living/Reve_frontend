@@ -73,7 +73,6 @@ const CollectionsPage = () => {
     const categoryMap = new Map(categories.map((category) => [category.id, category]));
 
     const categoryTiles = categories
-      .filter((category) => category.show_in_collections)
       .map((category) => {
         const categoryProducts = products.filter((product) => product.category_slug === category.slug);
         const image =
@@ -93,7 +92,6 @@ const CollectionsPage = () => {
       });
 
     const subcategoryTiles = subcategories
-      .filter((subcategory) => subcategory.show_in_collections)
       .map((subcategory) => {
         const parent = categoryMap.get(subcategory.category);
         const subcategoryProducts = products.filter((product) => product.subcategory_slug === subcategory.slug);
@@ -146,7 +144,7 @@ const CollectionsPage = () => {
               All Collections
             </h1>
             <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              Browse every featured category and subcategory selected from the admin panel.
+              Browse every category and subcategory available in your catalog.
             </p>
           </motion.div>
         </div>
