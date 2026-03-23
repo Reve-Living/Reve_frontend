@@ -202,17 +202,17 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 const formatPrice = (value: number): string => gbpFormatter.format(Math.max(0, value));
 
-const renderMultilineParagraphs = (value?: string) => {
+const renderMultilineParagraphs = (value?: string, emphasizeFirst = true) => {
   if (!value) return null;
   return value
-    .split(/\r?\n+/)
-    .map((line) => line.trim())
+    .split(/\r?\n\s*\r?\n/)
+    .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map((line, idx) => (
+    .map((paragraph, idx) => (
       <p
-        key={`${line}-${idx}`}
-        className={idx === 0 ? 'font-semibold whitespace-pre-line' : 'whitespace-pre-line'}
-        dangerouslySetInnerHTML={{ __html: renderRichText(line) }}
+        key={`${paragraph}-${idx}`}
+        className={`${emphasizeFirst && idx === 0 ? 'font-semibold ' : ''}whitespace-pre-line`}
+        dangerouslySetInnerHTML={{ __html: renderRichText(paragraph).replace(/\n/g, '<br/>') }}
       />
     ));
 };
@@ -2577,10 +2577,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
           <div className="rounded-xl border border-border bg-card p-4">
             {activeInfoTab === 'description' && fullDescription && (
-              <div
-                className="text-muted-foreground leading-relaxed space-y-2"
-                dangerouslySetInnerHTML={{ __html: renderRichText(fullDescription) }}
-              />
+              <div className="text-muted-foreground leading-relaxed space-y-4">
+                {renderMultilineParagraphs(fullDescription, false)}
+              </div>
             )}
 
             {activeInfoTab === 'dimensions' && (

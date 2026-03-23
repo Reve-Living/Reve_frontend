@@ -33,6 +33,14 @@ const Header = () => {
   const normalizedSearch = searchQuery.trim().toLowerCase();
   const shouldShowSearchResults = isSearchOpen && normalizedSearch.length > 0;
   const limitedSearchResults = useMemo(() => searchResults.slice(0, 6), [searchResults]);
+  const utilityLinks = useMemo(
+    () => navLinks.filter((link) => ['About Us', 'Contact Us'].includes(link.name)),
+    [navLinks]
+  );
+  const mainNavLinks = useMemo(
+    () => navLinks.filter((link) => !['About Us', 'Contact Us'].includes(link.name)),
+    [navLinks]
+  );
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
@@ -181,9 +189,9 @@ const Header = () => {
           Coming Soon
         </div>
         <div className="container mx-auto px-4">
-          <div className="flex h-20 items-center justify-between">
+          <div className="flex h-20 items-center gap-4">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-1 md:gap-2 leading-none">
+            <Link to="/" className="flex shrink-0 items-center gap-1 md:gap-2 leading-none">
               <img
                 src={logoLettersOnly}
                 alt="RL monogram"
@@ -203,8 +211,8 @@ const Header = () => {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex lg:items-center lg:gap-8">
-              {navLinks.map((link) => (
+            <nav className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-center lg:gap-6 xl:gap-8">
+              {mainNavLinks.map((link) => (
                 <div
                   key={link.name}
                   className="relative"
@@ -243,13 +251,203 @@ const Header = () => {
                   )}
                 </div>
               ))}
+
+              <div ref={searchRef} className="hidden">
+                <div className="relative">
+                  {isSearchOpen ? (
+                    <>
+                      <form onSubmit={handleSearchSubmit} className="w-72">
+                        <Input
+                          placeholder="Search..."
+                          className="h-11 border-accent bg-card pr-12"
+                          autoFocus
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button
+                          type="submit"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                          aria-label="Search"
+                        >
+                          <Search className="h-5 w-5" />
+                        </button>
+                      </form>
+
+                      {shouldShowSearchResults && (
+                        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                          {limitedSearchResults.length > 0 ? (
+                            <div className="max-h-96 overflow-y-auto p-2">
+                              {limitedSearchResults.map((product) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => handleSearchSelect(product.slug)}
+                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
+                                >
+                                  {product.images?.[0]?.url ? (
+                                    <img
+                                      src={product.images[0].url}
+                                      alt={product.name}
+                                      className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-14 w-14 flex-shrink-0 rounded-md bg-muted" />
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="truncate font-medium text-foreground">{product.name}</p>
+                                    {(product.category_name || product.subcategory_name) && (
+                                      <p className="truncate text-sm text-muted-foreground">
+                                        {[product.category_name, product.subcategory_name].filter(Boolean).join(' / ')}
+                                      </p>
+                                    )}
+                                    <p className="text-sm font-semibold text-primary">
+                                      £{Number(product.price).toFixed(2)}
+                                    </p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-muted-foreground">
+                              {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={openSearch}
+                      className="hover:bg-muted"
+                      aria-label="Open search"
+                    >
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
+
+                {utilityLinks[1] && (
+                  <Link
+                    to={utilityLinks[1].href}
+                    className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                  >
+                    {utilityLinks[1].name}
+                  </Link>
+                )}
+
+                {utilityLinks[0] && (
+                  <Link
+                    to={utilityLinks[0].href}
+                    className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                  >
+                    {utilityLinks[0].name}
+                  </Link>
+                )}
+              </div>
             </nav>
 
             {/* Right Actions */}
-            <div className="flex items-center gap-4">
+            <div className="ml-auto flex items-center gap-4">
+              <div ref={searchRef} className="hidden lg:flex lg:items-center lg:gap-4">
+                <div className="relative">
+                  {isSearchOpen ? (
+                    <>
+                      <form onSubmit={handleSearchSubmit} className="w-72">
+                        <Input
+                          placeholder="Search..."
+                          className="h-11 border-accent bg-card pr-12"
+                          autoFocus
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                        <button
+                          type="submit"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                          aria-label="Search"
+                        >
+                          <Search className="h-5 w-5" />
+                        </button>
+                      </form>
+
+                      {shouldShowSearchResults && (
+                        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                          {limitedSearchResults.length > 0 ? (
+                            <div className="max-h-96 overflow-y-auto p-2">
+                              {limitedSearchResults.map((product) => (
+                                <button
+                                  key={product.id}
+                                  type="button"
+                                  onClick={() => handleSearchSelect(product.slug)}
+                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
+                                >
+                                  {product.images?.[0]?.url ? (
+                                    <img
+                                      src={product.images[0].url}
+                                      alt={product.name}
+                                      className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-14 w-14 flex-shrink-0 rounded-md bg-muted" />
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="truncate font-medium text-foreground">{product.name}</p>
+                                    {(product.category_name || product.subcategory_name) && (
+                                      <p className="truncate text-sm text-muted-foreground">
+                                        {[product.category_name, product.subcategory_name].filter(Boolean).join(' / ')}
+                                      </p>
+                                    )}
+                                    <p className="text-sm font-semibold text-primary">
+                                      £{Number(product.price).toFixed(2)}
+                                    </p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="px-4 py-3 text-sm text-muted-foreground">
+                              {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={openSearch}
+                      className="hover:bg-muted"
+                      aria-label="Open search"
+                    >
+                      <Search className="h-5 w-5" />
+                    </Button>
+                  )}
+                </div>
+
+                {utilityLinks[1] && (
+                  <Link
+                    to={utilityLinks[1].href}
+                    className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                  >
+                    {utilityLinks[1].name}
+                  </Link>
+                )}
+
+                {utilityLinks[0] && (
+                  <Link
+                    to={utilityLinks[0].href}
+                    className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                  >
+                    {utilityLinks[0].name}
+                  </Link>
+                )}
+              </div>
+
               {/* Search */}
               {isSearchOpen && (
-                <div ref={searchRef} className="relative hidden md:block">
+                <div ref={searchRef} className="relative hidden md:block lg:hidden">
                   <form onSubmit={handleSearchSubmit}>
                     <Input
                       placeholder="Search..."
@@ -307,7 +505,7 @@ const Header = () => {
                 variant="ghost"
                 size="icon"
                 onClick={openSearch}
-                className="hover:bg-muted"
+                className="hover:bg-muted lg:hidden"
               >
                 <Search className="h-5 w-5" />
               </Button>
@@ -353,8 +551,8 @@ const Header = () => {
         {isMobileMenuOpen && (
           <div className="border-t border-border bg-card lg:hidden">
             <div className="container mx-auto px-4 py-6">
-              <div className="flex flex-col gap-4">
-                {navLinks.map((link) => (
+                <div className="flex flex-col gap-4">
+                {[...utilityLinks, ...mainNavLinks].map((link) => (
                   <div key={link.name}>
                     {link.children ? (
                       <>

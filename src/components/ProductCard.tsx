@@ -101,8 +101,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
                 className={`h-4 w-4 ${
                   i < Math.floor(product.rating)
                     ? 'fill-primary text-primary'
-                    : 'text-muted'
+                    : 'fill-transparent text-muted-foreground/60'
                 }`}
+                strokeWidth={1.8}
               />
             ))}
             <span className="ml-1 text-sm text-muted-foreground">
