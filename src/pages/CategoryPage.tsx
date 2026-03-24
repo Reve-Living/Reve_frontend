@@ -95,6 +95,11 @@ const normalizeSizeName = (raw?: string): string => {
 };
 
 const CategoryPage = () => {
+  const getDisplayOrder = (value?: number) => {
+    const num = Number(value);
+    return Number.isFinite(num) && num > 0 ? num : Number.MAX_SAFE_INTEGER;
+  };
+
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const subSlug = searchParams.get('sub') || '';
@@ -192,8 +197,8 @@ const CategoryPage = () => {
             : [];
 
         const orderedProducts = [...normalizedProducts].sort((a, b) => {
-          const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : 0;
-          const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : 0;
+          const aOrder = getDisplayOrder(a.sort_order);
+          const bOrder = getDisplayOrder(b.sort_order);
           if (aOrder !== bOrder) return aOrder - bOrder;
           return (b.id || 0) - (a.id || 0);
         });

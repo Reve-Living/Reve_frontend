@@ -30,6 +30,11 @@ const isLightColor = (hexColor: string): boolean => {
 };
 
 const CategoriesPage = () => {
+  const getDisplayOrder = (value?: number) => {
+    const num = Number(value);
+    return Number.isFinite(num) && num > 0 ? num : Number.MAX_SAFE_INTEGER;
+  };
+
   const [searchParams] = useSearchParams();
   const isBestsellerOnly = ['1', 'true', 'yes'].includes((searchParams.get('bestseller') || '').toLowerCase());
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -48,8 +53,8 @@ const CategoriesPage = () => {
         const productsRes = await apiGet<Product[]>(isBestsellerOnly ? '/products/?bestseller=1' : '/products/');
         const orderedProducts = Array.isArray(productsRes)
           ? [...productsRes].sort((a, b) => {
-              const aOrder = Number.isFinite(Number(a.sort_order)) ? Number(a.sort_order) : 0;
-              const bOrder = Number.isFinite(Number(b.sort_order)) ? Number(b.sort_order) : 0;
+              const aOrder = getDisplayOrder(a.sort_order);
+              const bOrder = getDisplayOrder(b.sort_order);
               if (aOrder !== bOrder) return aOrder - bOrder;
               return (b.id || 0) - (a.id || 0);
             })
