@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { motion } from 'framer-motion';
@@ -13,6 +14,10 @@ import Header from '@/components/Header';
 
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
+import { apiPost } from '@/lib/api';
+import type { PromotionAvailabilityResponse, PromotionValidationResponse } from '@/lib/types';
+import { buildPromotionItemsPayload } from '@/lib/promo';
+import { toast } from 'sonner';
 
 const getVariantsKey = (item: {
   selectedVariants?: Record<string, string>;
@@ -38,7 +43,20 @@ const getVariantsKey = (item: {
   });
 
 const CartPage = () => {
-  const { state, removeItem, updateQuantity, totalPrice } = useCart();
+  const {
+    state,
+    removeItem,
+    updateQuantity,
+    totalPrice,
+    promoDiscount,
+    discountedTotalPrice,
+    setAppliedPromo,
+    clearAppliedPromo,
+  } = useCart();
+  const [promoCode, setPromoCode] = useState(state.appliedPromo?.code || '');
+  const [promoAvailable, setPromoAvailable] = useState(false);
+  const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   const sanitize = (value?: string) =>
     (value || '')
@@ -55,11 +73,71 @@ const CartPage = () => {
     return parts.join(' | ');
   };
 
+  const deliveryFee = discountedTotalPrice >= 500 ? 0 : 49;
 
+  const orderTotal = discountedTotalPrice + deliveryFee;
 
-  const deliveryFee = totalPrice >= 500 ? 0 : 49;
+  useEffect(() => {
+    setPromoCode(state.appliedPromo?.code || '');
+  }, [state.appliedPromo?.code]);
 
-  const orderTotal = totalPrice + deliveryFee;
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (state.items.length === 0) {
+        setPromoAvailable(false);
+        clearAppliedPromo();
+        return;
+      }
+
+      setIsCheckingPromo(true);
+      try {
+        const response = await apiPost<PromotionAvailabilityResponse>('/promotions/availability/', {
+          items: buildPromotionItemsPayload(state.items),
+        });
+        setPromoAvailable(Boolean(response.has_applicable_promotion));
+        if (!response.has_applicable_promotion) {
+          clearAppliedPromo();
+          setPromoCode('');
+        }
+      } catch {
+        setPromoAvailable(false);
+      } finally {
+        setIsCheckingPromo(false);
+      }
+    };
+
+    void checkAvailability();
+  }, [state.items, clearAppliedPromo]);
+
+  const applyPromo = async () => {
+    if (!promoCode.trim()) {
+      toast.error('Enter a promo code');
+      return;
+    }
+
+    setIsApplyingPromo(true);
+    try {
+      const response = await apiPost<PromotionValidationResponse>('/promotions/validate_code/', {
+        code: promoCode.trim(),
+        items: buildPromotionItemsPayload(state.items),
+      });
+      setAppliedPromo({
+        promotionId: response.promotion_id,
+        promotionName: response.promotion_name,
+        code: response.code,
+        discountPercentage: response.discount_percentage,
+        discountAmount: response.discount_amount,
+        applicableProductIds: response.applicable_product_ids,
+      });
+      setPromoCode(response.code);
+      toast.success('Promo code applied');
+    } catch {
+      clearAppliedPromo();
+      toast.error('Promo code is invalid for the current cart');
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
 
 
 
@@ -348,6 +426,15 @@ const CartPage = () => {
 
                   </div>
 
+                  {promoDiscount > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">
+                        Promo {state.appliedPromo?.code ? `(${state.appliedPromo.code})` : ''}
+                      </span>
+                      <span className="font-medium text-primary">-GBP {promoDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between">
 
                     <span className="text-muted-foreground">Delivery</span>
@@ -368,11 +455,11 @@ const CartPage = () => {
 
                   </div>
 
-                  {totalPrice < 500 && (
+                  {discountedTotalPrice < 500 && (
 
                     <p className="text-sm text-muted-foreground">
 
-                      Add GBP {(500 - totalPrice).toFixed(2)} more for free delivery
+                      Add GBP {(500 - discountedTotalPrice).toFixed(2)} more for free delivery
 
                     </p>
 
@@ -404,21 +491,48 @@ const CartPage = () => {
 
                 {/* Promo Code */}
 
-                <div className="mt-6">
-
-                  <div className="flex gap-2">
-
-                    <Input placeholder="Promo code" className="border-accent" />
-
-                    <Button variant="outline" className="border-accent">
-
-                      Apply
-
-                    </Button>
-
+                {promoAvailable && (
+                  <div className="mt-6 space-y-2">
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Promo code"
+                        className="border-accent"
+                        value={promoCode}
+                        onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      />
+                      <Button
+                        variant="outline"
+                        className="border-accent"
+                        onClick={applyPromo}
+                        disabled={isApplyingPromo}
+                      >
+                        {isApplyingPromo ? 'Applying...' : 'Apply'}
+                      </Button>
+                    </div>
+                    {state.appliedPromo && (
+                      <div className="flex items-center justify-between rounded-md bg-primary/5 px-3 py-2 text-sm">
+                        <span>
+                          {state.appliedPromo.code} applied for {state.appliedPromo.discountPercentage}% off
+                        </span>
+                        <button
+                          type="button"
+                          className="text-primary hover:underline"
+                          onClick={() => {
+                            clearAppliedPromo();
+                            setPromoCode('');
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
                   </div>
-
-                </div>
+                )}
+                {!promoAvailable && !isCheckingPromo && (
+                  <p className="mt-6 text-sm text-muted-foreground">
+                    Promo codes are not available for the current cart items.
+                  </p>
+                )}
 
 
 

@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Search, ShoppingBag, Menu, X, ChevronDown, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import AnnouncementBar from '@/components/AnnouncementBar';
 import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import type { Category, Product, SubCategory } from '@/lib/types';
@@ -185,9 +186,7 @@ const Header = () => {
   return (
     <>
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background shadow-sm">
-        <div className="gradient-bronze py-0.5 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-primary-foreground">
-          Coming Soon
-        </div>
+        <AnnouncementBar />
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center gap-4">
             {/* Logo */}

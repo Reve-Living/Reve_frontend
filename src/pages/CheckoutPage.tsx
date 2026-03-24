@@ -12,7 +12,12 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { apiPost } from '@/lib/api';
-import type { ProductStyle } from '@/lib/types';
+import type {
+  ProductStyle,
+  PromotionAvailabilityResponse,
+  PromotionValidationResponse,
+} from '@/lib/types';
+import { buildPromotionItemsPayload } from '@/lib/promo';
 import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
@@ -208,16 +213,27 @@ const getStyleSummary = (item: {
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
-  const { state, totalPrice, clearCart } = useCart();
+  const {
+    state,
+    totalPrice,
+    promoDiscount,
+    discountedTotalPrice,
+    clearCart,
+    setAppliedPromo,
+    clearAppliedPromo,
+  } = useCart();
   const [step, setStep] = useState<CheckoutStep>('information');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [promoCode, setPromoCode] = useState(state.appliedPromo?.code || '');
+  const [promoAvailable, setPromoAvailable] = useState(false);
+  const [isApplyingPromo, setIsApplyingPromo] = useState(false);
 
   const deliveryFee = state.items.reduce(
     (sum, item) => sum + (item.product.delivery_charges || 0) * item.quantity,
     0
   );
-  const orderTotal = totalPrice + deliveryFee;
+  const orderTotal = discountedTotalPrice + deliveryFee;
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -254,6 +270,64 @@ const CheckoutPage = () => {
       clearCart();
     }
   }, [clearCart]);
+
+  useEffect(() => {
+    setPromoCode(state.appliedPromo?.code || '');
+  }, [state.appliedPromo?.code]);
+
+  useEffect(() => {
+    const checkAvailability = async () => {
+      if (state.items.length === 0) {
+        setPromoAvailable(false);
+        clearAppliedPromo();
+        return;
+      }
+      try {
+        const response = await apiPost<PromotionAvailabilityResponse>('/promotions/availability/', {
+          items: buildPromotionItemsPayload(state.items),
+        });
+        setPromoAvailable(Boolean(response.has_applicable_promotion));
+        if (!response.has_applicable_promotion) {
+          clearAppliedPromo();
+          setPromoCode('');
+        }
+      } catch {
+        setPromoAvailable(false);
+      }
+    };
+
+    void checkAvailability();
+  }, [state.items, clearAppliedPromo]);
+
+  const applyPromo = async () => {
+    if (!promoCode.trim()) {
+      toast.error('Enter a promo code');
+      return;
+    }
+
+    setIsApplyingPromo(true);
+    try {
+      const response = await apiPost<PromotionValidationResponse>('/promotions/validate_code/', {
+        code: promoCode.trim(),
+        items: buildPromotionItemsPayload(state.items),
+      });
+      setAppliedPromo({
+        promotionId: response.promotion_id,
+        promotionName: response.promotion_name,
+        code: response.code,
+        discountPercentage: response.discount_percentage,
+        discountAmount: response.discount_amount,
+        applicableProductIds: response.applicable_product_ids,
+      });
+      setPromoCode(response.code);
+      toast.success('Promo code applied');
+    } catch {
+      clearAppliedPromo();
+      toast.error('Promo code is invalid for the current cart');
+    } finally {
+      setIsApplyingPromo(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -332,11 +406,12 @@ const CheckoutPage = () => {
         floor_number: formData.floorNumber.trim(),
         total_amount: orderTotal,
         delivery_charges: deliveryFee,
+        promo_code: state.appliedPromo?.code || '',
         payment_method: paymentMethod,
         items: state.items.map((item) => ({
           product_id: item.product.id,
           quantity: item.quantity,
-          price: item.unit_price ?? item.product.price,
+            price: item.unit_price ?? item.product.price,
           size: item.size,
           color: item.color,
           style: getStyleSummary(item),
@@ -361,10 +436,16 @@ const CheckoutPage = () => {
 
       if (paymentMethod === 'card') {
         try {
+          const discountRate = (state.appliedPromo?.discountPercentage || 0) / 100;
+          const applicableSet = new Set(state.appliedPromo?.applicableProductIds || []);
           const session = await apiPost<{ url: string; id: string }>('/payments/create_stripe_session/', {
             items: state.items.map((item) => ({
               name: item.product.name,
-              price: String(item.unit_price ?? item.product.price),
+              price: String(
+                applicableSet.has(item.product.id)
+                  ? Number(((item.unit_price ?? item.product.price) * (1 - discountRate)).toFixed(2))
+                  : Number((item.unit_price ?? item.product.price).toFixed(2))
+              ),
               quantity: item.quantity,
             })),
             delivery_charges: String(deliveryFee),
@@ -745,6 +826,40 @@ const CheckoutPage = () => {
                 </motion.div>
               )}
 
+              {promoAvailable && (
+                <div className="mt-6 rounded-lg bg-card p-6 shadow-luxury">
+                  <h2 className="mb-4 font-serif text-xl font-semibold">Promo code</h2>
+                  <div className="flex gap-2">
+                    <Input
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="Enter promo code"
+                      className="border-accent"
+                    />
+                    <Button variant="outline" className="border-accent" onClick={applyPromo} disabled={isApplyingPromo}>
+                      {isApplyingPromo ? 'Applying...' : 'Apply'}
+                    </Button>
+                  </div>
+                  {state.appliedPromo && (
+                    <div className="mt-3 flex items-center justify-between rounded-md bg-primary/5 px-3 py-2 text-sm">
+                      <span>
+                        {state.appliedPromo.code} applied for {state.appliedPromo.discountPercentage}% off
+                      </span>
+                      <button
+                        type="button"
+                        className="text-primary hover:underline"
+                        onClick={() => {
+                          clearAppliedPromo();
+                          setPromoCode('');
+                        }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="mt-6">
                 <Button
                   size="lg"
@@ -810,6 +925,14 @@ const CheckoutPage = () => {
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>£{totalPrice.toFixed(2)}</span>
                   </div>
+                  {promoDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        Promo {state.appliedPromo?.code ? `(${state.appliedPromo.code})` : ''}
+                      </span>
+                      <span className="text-primary">-£{promoDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Delivery</span>
                     <span>£{deliveryFee.toFixed(2)}</span>

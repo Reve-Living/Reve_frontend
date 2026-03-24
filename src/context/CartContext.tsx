@@ -25,9 +25,19 @@ export interface CartItem {
   mattress_position?: 'top' | 'bottom' | 'both' | null;
 }
 
+export interface CartStatePromo {
+  promotionId: number;
+  promotionName: string;
+  code: string;
+  discountPercentage: number;
+  discountAmount: number;
+  applicableProductIds: number[];
+}
+
 interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  appliedPromo: CartStatePromo | null;
 }
 
 type CartAction =
@@ -38,6 +48,11 @@ type CartAction =
       payload: { productId: number; size: string; color: string; variantsKey: string; quantity: number };
     }
   | { type: 'CLEAR_CART' }
+  | {
+      type: 'SET_PROMO';
+      payload: CartStatePromo | null;
+    }
+  | { type: 'CLEAR_PROMO' }
   | { type: 'TOGGLE_CART' }
   | { type: 'OPEN_CART' }
   | { type: 'CLOSE_CART' };
@@ -86,15 +101,16 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       if (existingIndex > -1) {
         const newItems = [...state.items];
         newItems[existingIndex].quantity += action.payload.quantity;
-        return { ...state, items: newItems, isOpen: true };
+        return { ...state, items: newItems, isOpen: true, appliedPromo: null };
       }
 
-      return { ...state, items: [...state.items, action.payload], isOpen: true };
+      return { ...state, items: [...state.items, action.payload], isOpen: true, appliedPromo: null };
     }
 
     case 'REMOVE_ITEM':
       return {
         ...state,
+        appliedPromo: null,
         items: state.items.filter(
           item =>
             !(
@@ -118,11 +134,17 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
         }
         return item;
       });
-      return { ...state, items: newItems };
+      return { ...state, items: newItems, appliedPromo: null };
     }
 
     case 'CLEAR_CART':
-      return { ...state, items: [] };
+      return { ...state, items: [], appliedPromo: null };
+
+    case 'SET_PROMO':
+      return { ...state, appliedPromo: action.payload };
+
+    case 'CLEAR_PROMO':
+      return { ...state, appliedPromo: null };
 
     case 'TOGGLE_CART':
       return { ...state, isOpen: !state.isOpen };
@@ -144,17 +166,21 @@ interface CartContextType {
   removeItem: (productId: number, size: string, color: string, variantsKey: string) => void;
   updateQuantity: (productId: number, size: string, color: string, variantsKey: string, quantity: number) => void;
   clearCart: () => void;
+  setAppliedPromo: (promo: CartState['appliedPromo']) => void;
+  clearAppliedPromo: () => void;
   toggleCart: () => void;
   openCart: () => void;
   closeCart: () => void;
   totalItems: number;
   totalPrice: number;
+  promoDiscount: number;
+  discountedTotalPrice: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false });
+  const [state, dispatch] = useReducer(cartReducer, { items: [], isOpen: false, appliedPromo: null });
 
   const addItem = (item: CartItem) => dispatch({ type: 'ADD_ITEM', payload: item });
   const removeItem = (productId: number, size: string, color: string, variantsKey: string) =>
@@ -162,6 +188,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const updateQuantity = (productId: number, size: string, color: string, variantsKey: string, quantity: number) =>
     dispatch({ type: 'UPDATE_QUANTITY', payload: { productId, size, color, variantsKey, quantity } });
   const clearCart = () => dispatch({ type: 'CLEAR_CART' });
+  const setAppliedPromo = (promo: CartState['appliedPromo']) => dispatch({ type: 'SET_PROMO', payload: promo });
+  const clearAppliedPromo = () => dispatch({ type: 'CLEAR_PROMO' });
   const toggleCart = () => dispatch({ type: 'TOGGLE_CART' });
   const openCart = () => dispatch({ type: 'OPEN_CART' });
   const closeCart = () => dispatch({ type: 'CLOSE_CART' });
@@ -171,6 +199,8 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const unit = item.unit_price ?? item.product.price + (item.extras_total || 0);
     return sum + unit * item.quantity;
   }, 0);
+  const promoDiscount = state.appliedPromo?.discountAmount || 0;
+  const discountedTotalPrice = Math.max(0, totalPrice - promoDiscount);
 
   return (
     <CartContext.Provider
@@ -180,11 +210,15 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         removeItem,
         updateQuantity,
         clearCart,
+        setAppliedPromo,
+        clearAppliedPromo,
         toggleCart,
         openCart,
         closeCart,
         totalItems,
         totalPrice,
+        promoDiscount,
+        discountedTotalPrice,
       }}
     >
       {children}

@@ -57,6 +57,40 @@ export interface HeroSlide {
   updated_at?: string;
 }
 
+export interface Promotion {
+  id?: number;
+  name: string;
+  code?: string;
+  announcement_text?: string;
+  discount_percentage: number;
+  start_date: string;
+  end_date: string;
+  category_ids?: number[];
+  subcategory_ids?: number[];
+}
+
+export interface PromotionAvailabilityResponse {
+  has_applicable_promotion: boolean;
+  promotions: Promotion[];
+}
+
+export interface PromotionValidationResponse {
+  promotion_id: number;
+  promotion_name: string;
+  code: string;
+  discount_percentage: number;
+  discount_amount: number;
+  applicable_product_ids: number[];
+  line_results: {
+    index: number;
+    product_id: number;
+    quantity: number;
+    unit_price: number;
+    line_subtotal: number;
+    is_applicable: boolean;
+  }[];
+}
+
 export interface ProductImage {
   id: number;
   url: string;
@@ -259,6 +293,9 @@ export interface Order {
   status: string;
   payment_method: string;
   payment_id?: string;
+  promo_code?: string;
+  promo_name?: string;
+  promo_discount_amount?: number;
   created_at: string;
   items: OrderItem[];
 }
