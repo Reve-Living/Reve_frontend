@@ -9,6 +9,9 @@ type CacheEntry = { ts: number; data: unknown };
 const getCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<unknown>>();
 const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+type ApiGetOptions = {
+  noStore?: boolean;
+};
 
 const cloneData = <T>(data: T): T => {
   try {
@@ -32,8 +35,19 @@ const buildHeaders = (hasBody: boolean, requiresAuth: boolean = false) => {
   return headers;
 };
 
-export const apiGet = async <T>(path: string): Promise<T> => {
+export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Promise<T> => {
   const cacheKey = path;
+  const shouldBypassCache = options.noStore === true;
+
+  if (shouldBypassCache) {
+    const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
+      headers: buildHeaders(false),
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return (await res.json()) as T;
+  }
+
   const cached = getCache.get(cacheKey);
   const now = Date.now();
 

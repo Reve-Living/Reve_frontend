@@ -142,7 +142,7 @@ const CategoryPage = () => {
       }
       try {
         const tryFetchBySlug = async (candidate: string) =>
-          apiGet<Category[]>(`/categories/?slug=${candidate}`).catch(() => []);
+          apiGet<Category[]>(`/categories/?slug=${candidate}`, { noStore: true }).catch(() => []);
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
 
@@ -154,7 +154,7 @@ const CategoryPage = () => {
         let categoryItem = categoryRes?.[0] || null;
 
         if (!categoryItem) {
-          const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
+          const allCategories = await apiGet<Category[]>('/categories/', { noStore: true }).catch(() => []);
           categoryItem =
             allCategories.find((c) => c.name?.trim().toLowerCase() === slug.replace(/-/g, ' ').toLowerCase()) ||
             null;
@@ -165,7 +165,9 @@ const CategoryPage = () => {
         setCategory(categoryItem);
 
         const [subcategoryRes, productsRes, filtersRes] = await Promise.allSettled([
-          categoryItem?.id ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`) : Promise.resolve([]),
+          categoryItem?.id
+            ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`, { noStore: true })
+            : Promise.resolve([]),
           apiGet<Product[] | { results?: Product[] }>(
             subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
           ),

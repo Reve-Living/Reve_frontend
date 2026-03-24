@@ -49,8 +49,8 @@ const CollectionsPage = () => {
       setIsLoading(true);
       try {
         const [categoriesRes, subcategoriesRes, productsRes] = await Promise.all([
-          apiGet<Category[]>('/categories/'),
-          apiGet<SubCategory[]>('/subcategories/'),
+          apiGet<Category[]>('/categories/', { noStore: true }),
+          apiGet<SubCategory[]>('/subcategories/', { noStore: true }),
           apiGet<Product[]>('/products/'),
         ]);
 

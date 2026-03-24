@@ -55,8 +55,8 @@ const Header = () => {
       try {
         // Fetch in parallel to avoid waiting for one before the other
         const [categories, subcategories] = await Promise.all([
-          apiGet<Category[]>('/categories/'),
-          apiGet<SubCategory[]>('/subcategories/'),
+          apiGet<Category[]>('/categories/', { noStore: true }),
+          apiGet<SubCategory[]>('/subcategories/', { noStore: true }),
         ]);
 
         // Respect admin display order first, then fall back to name for ties.

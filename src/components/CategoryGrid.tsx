@@ -41,8 +41,8 @@ const CategoryGrid = () => {
     const load = async () => {
       try {
         const [categoryData, subcategoryData] = await Promise.all([
-          apiGet<Category[]>('/categories/'),
-          apiGet<SubCategory[]>('/subcategories/'),
+          apiGet<Category[]>('/categories/', { noStore: true }),
+          apiGet<SubCategory[]>('/subcategories/', { noStore: true }),
         ]);
 
         const selectedCategories = categoryData.filter((category) => category.show_in_collections);

@@ -42,7 +42,7 @@ const LifestyleSection = () => {
     const fetchTiles = async () => {
       setIsLoading(true);
       try {
-        const categories = await apiGet<Category[]>('/categories/');
+        const categories = await apiGet<Category[]>('/categories/', { noStore: true });
         const topCategories = categories.slice(0, 3);
 
         const tilesFromCategories = await Promise.all(

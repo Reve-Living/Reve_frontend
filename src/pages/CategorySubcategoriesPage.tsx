@@ -62,11 +62,11 @@ const CategorySubcategoriesPage = () => {
       }
 
       try {
-        const categoryMatches = await apiGet<Category[]>(`/categories/?slug=${slug}`).catch(() => []);
+        const categoryMatches = await apiGet<Category[]>(`/categories/?slug=${slug}`, { noStore: true }).catch(() => []);
         let categoryItem = categoryMatches?.[0] || null;
 
         if (!categoryItem) {
-          const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
+          const allCategories = await apiGet<Category[]>('/categories/', { noStore: true }).catch(() => []);
           categoryItem =
             allCategories.find((entry) => entry.slug === slug || entry.name?.trim().toLowerCase() === slug.replace(/-/g, ' ')) ||
             null;
@@ -84,7 +84,7 @@ const CategorySubcategoriesPage = () => {
         setCategory(categoryItem);
 
         const [subcategoriesRes, productsRes] = await Promise.allSettled([
-          apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`),
+          apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`, { noStore: true }),
           apiGet<Product[] | { results?: Product[] }>(`/products/?category=${categoryItem.slug}`),
         ]);
 
