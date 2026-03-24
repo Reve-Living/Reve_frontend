@@ -37,7 +37,11 @@ const buildHeaders = (hasBody: boolean, requiresAuth: boolean = false) => {
 
 export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Promise<T> => {
   const cacheKey = path;
-  const shouldBypassCache = options.noStore === true;
+  const isProductRequest =
+    path === "/products/" ||
+    path.startsWith("/products/?") ||
+    path.startsWith("/products/");
+  const shouldBypassCache = options.noStore === true || isProductRequest;
 
   if (shouldBypassCache) {
     const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
