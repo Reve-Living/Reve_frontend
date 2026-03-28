@@ -28,6 +28,7 @@ import {
   Maximize2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatWholePrice } from '@/lib/pricing';
 
 import { Badge } from '@/components/ui/badge';
 
@@ -200,7 +201,7 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 
 
-const formatPrice = (value: number): string => gbpFormatter.format(Math.max(0, value));
+const formatPrice = (value: number): string => formatWholePrice(value);
 
 const renderMultilineParagraphs = (value?: string, emphasizeFirst = true) => {
   if (!value) return null;

@@ -3,6 +3,7 @@ import { Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
+import { formatWholePrice } from '@/lib/pricing';
 
 interface ProductCardProps {
   product: Product;
@@ -19,12 +20,6 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
   const shortText = (product.short_description || product.description || "").trim();
   const isDentonReclinerCard = product.name.trim().toLowerCase() === 'denton recliner with footstool - pu & pvc'.toLowerCase();
   const hasMultipleSizePrices = Array.isArray(product.sizes) && product.sizes.length > 1;
-  const gbpFormatter = new Intl.NumberFormat('en-GB', {
-    style: 'currency',
-    currency: 'GBP',
-    maximumFractionDigits: 2,
-  });
-
   // Build the product link - if coming from a bed product, add mattress selection params
   const productLink = fromBedProduct
     ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${
@@ -126,11 +121,11 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              {hasMultipleSizePrices ? `From ${gbpFormatter.format(product.price)}` : gbpFormatter.format(product.price)}
+              {hasMultipleSizePrices ? `From ${formatWholePrice(product.price)}` : formatWholePrice(product.price)}
             </p>
             {product.original_price && product.original_price > product.price && (
               <p className="text-sm text-muted-foreground line-through">
-                {gbpFormatter.format(product.original_price)}
+                {formatWholePrice(product.original_price)}
               </p>
             )}
           </div>

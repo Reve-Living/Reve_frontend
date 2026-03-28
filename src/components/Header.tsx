@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import AnnouncementBar from '@/components/AnnouncementBar';
 import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
+import { formatWholePrice } from '@/lib/pricing';
 import type { Category, Product, SubCategory } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 
@@ -300,7 +301,7 @@ const Header = () => {
                                       </p>
                                     )}
                                     <p className="text-sm font-semibold text-primary">
-                                      £{Number(product.price).toFixed(2)}
+                                      {formatWholePrice(Number(product.price))}
                                     </p>
                                   </div>
                                 </button>
@@ -398,7 +399,7 @@ const Header = () => {
                                       </p>
                                     )}
                                     <p className="text-sm font-semibold text-primary">
-                                      £{Number(product.price).toFixed(2)}
+                                      {formatWholePrice(Number(product.price))}
                                     </p>
                                   </div>
                                 </button>
@@ -485,7 +486,7 @@ const Header = () => {
                                   </p>
                                 )}
                                 <p className="text-sm font-semibold text-primary">
-                                  £{Number(product.price).toFixed(2)}
+                                  {formatWholePrice(Number(product.price))}
                                 </p>
                               </div>
                             </button>
