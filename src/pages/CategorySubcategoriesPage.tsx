@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { ChevronRight, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Header from '@/components/Header';
@@ -41,11 +41,20 @@ type SubcategoryCard = {
 const CategorySubcategoriesPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
+  const selectedSubSlugs = useMemo(
+    () =>
+      (searchParams.get('subs') || '')
+        .split(',')
+        .map((value) => value.trim())
+        .filter(Boolean),
+    [searchParams]
+  );
 
   useEffect(() => {
     const load = async () => {
@@ -118,7 +127,9 @@ const CategorySubcategoriesPage = () => {
   }, [slug]);
 
   const cards = useMemo<SubcategoryCard[]>(() => {
+    const allowedSubSlugs = new Set(selectedSubSlugs);
     return subcategories
+      .filter((sub) => allowedSubSlugs.size === 0 || allowedSubSlugs.has(sub.slug))
       .map((sub) => {
         const subProducts = products.filter((product) => product.subcategory_slug === sub.slug);
         const fallbackImage =
@@ -137,7 +148,7 @@ const CategorySubcategoriesPage = () => {
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
-  }, [category?.image, products, subcategories]);
+  }, [category?.image, products, selectedSubSlugs, subcategories]);
 
   const seoTitle = category?.meta_title || (category?.name ? `${category.name} Collections | Reve Living` : 'Reve Living');
   const seoDescription =

@@ -160,6 +160,8 @@ const HeroSlider = () => {
             link:
               (slide.subcategory_slug && slide.category_slug
                 ? `/category/${slide.category_slug}?sub=${slide.subcategory_slug}`
+                : slide.category_slug && Array.isArray(slide.selected_subcategory_slugs) && slide.selected_subcategory_slugs.length > 0
+                ? `/category/${slide.category_slug}/subcategories?subs=${encodeURIComponent(slide.selected_subcategory_slugs.join(','))}`
                 : slide.category_slug
                 ? `/category/${slide.category_slug}/subcategories`
                 : slide.cta_link?.trim() || '/categories'),

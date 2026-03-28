@@ -48,6 +48,9 @@ export interface HeroSlide {
   subcategory?: number | null;
   subcategory_name?: string;
   subcategory_slug?: string;
+  selected_subcategories?: number[];
+  selected_subcategory_slugs?: string[];
+  selected_subcategory_names?: string[];
   cta_text?: string;
   cta_link?: string;
   image: string;
@@ -241,6 +244,7 @@ export interface Product {
   dimension_paragraph?: string;
   dimension_images?: { size: string; url: string }[];
   show_dimensions_table?: boolean;
+  is_hidden?: boolean;
   in_stock: boolean;
   is_bestseller: boolean;
   is_new: boolean;
