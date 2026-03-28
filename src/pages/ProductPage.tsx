@@ -2462,7 +2462,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     </span>
                     <span className="text-xs text-muted-foreground">
                       {selectedMattressDetails.length > 0
-                        ? formatPrice(totalMattressPrice)
+                        ? selectedMattressDetails.every((m) => isIncludedMattress(m, selectedSize))
+                          ? 'Included'
+                          : formatPrice(totalMattressPrice)
                         : 'Tap to choose a mattress'}
                     </span>
                   </div>
