@@ -71,6 +71,8 @@ const getVariantsKey = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
   mattress_id?: number | null;
 }) =>
   JSON.stringify({
@@ -81,6 +83,8 @@ const getVariantsKey = (item: {
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    assembly_service_selected: item.assembly_service_selected === true,
+    assembly_service_price: item.assembly_service_price || 0,
     mattress_id: item.mattress_id || null,
   });
 
@@ -102,6 +106,7 @@ const getOrderPartRank = (text?: string) => {
   if (lower.includes('storage')) return 4;
   if (lower.includes('headboard')) return 5;
   if (lower.startsWith('mattress')) return 6;
+  if (lower.startsWith('assembly service')) return 7;
   return 99;
 };
 
@@ -122,6 +127,8 @@ const getVariantSummary = (item: {
   extras_total?: number;
   include_dimension?: boolean;
   mattress_name?: string | null;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
 }) => {
   const parts: string[] = [];
   const seen = new Set<string>();
@@ -165,6 +172,10 @@ const getVariantSummary = (item: {
     addPart(`Mattress: ${item.mattress_name}`);
   }
 
+  if (item.assembly_service_selected) {
+    addPart(`Assembly Service: £${Number(item.assembly_service_price || 0).toFixed(2)}`);
+  }
+
   return sortOrderParts(parts).join(' | ');
 };
 
@@ -174,6 +185,8 @@ const getStyleSummary = (item: {
   mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   mattress_name?: string | null;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
 }) => {
   const parts: string[] = [];
   const seen = new Set<string>();
@@ -206,6 +219,10 @@ const getStyleSummary = (item: {
     );
   } else if (item.mattress_name) {
     addPart(`Mattress: ${item.mattress_name}`);
+  }
+
+  if (item.assembly_service_selected) {
+    addPart(`Assembly Service: £${Number(item.assembly_service_price || 0).toFixed(2)}`);
   }
 
   return sortOrderParts(parts).join(' | ');
@@ -420,6 +437,8 @@ const CheckoutPage = () => {
           selected_variants: item.selectedVariants || {},
           extras_total: item.extras_total || 0,
           include_dimension: item.include_dimension !== false,
+          assembly_service_selected: item.assembly_service_selected === true,
+          assembly_service_price: item.assembly_service_selected ? item.assembly_service_price || 0 : 0,
         })),
         special_notes: formData.specialNotes.trim() || undefined,
         reference_images: referenceImages.map((img) => img.dataUrl),
@@ -914,7 +933,7 @@ const CheckoutPage = () => {
                         )}
                       </div>
                       <p className="text-sm font-medium">
-                        £{(item.product.price * item.quantity).toFixed(2)}
+                        £{((item.unit_price ?? item.product.price) * item.quantity).toFixed(2)}
                       </p>
                     </div>
                   ))}

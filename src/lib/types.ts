@@ -241,6 +241,8 @@ export interface Product {
   returns_title?: string;
   custom_info_sections?: { title?: string; content?: string }[];
   delivery_charges?: number;
+  assembly_service_enabled?: boolean;
+  assembly_service_price?: number;
   dimension_paragraph?: string;
   dimension_images?: { size: string; url: string }[];
   show_dimensions_table?: boolean;
@@ -281,6 +283,8 @@ export interface OrderItem {
    selected_variants?: Record<string, string>;
    extras_total?: number;
    include_dimension?: boolean;
+   assembly_service_selected?: boolean;
+   assembly_service_price?: number;
 }
 
 export interface Order {

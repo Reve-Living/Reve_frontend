@@ -657,6 +657,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const [activeVariantGroupKey, setActiveVariantGroupKey] = useState('');
   const [activeInfoTab, setActiveInfoTab] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [assemblyServiceSelected, setAssemblyServiceSelected] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [includeDimensions, setIncludeDimensions] = useState(true);
@@ -675,6 +676,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     setSelectedMattresses([]);
     setExternalMattress(null);
     setPreviewFabric('');
+    setAssemblyServiceSelected(false);
     hasAutoSelectedIncludedMattress.current = false;
   }, [product?.id]);
 
@@ -1486,7 +1488,14 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
       : undefined;
 
-  const unitPrice = basePrice + sizeDelta + stylePriceDelta + totalMattressPrice;
+  const assemblyServicePrice =
+    product?.assembly_service_enabled ? Number(product?.assembly_service_price || 0) : 0;
+  const unitPrice =
+    basePrice +
+    sizeDelta +
+    stylePriceDelta +
+    totalMattressPrice +
+    (assemblyServiceSelected ? assemblyServicePrice : 0);
 
   const unitOriginalPrice =
 
@@ -1839,7 +1848,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       return;
     }
 
-    const extrasTotal = stylePriceDelta + totalMattressPrice;
+    const extrasTotal =
+      stylePriceDelta + totalMattressPrice + (assemblyServiceSelected ? assemblyServicePrice : 0);
     const variantMap = enabledGroups
       ? Object.fromEntries(Object.entries(selectedStyles).filter(([name]) => enabledGroups[name]))
       : { ...selectedStyles };
@@ -1868,6 +1878,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       dimension: includeDimensions ? selectedDimension || undefined : undefined,
       dimension_details: includeDimensions ? selectedDimensionDetails || undefined : undefined,
       include_dimension: includeDimensions,
+      assembly_service_selected: assemblyServiceSelected,
+      assembly_service_price: assemblyServiceSelected ? assemblyServicePrice : 0,
       extras_total: extrasTotal,
       unit_price: unitPrice,
     });
@@ -2470,6 +2482,31 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </button>
+              </div>
+            )}
+
+            {product?.assembly_service_enabled && (
+              <div className="rounded-xl border border-border bg-white p-4 space-y-3">
+                <div>
+                  <p className="text-base font-semibold">Assembly Service</p>
+                  <p className="text-xs text-muted-foreground">
+                    Let our team assemble your product for a hassle-free experience.
+                  </p>
+                </div>
+                <label className="flex items-start gap-3 rounded-lg border border-dashed border-primary/50 px-3 py-3 transition hover:border-primary/70">
+                  <input
+                    type="checkbox"
+                    className="mt-1 h-4 w-4"
+                    checked={assemblyServiceSelected}
+                    onChange={(e) => setAssemblyServiceSelected(e.target.checked)}
+                  />
+                  <span className="flex flex-1 items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-foreground">Add Assembly Service</span>
+                    <span className="text-sm font-semibold text-espresso">
+                      {assemblyServicePrice > 0 ? `+${formatPrice(assemblyServicePrice)}` : 'Included'}
+                    </span>
+                  </span>
+                </label>
               </div>
             )}
 

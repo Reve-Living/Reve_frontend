@@ -17,6 +17,8 @@ const getVariantsKey = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
   mattresses?: { id: number; position?: 'top' | 'bottom' | 'both' | null }[];
   mattress_id?: number | null;
   mattress_position?: 'top' | 'bottom' | 'both' | null;
@@ -28,6 +30,8 @@ const getVariantsKey = (item: {
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    assembly_service_selected: item.assembly_service_selected === true,
+    assembly_service_price: item.assembly_service_price || 0,
     mattresses: (item.mattresses || []).map((m) => ({ id: m.id, position: m.position || null })),
     mattress_id: item.mattress_id || null,
     mattress_position: item.mattress_position || null,
@@ -41,6 +45,8 @@ const getVariantSummary = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
 }) => {
   const variantSummary = Object.entries(item.selectedVariants || {})
 
@@ -57,6 +63,10 @@ const getVariantSummary = (item: {
   if (item.dimension) bits.push(`Dimension: ${item.dimension}`);
 
   if (item.dimension_details) bits.push(item.dimension_details);
+
+  if (item.assembly_service_selected) {
+    bits.push(`Assembly Service: GBP ${Number(item.assembly_service_price || 0).toFixed(2)}`);
+  }
 
   return bits.join(' | ');
 

@@ -19,6 +19,8 @@ export interface CartItem {
   extras_total?: number;
   include_dimension?: boolean;
   unit_price?: number;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
   mattress_id?: number | null;
   mattress_name?: string | null;
   mattress_price?: number | null;
@@ -67,6 +69,8 @@ const getVariantsKey = (
     | 'dimension_details'
     | 'extras_total'
     | 'include_dimension'
+    | 'assembly_service_selected'
+    | 'assembly_service_price'
     | 'mattress_id'
     | 'mattress_position'
   >
@@ -78,6 +82,8 @@ const getVariantsKey = (
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    assembly_service_selected: item.assembly_service_selected === true,
+    assembly_service_price: item.assembly_service_price || 0,
     mattresses: (item.mattresses || []).map((m) => ({
       id: m.id,
       position: m.position || null,

@@ -27,6 +27,8 @@ const getVariantsKey = (item: {
   dimension_details?: string;
   extras_total?: number;
   include_dimension?: boolean;
+  assembly_service_selected?: boolean;
+  assembly_service_price?: number;
   mattress_id?: number | null;
   mattress_position?: 'top' | 'bottom' | 'both' | null;
 }) =>
@@ -38,6 +40,8 @@ const getVariantsKey = (item: {
     dimension_details: item.dimension_details || '',
     extras_total: item.extras_total || 0,
     include_dimension: item.include_dimension !== false,
+    assembly_service_selected: item.assembly_service_selected === true,
+    assembly_service_price: item.assembly_service_price || 0,
     mattress_id: item.mattress_id || null,
     mattress_position: item.mattress_position || null,
   });
@@ -286,6 +290,11 @@ const CartPage = () => {
                                 : ''}
                             </p>
                           ) : null}
+                          {item.assembly_service_selected && (
+                            <p className="text-sm text-muted-foreground">
+                              Assembly Service: GBP {Number(item.assembly_service_price || 0).toFixed(2)}
+                            </p>
+                          )}
                           {item.selectedVariants && Object.keys(item.selectedVariants).length > 0 && (
                             <p className="text-sm text-muted-foreground">
                               {Object.entries(item.selectedVariants)
