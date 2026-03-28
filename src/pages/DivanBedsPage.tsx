@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { formatWholePrice } from '@/lib/pricing';
 
 // Filter Options Data
 const filterOptions = {
@@ -224,14 +225,10 @@ const ProductCard = ({ product }: { product: typeof divanBeds[0] }) => {
 
         {/* Price */}
         <div className="flex items-baseline gap-2">
-          <span className="text-xl font-bold text-foreground">
-            £{product.price}<sup className="text-sm">00</sup>
-          </span>
+          <span className="text-xl font-bold text-foreground">{formatWholePrice(product.price)}</span>
           {product.originalPrice && (
             <>
-              <span className="text-sm text-muted-foreground line-through">
-                £{product.originalPrice}<sup>00</sup>
-              </span>
+              <span className="text-sm text-muted-foreground line-through">{formatWholePrice(product.originalPrice)}</span>
               <span className="text-sm font-medium text-red-500">
                 Save {savingsPercent}%
               </span>
