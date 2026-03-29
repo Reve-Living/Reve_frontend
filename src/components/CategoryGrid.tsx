@@ -172,11 +172,11 @@ const CategoryGrid = () => {
                 <div className="relative z-10 flex h-full w-full flex-col justify-between p-5">
                   {/* Top - Category Badge */}
                   <div className="flex items-start justify-between">
-                    <span className="rounded-full border border-white/20 bg-black/28 px-3 py-1 text-xs font-medium uppercase tracking-wider text-cream shadow-sm backdrop-blur-md">
+                    <span className="rounded-full border border-primary/70 bg-primary px-3 py-1 text-xs font-medium uppercase tracking-wider text-primary-foreground shadow-sm">
                       Category
                     </span>
                     <div 
-                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/28 text-cream shadow-sm backdrop-blur-md transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-primary/70 bg-primary text-primary-foreground shadow-sm transition-all duration-300 group-hover:scale-105"
                     >
                       <ArrowUpRight className="h-4 w-4" />
                     </div>
