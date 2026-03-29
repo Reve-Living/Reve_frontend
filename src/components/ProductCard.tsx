@@ -41,7 +41,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
             <img
               src={imageUrl}
               alt={product.name}
-              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              className="absolute inset-0 h-full w-full scale-[1.08] object-cover transition-transform duration-700 group-hover:scale-[1.14]"
               style={isDentonReclinerCard ? { objectPosition: 'center 30%' } : undefined}
             />
 
