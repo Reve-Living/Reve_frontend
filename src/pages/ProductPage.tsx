@@ -1989,7 +1989,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   initial={{ opacity: 0 }}
 
-                  animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1 }}
+                  animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1.16 }}
 
                   exit={{ opacity: 0 }}
 
