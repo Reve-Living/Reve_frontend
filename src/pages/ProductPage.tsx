@@ -1383,6 +1383,9 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     );
   }, [product?.computed_dimensions, product?.dimensions, showDimensionsTable]);
   const dimensionParagraph = (product as Product | undefined)?.dimension_paragraph?.trim() || '';
+  const dimensionNote =
+    (product as Product | undefined)?.dimension_note?.trim() ||
+    'All dimensions are approximate and may vary by +/-5 cm (approximately +/-2 inches) due to manufacturing tolerances.';
   const dimensionImages = (product as Product | undefined)?.dimension_images || [];
   const matchedDimensionImages = useMemo(() => {
     if (!Array.isArray(dimensionImages)) return [];
@@ -2679,9 +2682,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   ) : null}
                 </div>
                 {dimensionColumns.length > 0 && adjustedDimensionTableRows.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    All dimensions are approximate and may vary by ±5 cm (approximately ±2 inches) due to manufacturing tolerances.
-                  </p>
+                  <p className="text-xs text-muted-foreground">{dimensionNote}</p>
                 )}
               </div>
             )}
@@ -3308,7 +3309,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 ) : (
                   <p className="text-sm text-muted-foreground">Select a size to see detailed measurements.</p>
                 )}
-                <p className="text-xs text-muted-foreground">All dimensions are approximate and may vary by ±5 cm (approximately ±2 inches) due to manufacturing tolerances.</p>
+                <p className="text-xs text-muted-foreground">{dimensionNote}</p>
               </div>
             </div>
           </div>

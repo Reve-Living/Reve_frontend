@@ -244,6 +244,7 @@ export interface Product {
   assembly_service_enabled?: boolean;
   assembly_service_price?: number;
   dimension_paragraph?: string;
+  dimension_note?: string;
   dimension_images?: { size: string; url: string }[];
   show_dimensions_table?: boolean;
   is_hidden?: boolean;

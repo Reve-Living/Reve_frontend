@@ -156,6 +156,7 @@ const CategoryGrid = () => {
                 
                 {/* Gradient Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-t from-espresso/90 via-espresso/40 to-espresso/10 transition-all duration-500 group-hover:from-espresso/95" />
+                <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/35 via-black/18 to-transparent transition-all duration-500 group-hover:from-black/45" />
                 
                 {/* Decorative Corner Lines */}
                 <div className="absolute left-4 top-4 h-8 w-8">
@@ -171,11 +172,11 @@ const CategoryGrid = () => {
                 <div className="relative z-10 flex h-full w-full flex-col justify-between p-5">
                   {/* Top - Category Badge */}
                   <div className="flex items-start justify-between">
-                    <span className="rounded-full bg-cream/10 px-3 py-1 text-xs font-medium uppercase tracking-wider text-cream backdrop-blur-sm">
+                    <span className="rounded-full border border-white/20 bg-black/28 px-3 py-1 text-xs font-medium uppercase tracking-wider text-cream shadow-sm backdrop-blur-md">
                       Category
                     </span>
                     <div 
-                      className="flex h-9 w-9 items-center justify-center rounded-full bg-cream/10 text-cream backdrop-blur-sm transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground"
+                      className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-black/28 text-cream shadow-sm backdrop-blur-md transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground"
                     >
                       <ArrowUpRight className="h-4 w-4" />
                     </div>
