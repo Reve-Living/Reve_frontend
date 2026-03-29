@@ -1385,7 +1385,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const dimensionParagraph = (product as Product | undefined)?.dimension_paragraph?.trim() || '';
   const dimensionNote =
     (product as Product | undefined)?.dimension_note?.trim() ||
-    'All dimensions are approximate and may vary by +/-5 cm (approximately +/-2 inches) due to manufacturing tolerances.';
+    'All dimensions are approximate and may vary by +/-2 cm (approximately +/-1 inches) due to manufacturing tolerances.';
   const dimensionImages = (product as Product | undefined)?.dimension_images || [];
   const matchedDimensionImages = useMemo(() => {
     if (!Array.isArray(dimensionImages)) return [];
