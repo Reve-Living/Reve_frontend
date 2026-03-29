@@ -1995,7 +1995,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   transition={{ duration: 0.3 }}
 
-                  className="h-full w-full object-cover bg-[#f7f3ef]"
+                  className="absolute inset-0 h-full w-full object-cover bg-[#f7f3ef]"
 
                 />
 
@@ -2114,7 +2114,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                       alt={img.alt_text || `${product.name} ${index + 1}`}
 
-                      className="h-full w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
 
                     />
 
