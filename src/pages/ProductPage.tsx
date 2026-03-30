@@ -956,7 +956,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
             ) || undefined;
           if (freeOption) {
             initialStyles[styleGroup.name] = freeOption.label;
-            nextEnabled[styleGroup.name] = false;
+            nextEnabled[styleGroup.name] = true;
           } else {
             nextEnabled[styleGroup.name] = false;
           }
