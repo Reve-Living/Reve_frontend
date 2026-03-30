@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiGet } from '@/lib/api';
 import { Category, SubCategory, Product } from '@/lib/types';
+import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 
 const CategoryGrid = () => {
   const navigate = useNavigate();
@@ -149,9 +150,12 @@ const CategoryGrid = () => {
                 className="group relative flex h-full w-full overflow-hidden rounded-2xl"
               >
                 {/* Image with Parallax Effect */}
-                <div
-                  className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-out group-hover:scale-105"
-                  style={{ backgroundImage: `url(${resolveImageUrl(category.image)})` }}
+                <EdgeAwareCoverImage
+                  src={resolveImageUrl(category.image)}
+                  alt={category.name}
+                  imgClassName="duration-700 ease-out"
+                  defaultStyle={{ baseScale: 1.04, hoverScale: 1.1 }}
+                  containerAspectRatio={1}
                 />
                 
                 {/* Gradient Overlay */}

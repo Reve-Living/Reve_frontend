@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 import { apiGet } from '@/lib/api';
 import type { Category, Product, SubCategory } from '@/lib/types';
 
@@ -167,9 +168,12 @@ const CollectionsPage = () => {
                     to={tile.href}
                     className="group relative flex h-[380px] w-full flex-col overflow-hidden rounded-2xl"
                   >
-                    <div
-                      className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-out group-hover:scale-105"
-                      style={{ backgroundImage: `url(${tile.image})` }}
+                    <EdgeAwareCoverImage
+                      src={tile.image}
+                      alt={tile.name}
+                      imgClassName="duration-700 ease-out"
+                      defaultStyle={{ baseScale: 1.04, hoverScale: 1.1 }}
+                      containerAspectRatio={1.3}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-espresso/95 via-espresso/50 to-espresso/20 transition-all duration-500" />
                     <div className="relative z-10 flex h-full flex-col justify-between p-6 md:p-8">

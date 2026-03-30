@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
 import { formatWholePrice } from '@/lib/pricing';
+import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 
 interface ProductCardProps {
   product: Product;
@@ -38,11 +39,11 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
       >
         {hasImage && (
           <div className="relative aspect-[4/3] overflow-hidden">
-            <img
+            <EdgeAwareCoverImage
               src={imageUrl}
               alt={product.name}
-              className="absolute inset-0 h-full w-full scale-[1.08] object-cover transition-transform duration-700 group-hover:scale-[1.14]"
-              style={isDentonReclinerCard ? { objectPosition: 'center 30%' } : undefined}
+              containerAspectRatio={4 / 3}
+              defaultStyle={isDentonReclinerCard ? { objectPosition: '50% 30%' } : undefined}
             />
 
             {/* Badges */}
