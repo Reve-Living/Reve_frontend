@@ -647,6 +647,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
   const [mattressOptions, setMattressOptions] = useState<ProductMattress[]>([]);
   const [hasUserChangedMattressSelection, setHasUserChangedMattressSelection] = useState(false);
+  const [hasUserChangedStyleSelections, setHasUserChangedStyleSelections] = useState(false);
 
   useEffect(() => {
     const seoTitle = product?.meta_title || (product?.name ? `${product.name} | Reve Living` : 'Reve Living');
@@ -832,6 +833,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
         setSelectedMattresses([]);
         setExternalMattress(null);
         setActiveVariantGroupKey('');
+        setHasUserChangedStyleSelections(false);
         hasAutoSelectedIncludedMattress.current = false;
         setEnabledGroups({});
         hasAutoSelectedIncludedMattress.current = false;
@@ -954,7 +956,8 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
           }
         });
         setSelectedStyles(initialStyles);
-        setEnabledGroups((prev) => ({ ...nextEnabled, ...prev }));
+        setEnabledGroups(nextEnabled);
+        setHasUserChangedStyleSelections(false);
         setIsLoading(false);
 
       } catch {
@@ -1360,12 +1363,14 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
 
 
-  const stylePriceDelta = styleVariantGroups.reduce((sum, group) => {
-    const selected = getSelectedOptionForGroup(group);
-    if (!enabledGroups[group.name]) return sum;
-    const delta = Number(selected?.price_delta ?? 0);
-    return sum + (Number.isFinite(delta) ? delta : 0);
-  }, 0);
+  const stylePriceDelta = hasUserChangedStyleSelections
+    ? styleVariantGroups.reduce((sum, group) => {
+        const selected = getSelectedOptionForGroup(group);
+        if (!enabledGroups[group.name]) return sum;
+        const delta = Number(selected?.price_delta ?? 0);
+        return sum + (Number.isFinite(delta) ? delta : 0);
+      }, 0)
+    : 0;
 
 
 
@@ -2337,6 +2342,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                  const isStyleGroup = group.kind === 'style';
 
                                  if (isStyleGroup) {
+                                   setHasUserChangedStyleSelections(true);
                                    setSelectedStyles((prev) => ({ ...prev, [styleName]: option.key }));
                                    setEnabledGroups((prev) => ({ ...prev, [styleName]: true }));
                                  }
