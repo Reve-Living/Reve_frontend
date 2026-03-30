@@ -202,6 +202,7 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 
 const formatPrice = (value: number): string => formatWholePrice(value);
+const formatAddonPrice = (value: number): string => `+${formatWholePrice(value)}`;
 
 const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number): number => {
   const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
@@ -2307,7 +2308,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                 ? 'Selected: No Storage'
                                 : isHeadboardGroup
                                 ? 'Selected: No Headboard'
-                                : 'Select an option'}
+                                : 'Selected: No option'}
                             </p>
                           </div>
                         </div>
@@ -2347,6 +2348,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                  const isStyleGroup = group.kind === 'style';
 
                                  if (isStyleGroup) {
+                                   if (isSelected) {
+                                     setHasUserChangedStyleSelections(true);
+                                     setSelectedStyles((prev) => {
+                                       const next = { ...prev };
+                                       delete next[styleName];
+                                       return next;
+                                     });
+                                     setEnabledGroups((prev) => ({ ...prev, [styleName]: false }));
+                                     return;
+                                   }
                                    setHasUserChangedStyleSelections(true);
                                    setSelectedStyles((prev) => ({ ...prev, [styleName]: option.key }));
                                    setEnabledGroups((prev) => ({ ...prev, [styleName]: true }));
@@ -2445,7 +2456,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                               : 'text-center min-h-[14px] flex items-center justify-center w-full'
                                           }`}
                                         >
-                                          {formatPrice(Number(option.price_delta || 0))}
+                                          {group.kind === 'size'
+                                            ? formatPrice(Number(option.price_delta || 0))
+                                            : formatAddonPrice(Number(option.price_delta || 0))}
                                         </p>
                                       </div>
                                     </div>
