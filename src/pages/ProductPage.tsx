@@ -207,9 +207,6 @@ const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number
   const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
   const raw = Number(storedValue ?? 0);
   if (!Number.isFinite(raw)) return base;
-  if (raw === 0) return base;
-  // Backward compatibility for older products where size values were saved as deltas.
-  if (base > 0 && raw < base) return base + raw;
   return raw;
 };
 
@@ -1328,8 +1325,8 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     sizeOptions[0];
 
   const selectedSizeBasePrice =
-    activeSizeOption && Number.isFinite(activeSizeOption.price)
-      ? Number(activeSizeOption.price)
+    sizeOptions.length > 0
+      ? Number(activeSizeOption?.price ?? 0)
       : Number(product?.price ?? 0);
 
 
