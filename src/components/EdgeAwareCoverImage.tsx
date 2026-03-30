@@ -187,7 +187,6 @@ const EdgeAwareCoverImage = ({
   defaultStyle,
   containerAspectRatio = 4 / 3,
   onLoad,
-  crossOrigin = 'anonymous',
   ...rest
 }: EdgeAwareCoverImageProps) => {
   const mergedDefaultStyle: EdgeAwareImageStyle = {
@@ -210,7 +209,6 @@ const EdgeAwareCoverImage = ({
       {...rest}
       src={src}
       alt={alt}
-      crossOrigin={crossOrigin}
       onLoad={(event) => {
         onLoad?.(event);
         const nextStyle = detectEdgeAwareImageStyle(event.currentTarget, containerAspectRatio, mergedDefaultStyle);

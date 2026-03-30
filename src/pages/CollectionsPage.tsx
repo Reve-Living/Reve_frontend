@@ -5,6 +5,7 @@ import { ArrowUpRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
+import type { EdgeAwareImageStyle } from '@/components/EdgeAwareCoverImage';
 import { apiGet } from '@/lib/api';
 import type { Category, Product, SubCategory } from '@/lib/types';
 
@@ -37,6 +38,25 @@ const resolveImageUrl = (value?: string): string => {
     }
   }
   return raw;
+};
+
+const getCollectionImageStyle = (name: string): Partial<EdgeAwareImageStyle> => {
+  const normalized = (name || '').toLowerCase();
+
+  if (normalized.includes('console table') || normalized.includes('console tables')) {
+    return { objectPosition: '50% 42%', baseScale: 1.18, hoverScale: 1.24 };
+  }
+
+  if (
+    normalized.includes('table') ||
+    normalized.includes('tables') ||
+    normalized.includes('coffee') ||
+    normalized.includes('dining')
+  ) {
+    return { objectPosition: '50% 46%', baseScale: 1.12, hoverScale: 1.18 };
+  }
+
+  return { baseScale: 1.1, hoverScale: 1.16 };
 };
 
 const CollectionsPage = () => {
@@ -172,7 +192,7 @@ const CollectionsPage = () => {
                       src={tile.image}
                       alt={tile.name}
                       imgClassName="duration-700 ease-out"
-                      defaultStyle={{ baseScale: 1.04, hoverScale: 1.1 }}
+                      defaultStyle={getCollectionImageStyle(tile.name)}
                       containerAspectRatio={1.3}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-espresso/95 via-espresso/50 to-espresso/20 transition-all duration-500" />

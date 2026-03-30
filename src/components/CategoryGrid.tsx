@@ -5,6 +5,26 @@ import { Button } from '@/components/ui/button';
 import { apiGet } from '@/lib/api';
 import { Category, SubCategory, Product } from '@/lib/types';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
+import type { EdgeAwareImageStyle } from '@/components/EdgeAwareCoverImage';
+
+const getCollectionImageStyle = (name: string): Partial<EdgeAwareImageStyle> => {
+  const normalized = (name || '').toLowerCase();
+
+  if (normalized.includes('console table') || normalized.includes('console tables')) {
+    return { objectPosition: '50% 42%', baseScale: 1.18, hoverScale: 1.24 };
+  }
+
+  if (
+    normalized.includes('table') ||
+    normalized.includes('tables') ||
+    normalized.includes('coffee') ||
+    normalized.includes('dining')
+  ) {
+    return { objectPosition: '50% 46%', baseScale: 1.12, hoverScale: 1.18 };
+  }
+
+  return { baseScale: 1.1, hoverScale: 1.16 };
+};
 
 const CategoryGrid = () => {
   const navigate = useNavigate();
@@ -154,7 +174,7 @@ const CategoryGrid = () => {
                   src={resolveImageUrl(category.image)}
                   alt={category.name}
                   imgClassName="duration-700 ease-out"
-                  defaultStyle={{ baseScale: 1.04, hoverScale: 1.1 }}
+                  defaultStyle={getCollectionImageStyle(category.name)}
                   containerAspectRatio={1}
                 />
                 

@@ -21,6 +21,28 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
   const shortText = (product.short_description || product.description || "").trim();
   const isDentonReclinerCard = product.name.trim().toLowerCase() === 'denton recliner with footstool - pu & pvc'.toLowerCase();
   const hasMultipleSizePrices = Array.isArray(product.sizes) && product.sizes.length > 1;
+  const cardText = [
+    product.name,
+    product.category_name,
+    product.subcategory_name,
+    product.category_slug,
+    product.subcategory_slug,
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  const needsAggressiveImageFill = [
+    'table',
+    'tables',
+    'coffee',
+    'console',
+    'dining',
+    'side table',
+    'lamp table',
+    'chair',
+    'chairs',
+    'glass top',
+  ].some((token) => cardText.includes(token));
   // Build the product link - if coming from a bed product, add mattress selection params
   const productLink = fromBedProduct
     ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${
@@ -43,7 +65,13 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
               src={imageUrl}
               alt={product.name}
               containerAspectRatio={4 / 3}
-              defaultStyle={isDentonReclinerCard ? { objectPosition: '50% 30%' } : undefined}
+              defaultStyle={
+                isDentonReclinerCard
+                  ? { objectPosition: '50% 30%' }
+                  : needsAggressiveImageFill
+                    ? { baseScale: 1.18, hoverScale: 1.24 }
+                    : undefined
+              }
             />
 
             {/* Badges */}
