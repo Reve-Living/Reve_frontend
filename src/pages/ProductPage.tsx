@@ -420,7 +420,12 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
 
         const rawDelta = (option as { price_delta?: unknown }).price_delta;
 
-        const price_delta = typeof rawDelta === 'number' ? rawDelta : Number(rawDelta || 0);
+        const price_delta =
+          typeof rawDelta === 'number'
+            ? rawDelta
+            : typeof rawDelta === 'string' && rawDelta.trim() !== ''
+            ? Number(rawDelta)
+            : undefined;
 
         const rawSize = (option as { size?: unknown }).size;
 
