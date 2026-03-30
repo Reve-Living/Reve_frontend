@@ -950,7 +950,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
             ) || undefined;
           if (freeOption) {
             initialStyles[styleGroup.name] = freeOption.label;
-            nextEnabled[styleGroup.name] = true;
+            nextEnabled[styleGroup.name] = false;
           } else {
             nextEnabled[styleGroup.name] = false;
           }
@@ -2294,7 +2294,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           <div>
                             <p className="text-base font-semibold capitalize">{group.name}</p>
                             <p className="text-xs text-muted-foreground">
-                              {selected?.label
+                              {groupEnabled && selected?.label
                                 ? `Selected: ${selected.label.replace(/(\d+)(Drawers)/i, '$1 $2')}${
                                     selected.description ? ` (${selected.description})` : ''
                                   }`
