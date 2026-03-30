@@ -16,6 +16,12 @@ interface ProductCardProps {
 const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: ProductCardProps) => {
   // Calculate savings if there's an original price
   const savings = product.original_price ? product.original_price - product.price : 0;
+  const sizePrices = Array.isArray(product.sizes)
+    ? product.sizes
+        .map((size) => Number(size.price_delta))
+        .filter((price) => Number.isFinite(price) && price >= 0)
+    : [];
+  const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : product.price;
   const imageUrl = product.images?.[0]?.url || "";
   const hasImage = imageUrl.trim().length > 0;
   const shortText = (product.short_description || product.description || "").trim();
@@ -150,9 +156,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              {hasMultipleSizePrices ? `From ${formatWholePrice(product.price)}` : formatWholePrice(product.price)}
+              {hasMultipleSizePrices ? `From ${formatWholePrice(displayBasePrice)}` : formatWholePrice(displayBasePrice)}
             </p>
-            {product.original_price && product.original_price > product.price && (
+            {product.original_price && product.original_price > displayBasePrice && (
               <p className="text-sm text-muted-foreground line-through">
                 {formatWholePrice(product.original_price)}
               </p>

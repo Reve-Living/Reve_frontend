@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
@@ -15,7 +15,6 @@ type CollectionTile = {
   description: string;
   image: string;
   href: string;
-  badge: string;
   sortOrder: number;
 };
 
@@ -94,6 +93,7 @@ const CollectionsPage = () => {
     const categoryMap = new Map(categories.map((category) => [category.id, category]));
 
     const categoryTiles = categories
+      .filter((category) => category.show_in_all_collections)
       .map((category) => {
         const categoryProducts = products.filter((product) => product.category_slug === category.slug);
         const image =
@@ -107,12 +107,12 @@ const CollectionsPage = () => {
           description: category.description || '',
           image,
           href: `/category/${category.slug}`,
-          badge: 'Category',
           sortOrder: Number(category.sort_order) || 0,
         };
       });
 
     const subcategoryTiles = subcategories
+      .filter((subcategory) => subcategory.show_in_all_collections)
       .map((subcategory) => {
         const parent = categoryMap.get(subcategory.category);
         const subcategoryProducts = products.filter((product) => product.subcategory_slug === subcategory.slug);
@@ -128,7 +128,6 @@ const CollectionsPage = () => {
           description: subcategory.description || '',
           image,
           href: parent ? `/category/${parent.slug}?sub=${subcategory.slug}` : `/categories`,
-          badge: parent ? parent.name : 'Subcategory',
           sortOrder: Number(subcategory.sort_order) || 0,
         };
       });
@@ -186,33 +185,31 @@ const CollectionsPage = () => {
                 >
                   <Link
                     to={tile.href}
-                    className="group relative flex h-[380px] w-full flex-col overflow-hidden rounded-2xl"
+                    className="group flex h-full w-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   >
-                    <EdgeAwareCoverImage
-                      src={tile.image}
-                      alt={tile.name}
-                      imgClassName="duration-700 ease-out"
-                      defaultStyle={getCollectionImageStyle(tile.name)}
-                      containerAspectRatio={1.3}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-espresso/95 via-espresso/50 to-espresso/20 transition-all duration-500" />
-                    <div className="relative z-10 flex h-full flex-col justify-between p-6 md:p-8">
-                      <div className="flex items-start justify-between">
-                        <span className="rounded-full bg-cream/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-cream backdrop-blur-sm">
-                          {tile.badge}
-                        </span>
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-cream/10 text-cream backdrop-blur-sm transition-all duration-300 group-hover:bg-primary group-hover:text-primary-foreground">
-                          <ArrowUpRight className="h-5 w-5" />
-                        </div>
-                      </div>
+                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                      <EdgeAwareCoverImage
+                        src={tile.image}
+                        alt={tile.name}
+                        imgClassName="duration-700 ease-out brightness-[1.08] saturate-[1.06]"
+                        defaultStyle={getCollectionImageStyle(tile.name)}
+                        containerAspectRatio={4 / 3}
+                      />
+                    </div>
 
-                      <div className="space-y-3">
-                        <h2 className="font-serif text-3xl font-bold text-cream md:text-4xl transition-transform duration-300 group-hover:translate-x-2">
-                          {tile.name}
-                        </h2>
-                        <p className="line-clamp-3 text-cream/80">
+                    <div className="flex flex-1 flex-col gap-3 p-4">
+                      <h2 className="min-h-[56px] font-serif text-2xl font-semibold text-foreground transition-colors group-hover:text-primary">
+                        {tile.name}
+                      </h2>
+                      <p className="line-clamp-3 text-sm text-muted-foreground">
                           {tile.description || `Browse our ${tile.name.toLowerCase()} range.`}
-                        </p>
+                      </p>
+
+                      <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+                        <span className="h-px flex-1 bg-border transition-colors duration-300 group-hover:bg-primary/40" />
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground transition-all duration-300 group-hover:translate-x-1">
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
                       </div>
                     </div>
                   </Link>

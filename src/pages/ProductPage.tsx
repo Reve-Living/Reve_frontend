@@ -115,7 +115,7 @@ type ParsedSizeOption = {
 
   label: string;
 
-  delta: number;
+  price: number;
 
   description: string;
 
@@ -304,7 +304,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
   if (!raw) {
 
-    return { id: `size-${index}`, label: 'Size', delta: 0, description, raw: rawSize };
+    return { id: `size-${index}`, label: 'Size', price: 0, description, raw: rawSize };
 
   }
 
@@ -324,7 +324,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
       label: pipeMatch[1].trim() || raw,
 
-      delta: Number(pipeMatch[2] || 0),
+      price: Number(pipeMatch[2] || 0),
 
       description,
 
@@ -346,7 +346,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
       label: plusMatch[1].trim() || raw,
 
-      delta: Number(plusMatch[2] || 0),
+      price: Number(plusMatch[2] || 0),
 
       description,
 
@@ -360,7 +360,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
   const fallbackDelta = Number.isFinite(explicitDelta) ? Number(explicitDelta) : 0;
 
-  return { id: `size-${index}`, label: raw, delta: fallbackDelta, description, raw: rawSize };
+  return { id: `size-${index}`, label: raw, price: fallbackDelta, description, raw: rawSize };
 
 };
 
@@ -1232,7 +1232,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
           description: size.description,
 
-          price_delta: size.delta,
+          price_delta: size.price,
 
         })),
 
@@ -1295,7 +1295,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
   const activeSizeOption = sizeOptions.find((size) => size.label === selectedSize) || sizeOptions[0];
 
-  const sizeDelta = activeSizeOption?.delta || 0;
+  const selectedSizeBasePrice =
+    activeSizeOption && Number.isFinite(activeSizeOption.price)
+      ? Number(activeSizeOption.price)
+      : Number(product?.price ?? 0);
 
 
 
@@ -1494,15 +1497,21 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const assemblyServicePrice =
     product?.assembly_service_enabled ? Number(product?.assembly_service_price || 0) : 0;
   const unitPrice =
-    basePrice +
-    sizeDelta +
+    selectedSizeBasePrice +
     stylePriceDelta +
     totalMattressPrice +
     (assemblyServiceSelected ? assemblyServicePrice : 0);
 
+  const baseSavings =
+    baseOriginalPrice !== undefined && baseOriginalPrice > basePrice ? baseOriginalPrice - basePrice : 0;
+  const selectedSizeOriginalPriceBase =
+    baseOriginalPrice !== undefined ? selectedSizeBasePrice + baseSavings : undefined;
+
   const unitOriginalPrice =
 
-    baseOriginalPrice !== undefined ? baseOriginalPrice + sizeDelta + stylePriceDelta + totalMattressPrice : undefined;
+    selectedSizeOriginalPriceBase !== undefined
+      ? selectedSizeOriginalPriceBase + stylePriceDelta + totalMattressPrice
+      : undefined;
 
   const totalPrice = unitPrice * quantity;
 
@@ -2395,9 +2404,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                               : 'text-center min-h-[14px] flex items-center justify-center w-full'
                                           }`}
                                         >
-                                          {Number(option.price_delta || 0) > 0
-                                            ? `+${formatPrice(Number(option.price_delta || 0))}`
-                                            : 'Included'}
+                                          {formatPrice(Number(option.price_delta || 0))}
                                         </p>
                                       </div>
                                     </div>
