@@ -61,54 +61,67 @@ const LifestyleSection = () => {
   };
 
   return (
-    <section className="bg-[#FAF8F5] py-14 md:py-20">
-      <div className="container mx-auto px-4">
-        <div className="mb-10 text-center">
-          <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary">
+    <section className="relative overflow-hidden bg-[#F7F2EB] py-16 md:py-24">
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-[-8rem] top-16 h-56 w-56 rounded-full bg-primary/8 blur-3xl" />
+        <div className="absolute bottom-[-6rem] right-[-4rem] h-64 w-64 rounded-full bg-amber-200/20 blur-3xl" />
+      </div>
+
+      <div className="container relative mx-auto px-4">
+        <div className="mb-12 text-center">
+          <span className="mb-4 inline-block rounded-full border border-primary/15 bg-white/70 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.24em] text-primary backdrop-blur">
             Inspiration
           </span>
-          <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+          <h2 className="font-serif text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
             {section?.title || 'Transform Your Home'}
           </h2>
           {!!section?.subtitle && (
-            <p className="mx-auto mt-3 max-w-3xl text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-3xl text-base leading-7 text-muted-foreground md:text-lg">
               {section.subtitle}
             </p>
           )}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-8">
           {visibleArticles.map((article, index) => {
             const readMoreHref = getReadMoreHref(article);
             const imageOnLeft = index % 2 === 0;
+            const articleAccentClasses = imageOnLeft
+              ? 'bg-white/90'
+              : 'bg-[#FCF8F2]';
 
             return (
               <article
                 key={article.id}
-                className="overflow-hidden rounded-2xl bg-card shadow-luxury"
+                className={`overflow-hidden rounded-[28px] border border-black/5 shadow-[0_18px_50px_rgba(42,31,22,0.08)] ${articleAccentClasses}`}
               >
                 <div className="grid h-full grid-cols-1 md:grid-cols-2">
-                  <div className={`relative min-h-[260px] bg-muted ${imageOnLeft ? 'md:order-1' : 'md:order-2'}`}>
+                  <div className={`relative min-h-[280px] overflow-hidden bg-muted md:min-h-[360px] ${imageOnLeft ? 'md:order-1' : 'md:order-2'}`}>
                     {article.image && (
                       <img
                         src={resolveUrl(article.image)}
                         alt={article.title}
-                        className="h-full w-full object-cover"
+                        className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
                       />
                     )}
+                    <div className={`absolute inset-0 ${imageOnLeft ? 'bg-gradient-to-r from-black/8 to-transparent' : 'bg-gradient-to-l from-black/8 to-transparent'}`} />
                   </div>
 
-                  <div className={`flex flex-col justify-center p-6 md:p-8 ${imageOnLeft ? 'md:order-2' : 'md:order-1'}`}>
-                    <h3 className="font-serif text-2xl font-semibold text-foreground md:text-3xl">
+                  <div className={`flex flex-col justify-center p-7 md:p-10 lg:p-12 ${imageOnLeft ? 'md:order-2' : 'md:order-1'}`}>
+                    <span className="mb-4 inline-flex w-fit items-center rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+                      Editorial Feature
+                    </span>
+                    <h3 className="max-w-md font-serif text-3xl font-semibold leading-tight text-foreground md:text-4xl">
                       {article.title}
                     </h3>
-                    <p className="mt-4 text-sm leading-7 text-muted-foreground">
+                    <div className="mt-6 h-px w-16 bg-primary/30" />
+                    <p className="mt-6 max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
                       {article.description}
                     </p>
 
                     {readMoreHref && (
-                      <div className="mt-6">
-                        <Button asChild className="group gradient-bronze">
+                      <div className="mt-8">
+                        <Button asChild className="group h-11 rounded-full px-6 gradient-bronze">
                           <a href={readMoreHref} target="_blank" rel="noreferrer">
                             Read More
                             <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
