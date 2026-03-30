@@ -649,6 +649,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   const [selectedMattresses, setSelectedMattresses] = useState<SelectedMattressPick[]>([]);
   const [externalMattress, setExternalMattress] = useState<ProductMattress | null>(null);
   const [mattressOptions, setMattressOptions] = useState<ProductMattress[]>([]);
+  const [hasUserChangedMattressSelection, setHasUserChangedMattressSelection] = useState(false);
 
   useEffect(() => {
     const seoTitle = product?.meta_title || (product?.name ? `${product.name} | Reve Living` : 'Reve Living');
@@ -692,6 +693,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
   useEffect(() => {
     setSelectedMattresses([]);
     setExternalMattress(null);
+    setHasUserChangedMattressSelection(false);
     setPreviewFabric('');
     setAssemblyServiceSelected(false);
     hasAutoSelectedIncludedMattress.current = false;
@@ -1508,7 +1510,8 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
       };
     })
     .filter(Boolean) as Array<ProductMattress & { position: 'top' | 'bottom' | null; price_value: number }>;
-  const totalMattressPrice = selectedMattressDetails.reduce(
+  const chargeableMattressDetails = hasUserChangedMattressSelection ? selectedMattressDetails : [];
+  const totalMattressPrice = chargeableMattressDetails.reduce(
     (sum, m) => sum + (Number.isFinite(m.price_value) ? m.price_value : 0),
     0
   );
@@ -3077,6 +3080,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     type="button"
                     onClick={() => {
                       setSelectedMattresses((prev) => {
+                        setHasUserChangedMattressSelection(true);
                         const withoutCurrent = prev.filter((m) => m.id !== mattress.id);
 
                         // Toggle off if already selected
@@ -3192,6 +3196,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                   }`}
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    setHasUserChangedMattressSelection(true);
                                     setSelectedMattresses((prev) => {
                                       const withoutCurrent = prev.filter((m) => m.id !== mattress.id);
 
