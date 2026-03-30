@@ -950,9 +950,17 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
           const normalized = normalizeStyleOptions(styleGroup.options);
           const freeOption =
             normalized.find(
-              (o) =>
-                parsePriceDeltaFromText(o.label, o.description || '') === 0 ||
-                Number(o.price_delta ?? 0) === 0
+              (o) => {
+                const numericDelta =
+                  typeof o.price_delta === 'number' && Number.isFinite(o.price_delta)
+                    ? Number(o.price_delta)
+                    : undefined;
+                const resolvedDelta =
+                  numericDelta !== undefined
+                    ? numericDelta
+                    : parsePriceDeltaFromText(o.label, o.description || '');
+                return resolvedDelta === 0;
+              }
             ) || undefined;
           if (freeOption) {
             initialStyles[styleGroup.name] = freeOption.label;
