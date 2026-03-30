@@ -203,6 +203,16 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 const formatPrice = (value: number): string => formatWholePrice(value);
 
+const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number): number => {
+  const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
+  const raw = Number(storedValue ?? 0);
+  if (!Number.isFinite(raw)) return base;
+  if (raw === 0) return base;
+  // Backward compatibility for older products where size values were saved as deltas.
+  if (base > 0 && raw < base) return base + raw;
+  return raw;
+};
+
 const renderMultilineParagraphs = (value?: string, emphasizeFirst = true) => {
   if (!value) return null;
   return value
@@ -889,7 +899,12 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
       if (fetched?.sizes?.length) {
         const parsedSizes = sortParsedSizeOptions(
           fetched.sizes.map((size, index) =>
-            parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+            parseSizeOption(
+              size.name,
+              index,
+              size.description || '',
+              normalizeStoredSizePrice(Number(fetched.price ?? 0), Number(size.price_delta ?? 0))
+            )
           )
         );
         const normalizedLinkedSize = (linkedBedSize || '').trim().toLowerCase();
@@ -1091,7 +1106,12 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
   const sizeOptions = sortParsedSizeOptions(
     productSizes.map((size, index) =>
-      parseSizeOption(size.name, index, size.description || '', Number(size.price_delta ?? 0))
+      parseSizeOption(
+        size.name,
+        index,
+        size.description || '',
+        normalizeStoredSizePrice(Number(product?.price ?? 0), Number(size.price_delta ?? 0))
+      )
     )
   );
 

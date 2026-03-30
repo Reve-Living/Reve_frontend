@@ -6,6 +6,15 @@ import { Product } from '@/lib/types';
 import { formatWholePrice } from '@/lib/pricing';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 
+const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number): number => {
+  const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
+  const raw = Number(storedValue ?? 0);
+  if (!Number.isFinite(raw)) return base;
+  if (raw === 0) return base;
+  if (base > 0 && raw < base) return base + raw;
+  return raw;
+};
+
 interface ProductCardProps {
   product: Product;
   index?: number;
@@ -18,7 +27,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
   const savings = product.original_price ? product.original_price - product.price : 0;
   const sizePrices = Array.isArray(product.sizes)
     ? product.sizes
-        .map((size) => Number(size.price_delta))
+        .map((size) => normalizeStoredSizePrice(Number(product.price ?? 0), Number(size.price_delta)))
         .filter((price) => Number.isFinite(price) && price >= 0)
     : [];
   const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : product.price;
