@@ -545,6 +545,13 @@ const sortParsedSizeOptions = (sizes: ParsedSizeOption[]): ParsedSizeOption[] =>
     if (orderDiff !== 0) return orderDiff;
     return a.label.localeCompare(b.label, undefined, { numeric: true, sensitivity: 'base' });
   });
+
+const getLowestPricedSizeOption = (sizes: ParsedSizeOption[]): ParsedSizeOption | undefined =>
+  [...sizes].sort((a, b) => {
+    const priceDiff = Number(a.price || 0) - Number(b.price || 0);
+    if (priceDiff !== 0) return priceDiff;
+    return getSizeDisplayOrderIndex(a.label) - getSizeDisplayOrderIndex(b.label);
+  })[0];
 // Normalizes features so we only create bullets for actual bullet separators (line breaks or •),
 // never for commas inside the text.
 const normalizeFeatures = (features: unknown): string[] => {
@@ -911,7 +918,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
         const matchedSize = normalizedLinkedSize
           ? parsedSizes.find((opt) => opt.label.trim().toLowerCase() === normalizedLinkedSize)
           : null;
-        setSelectedSize((matchedSize || parsedSizes[0]).label);
+        setSelectedSize((matchedSize || getLowestPricedSizeOption(parsedSizes) || parsedSizes[0]).label);
       }
 
         const firstFabricWithColors = (fetched?.fabrics || []).find((f) => (f.colors || []).length > 0);
@@ -1313,7 +1320,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
 
 
-  const activeSizeOption = sizeOptions.find((size) => size.label === selectedSize) || sizeOptions[0];
+  const activeSizeOption =
+    sizeOptions.find((size) => size.label === selectedSize) ||
+    getLowestPricedSizeOption(sizeOptions) ||
+    sizeOptions[0];
 
   const selectedSizeBasePrice =
     activeSizeOption && Number.isFinite(activeSizeOption.price)
