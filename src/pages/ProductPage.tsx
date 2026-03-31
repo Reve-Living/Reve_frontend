@@ -67,7 +67,15 @@ type NormalizedStyleOption = {
 
   icon_url?: string;
 
+  price_delta?: number;
+
   size?: string;
+
+  sizes?: string[];
+
+  use_size_pricing?: boolean;
+
+  size_price_overrides?: Record<string, number>;
 
 };
 
@@ -203,6 +211,24 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 const formatPrice = (value: number): string => formatWholePrice(value);
 const formatAddonPrice = (value: number): string => `+${formatWholePrice(value)}`;
+
+const normalizeSizePriceOverrides = (value: unknown): Record<string, number> => {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return Object.entries(value as Record<string, unknown>).reduce<Record<string, number>>((acc, [key, rawValue]) => {
+    const sizeName = String(key || '').trim();
+    if (!sizeName) return acc;
+    const parsed =
+      typeof rawValue === 'number'
+        ? rawValue
+        : typeof rawValue === 'string' && rawValue.trim() !== ''
+        ? Number(rawValue)
+        : Number.NaN;
+    if (Number.isFinite(parsed)) {
+      acc[sizeName] = parsed;
+    }
+    return acc;
+  }, {});
+};
 
 const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number): number => {
   const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
@@ -441,8 +467,14 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
               .filter(Boolean)
 
           : [];
+        const size_price_overrides = normalizeSizePriceOverrides(
+          (option as { size_price_overrides?: unknown }).size_price_overrides
+        );
+        const use_size_pricing =
+          (option as { use_size_pricing?: unknown }).use_size_pricing === true ||
+          Object.keys(size_price_overrides).length > 0;
 
-        return { label, description, icon_url, price_delta, size, sizes };
+        return { label, description, icon_url, price_delta, size, sizes, use_size_pricing, size_price_overrides };
 
       }
 
@@ -1163,14 +1195,20 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
             size: option.size,
 
             sizes: option.sizes,
-
-            price_delta:
-
-              typeof option.price_delta === 'number'
-
-                ? option.price_delta
-
-                : Number(option.price_delta || 0) || parsePriceDeltaFromText(option.label, option.description),
+            price_delta: (() => {
+              const defaultDelta =
+                typeof option.price_delta === 'number'
+                  ? option.price_delta
+                  : Number(option.price_delta || 0) || parsePriceDeltaFromText(option.label, option.description);
+              const overrides = normalizeSizePriceOverrides(option.size_price_overrides);
+              if (option.use_size_pricing && currentSize) {
+                const matchedEntry = Object.entries(overrides).find(
+                  ([sizeName]) => normalizeSizeName(sizeName).toLowerCase() === normalizeSizeName(currentSize).toLowerCase()
+                );
+                if (matchedEntry) return matchedEntry[1];
+              }
+              return defaultDelta;
+            })(),
 
           }))
 
