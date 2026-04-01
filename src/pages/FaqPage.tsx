@@ -170,14 +170,6 @@ const FaqPage = () => {
               </p>
             </section>
 
-            <section>
-              <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Why this order works</h2>
-              <p>● Starts with delivery coverage (most important pre-purchase)</p>
-              <p>● Moves into timing → logistics → practical constraints</p>
-              <p>● Then support/contact</p>
-              <p>● Then full returns journey (after purchase concerns)</p>
-              <p>● Ends with refunds + cancellations (final stage concerns)</p>
-            </section>
           </div>
         </motion.div>
       </main>
