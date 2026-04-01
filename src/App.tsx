@@ -25,6 +25,8 @@ import SignupPage from "./pages/SignupPage";
 import TermsConditionsPage from "./pages/TermsConditionsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ReturnsRefundsPage from "./pages/ReturnsRefundsPage";
+import DeliveryInformationPage from "./pages/DeliveryInformationPage";
+import FaqPage from "./pages/FaqPage";
 import DivanBedsPage from "./pages/DivanBedsPage";
 import LifestyleArticlePage from "./pages/LifestyleArticlePage";
 import NotFound from "./pages/NotFound";
@@ -59,7 +61,9 @@ const App = () => (
               <Route path="/signup" element={<SignupPage />} />
               <Route path="/terms-conditions" element={<TermsConditionsPage />} />
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+              <Route path="/delivery" element={<DeliveryInformationPage />} />
               <Route path="/returns-refunds" element={<ReturnsRefundsPage />} />
+              <Route path="/faq" element={<FaqPage />} />
               <Route path="/divan-beds" element={<DivanBedsPage />} />
               <Route path="/transform-your-home/:slug" element={<LifestyleArticlePage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

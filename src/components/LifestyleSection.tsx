@@ -73,17 +73,14 @@ const LifestyleSection = () => {
       </div>
 
       <div className="container relative mx-auto px-4">
-        <div className="mb-10">
+        <div className="mb-10 text-center">
           <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary">
             Inspiration
           </span>
-          <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
-            Transform Your Home
-          </h2>
-          <h3 className="mt-4 max-w-5xl font-serif text-2xl font-semibold leading-tight text-foreground md:text-4xl">
+          <h2 className="mx-auto mt-4 max-w-5xl font-serif text-2xl font-semibold leading-tight text-foreground md:text-4xl">
             How to Choose the Right Bed and Mattress for You
-          </h3>
-          <p className="mt-4 max-w-4xl text-base leading-8 text-muted-foreground md:text-lg">
+          </h2>
+          <p className="mx-auto mt-4 max-w-4xl text-base leading-8 text-muted-foreground md:text-lg">
             {section?.subtitle || 'A practical guide to choosing the right style, storage and comfort for your home'}
           </p>
         </div>

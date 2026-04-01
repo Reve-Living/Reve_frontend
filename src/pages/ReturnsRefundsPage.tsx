@@ -101,17 +101,10 @@ const ReturnsRefundsPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Starting a Return</h2>
               <p>
-                To begin a return, exchange, or cancellation, please contact Reve Living Customer Support within
-                the applicable timeframes.
+                To begin a return, exchange, or cancellation, please contact Reve Living Customer Support within the applicable timeframes.
               </p>
-              <p className="mt-4">
-                <strong>Reve Living Limited</strong>
-                <br />
-                128 City Road, London, EC1V 2NX
-                <br />
-                <strong>Email:</strong> info@reveliving.co.uk
-                <br />
-                <strong>Phone:</strong> 020 7871 7675
+              <p>
+                You can reach our team via WhatsApp, phone, or email, and we will guide you through the process.
               </p>
             </section>
           </div>

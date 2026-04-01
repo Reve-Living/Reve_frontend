@@ -12,7 +12,7 @@ const Footer = () => {
       { name: 'Delivery Information', href: '/delivery' },
       { name: 'Returns & Refunds', href: '/returns-refunds' },
       { name: 'FAQ', href: '/faq' },
-      { name: 'Track Order', href: '/track-order' },
+      
     ],
     company: [
       { name: 'About Us', href: '/about' },
