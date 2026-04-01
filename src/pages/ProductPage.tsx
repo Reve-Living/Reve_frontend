@@ -1170,11 +1170,14 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
     )
   );
 
+  const resolvedSelectedSize =
+    selectedSize || getLowestPricedSizeOption(sizeOptions)?.label || sizeOptions[0]?.label || '';
+
 
 
   const styleVariantGroups = useMemo<VariantGroup[]>(() => {
 
-    const currentSize = selectedSize;
+    const currentSize = resolvedSelectedSize;
 
     return (product?.styles || [])
 
@@ -1206,6 +1209,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
                   ([sizeName]) => normalizeSizeName(sizeName).toLowerCase() === normalizeSizeName(currentSize).toLowerCase()
                 );
                 if (matchedEntry) return matchedEntry[1];
+                return 0;
               }
               return defaultDelta;
             })(),
@@ -1218,7 +1222,10 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
             if (!currentSize || sizes.length === 0) return true;
 
-            return sizes.includes(currentSize);
+            const normalizedCurrentSize = normalizeSizeName(currentSize).toLowerCase();
+            return sizes.some(
+              (sizeName) => normalizeSizeName(sizeName).toLowerCase() === normalizedCurrentSize
+            );
 
           });
 
@@ -1242,7 +1249,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
       .filter((group) => group.options.length > 0);
 
-  }, [product?.styles, selectedSize]);
+  }, [product?.styles, resolvedSelectedSize]);
 
 
 
@@ -1375,7 +1382,7 @@ type SelectedMattressPick = { id: number; position?: 'top' | 'bottom' | null };
 
 
   const activeSizeOption =
-    sizeOptions.find((size) => size.label === selectedSize) ||
+    sizeOptions.find((size) => size.label === resolvedSelectedSize) ||
     getLowestPricedSizeOption(sizeOptions) ||
     sizeOptions[0];
 
