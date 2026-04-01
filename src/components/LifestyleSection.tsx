@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { apiGet } from '@/lib/api';
 import { LifestyleArticle, LifestyleSection as LifestyleSectionType } from '@/lib/types';
+import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 
 const LifestyleSection = () => {
   const [section, setSection] = useState<LifestyleSectionType | null>(null);
@@ -55,10 +56,14 @@ const LifestyleSection = () => {
   }
 
   const getReadMoreHref = (article: LifestyleArticle) => {
+    if (article.read_more_type === 'article' && article.slug) return `/transform-your-home/${article.slug}`;
     if (article.read_more_type === 'pdf') return resolveUrl(article.read_more_pdf || article.read_more_target);
     if (article.read_more_type === 'url') return resolveUrl(article.read_more_url || article.read_more_target);
     return '';
   };
+
+  const isExternalReadMore = (article: LifestyleArticle) => article.read_more_type === 'pdf' || article.read_more_type === 'url';
+  const isInternalReadMore = (article: LifestyleArticle) => article.read_more_type === 'article' && Boolean(article.slug);
 
   return (
     <section className="relative overflow-hidden bg-[#F7F2EB] py-16 md:py-24">
@@ -68,69 +73,90 @@ const LifestyleSection = () => {
       </div>
 
       <div className="container relative mx-auto px-4">
-        <div className="mb-12 text-center">
-          <span className="mb-4 inline-block rounded-full border border-primary/15 bg-white/70 px-4 py-1.5 text-xs font-medium uppercase tracking-[0.24em] text-primary backdrop-blur">
+        <div className="mb-10">
+          <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary">
             Inspiration
           </span>
-          <h2 className="font-serif text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl">
-            {section?.title || 'Transform Your Home'}
+          <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
+            Transform Your Home
           </h2>
-          {!!section?.subtitle && (
-            <p className="mx-auto mt-4 max-w-3xl text-base leading-7 text-muted-foreground md:text-lg">
-              {section.subtitle}
-            </p>
-          )}
+          <h3 className="mt-4 max-w-5xl font-serif text-2xl font-semibold leading-tight text-foreground md:text-4xl">
+            How to Choose the Right Bed and Mattress for You
+          </h3>
+          <p className="mt-4 max-w-4xl text-base leading-8 text-muted-foreground md:text-lg">
+            {section?.subtitle || 'A practical guide to choosing the right style, storage and comfort for your home'}
+          </p>
         </div>
 
-        <div className="space-y-8">
-          {visibleArticles.map((article, index) => {
+        <div className="flex flex-wrap justify-start gap-6">
+          {visibleArticles.map((article) => {
             const readMoreHref = getReadMoreHref(article);
-            const imageOnLeft = index % 2 === 0;
-            const articleAccentClasses = imageOnLeft
-              ? 'bg-white/90'
-              : 'bg-[#FCF8F2]';
+            const cardInner = (
+              <>
+                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                  {article.card_image || article.image ? (
+                    <EdgeAwareCoverImage
+                      src={resolveUrl(article.card_image || article.image)}
+                      alt={article.title}
+                      containerAspectRatio={4 / 3}
+                    />
+                  ) : null}
+                </div>
+
+                <div className="flex flex-1 flex-col gap-3 p-4">
+                  <h3 className="min-h-[56px] font-serif text-xl font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
+                    {article.title}
+                  </h3>
+                  <p className="line-clamp-4 whitespace-pre-line text-sm text-muted-foreground">
+                    {article.description}
+                  </p>
+
+                  {readMoreHref && (
+                    <div className="mt-auto pt-2">
+                      <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors group-hover:text-primary/80">
+                        Read More
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+
+            if (readMoreHref && isInternalReadMore(article)) {
+              return (
+                <Link
+                  key={article.id}
+                  to={readMoreHref}
+                  className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  aria-label={`Read more about ${article.title}`}
+                >
+                  {cardInner}
+                </Link>
+              );
+            }
+
+            if (readMoreHref && isExternalReadMore(article)) {
+              return (
+                <a
+                  key={article.id}
+                  href={readMoreHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  aria-label={`Read more about ${article.title}`}
+                >
+                  {cardInner}
+                </a>
+              );
+            }
 
             return (
               <article
                 key={article.id}
-                className={`overflow-hidden rounded-[28px] border border-black/5 shadow-[0_18px_50px_rgba(42,31,22,0.08)] ${articleAccentClasses}`}
+                className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-lg bg-card shadow-luxury"
               >
-                <div className="grid h-full grid-cols-1 md:grid-cols-2">
-                  <div className={`relative min-h-[280px] overflow-hidden bg-muted md:min-h-[360px] ${imageOnLeft ? 'md:order-1' : 'md:order-2'}`}>
-                    {article.image && (
-                      <img
-                        src={resolveUrl(article.image)}
-                        alt={article.title}
-                        className="h-full w-full object-cover transition-transform duration-700 hover:scale-[1.03]"
-                      />
-                    )}
-                    <div className={`absolute inset-0 ${imageOnLeft ? 'bg-gradient-to-r from-black/8 to-transparent' : 'bg-gradient-to-l from-black/8 to-transparent'}`} />
-                  </div>
-
-                  <div className={`flex flex-col justify-center p-7 md:p-10 lg:p-12 ${imageOnLeft ? 'md:order-2' : 'md:order-1'}`}>
-                    <span className="mb-4 inline-flex w-fit items-center rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-                      Editorial Feature
-                    </span>
-                    <h3 className="max-w-md font-serif text-3xl font-semibold leading-tight text-foreground md:text-4xl">
-                      {article.title}
-                    </h3>
-                    <div className="mt-6 h-px w-16 bg-primary/30" />
-                    <p className="mt-6 max-w-xl text-sm leading-7 text-muted-foreground md:text-base">
-                      {article.description}
-                    </p>
-
-                    {readMoreHref && (
-                      <div className="mt-8">
-                        <Button asChild className="group h-11 rounded-full px-6 gradient-bronze">
-                          <a href={readMoreHref} target="_blank" rel="noreferrer">
-                            Read More
-                            <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
-                          </a>
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                {cardInner}
               </article>
             );
           })}

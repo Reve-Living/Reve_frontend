@@ -26,6 +26,7 @@ import TermsConditionsPage from "./pages/TermsConditionsPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import ReturnsRefundsPage from "./pages/ReturnsRefundsPage";
 import DivanBedsPage from "./pages/DivanBedsPage";
+import LifestyleArticlePage from "./pages/LifestyleArticlePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
               <Route path="/returns-refunds" element={<ReturnsRefundsPage />} />
               <Route path="/divan-beds" element={<DivanBedsPage />} />
+              <Route path="/transform-your-home/:slug" element={<LifestyleArticlePage />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
