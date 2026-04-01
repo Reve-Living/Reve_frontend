@@ -74,42 +74,41 @@ const LifestyleSection = () => {
 
       <div className="container relative mx-auto px-4">
         <div className="mb-10 text-center">
-          <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary">
-            Inspiration
-          </span>
-          <h2 className="mx-auto mt-4 max-w-5xl font-serif text-2xl font-semibold leading-tight text-foreground md:text-4xl">
-            How to Choose the Right Bed and Mattress for You
+          <h2 className="mx-auto max-w-5xl font-serif text-3xl font-semibold leading-tight text-foreground md:text-5xl">
+            Find the Right Bed & Mattress for You
           </h2>
-          <p className="mx-auto mt-4 max-w-4xl text-base leading-8 text-muted-foreground md:text-lg">
-            {section?.subtitle || 'A practical guide to choosing the right style, storage and comfort for your home'}
+          <p className="mx-auto mt-6 max-w-4xl text-base leading-8 text-muted-foreground md:text-lg">
+            A practical guide to choosing the right style, storage and comfort for your home
           </p>
         </div>
 
-        <div className="flex flex-wrap justify-start gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {visibleArticles.map((article) => {
             const readMoreHref = getReadMoreHref(article);
             const cardInner = (
-              <>
-                <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  {article.card_image || article.image ? (
-                    <EdgeAwareCoverImage
-                      src={resolveUrl(article.card_image || article.image)}
-                      alt={article.title}
-                      containerAspectRatio={4 / 3}
-                    />
-                  ) : null}
+              <div className="grid h-full grid-cols-1 gap-4 rounded-[24px] bg-[#EFE7DC] p-4 md:grid-cols-[1.02fr,0.98fr] md:p-5">
+                <div className="flex items-center justify-center">
+                  <div className="relative aspect-[1.18/1] w-full overflow-hidden border border-black/15 bg-muted">
+                    {article.card_image || article.image ? (
+                      <EdgeAwareCoverImage
+                        src={resolveUrl(article.card_image || article.image)}
+                        alt={article.title}
+                        containerAspectRatio={1.18}
+                      />
+                    ) : null}
+                  </div>
                 </div>
 
-                <div className="flex flex-1 flex-col gap-3 p-4">
-                  <h3 className="min-h-[56px] font-serif text-xl font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
+                <div className="flex h-full flex-1 flex-col rounded-[18px] bg-[#FBF8F3] p-5 shadow-[0_10px_24px_rgba(87,59,31,0.06)] md:p-6">
+                  <h3 className="text-2xl font-semibold leading-tight text-foreground transition-colors group-hover:text-primary">
                     {article.title}
                   </h3>
-                  <p className="line-clamp-4 whitespace-pre-line text-sm text-muted-foreground">
+                  <p className="mt-3 line-clamp-6 whitespace-pre-line text-base leading-8 text-muted-foreground">
                     {article.description}
                   </p>
 
                   {readMoreHref && (
-                    <div className="mt-auto pt-2">
+                    <div className="mt-auto pt-4">
                       <span className="inline-flex items-center gap-2 text-sm font-semibold text-primary transition-colors group-hover:text-primary/80">
                         Read More
                         <ArrowRight className="h-4 w-4" />
@@ -117,7 +116,7 @@ const LifestyleSection = () => {
                     </div>
                   )}
                 </div>
-              </>
+              </div>
             );
 
             if (readMoreHref && isInternalReadMore(article)) {
@@ -125,7 +124,7 @@ const LifestyleSection = () => {
                 <Link
                   key={article.id}
                   to={readMoreHref}
-                  className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  className="group flex h-full w-full overflow-hidden rounded-[24px] transition-all duration-300 hover:-translate-y-1"
                   aria-label={`Read more about ${article.title}`}
                 >
                   {cardInner}
@@ -140,7 +139,7 @@ const LifestyleSection = () => {
                   href={readMoreHref}
                   target="_blank"
                   rel="noreferrer"
-                  className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+                  className="group flex h-full w-full overflow-hidden rounded-[24px] transition-all duration-300 hover:-translate-y-1"
                   aria-label={`Read more about ${article.title}`}
                 >
                   {cardInner}
@@ -151,7 +150,7 @@ const LifestyleSection = () => {
             return (
               <article
                 key={article.id}
-                className="group flex h-full w-full max-w-sm flex-col overflow-hidden rounded-lg bg-card shadow-luxury"
+                className="group flex h-full w-full overflow-hidden rounded-[24px]"
               >
                 {cardInner}
               </article>
