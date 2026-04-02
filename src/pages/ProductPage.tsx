@@ -3393,8 +3393,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                         {!mattress.enable_bunk_positions && savingsAmount > 0 && (
                           <div className="flex flex-wrap items-center gap-4">
-                            <div className="inline-flex rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">
-                              SAVE: {formatPrice(savingsAmount)}
+                            <div className="inline-flex max-w-full rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold leading-4 text-primary-foreground md:text-xs">
+                              (Save extra {formatPrice(savingsAmount)} when bought with a bed)
                             </div>
                             <button
                               type="button"
