@@ -189,19 +189,19 @@ const Header = () => {
       <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background shadow-sm">
         <AnnouncementBar />
         <div className="container mx-auto px-4">
-          <div className="flex h-20 items-center gap-4">
+          <div className="flex h-20 items-center gap-4 lg:hidden">
             {/* Logo */}
             <Link to="/" className="flex shrink-0 items-center gap-1 md:gap-2 leading-none">
               <img
                 src={logoLettersOnly}
                 alt="RL monogram"
-                className="block h-12 md:h-14 lg:h-16 w-auto object-contain"
-                style={{ mixBlendMode: 'multiply' }} // blend white background into header backdrop
+                className="block h-12 w-auto object-contain md:h-14"
+                style={{ mixBlendMode: 'multiply' }}
               />
-              <span 
-                className="block text-2xl md:text-3xl lg:text-4xl leading-none"
-                style={{ 
-                  fontFamily: '"Great Vibes", cursive', 
+              <span
+                className="block text-2xl leading-none md:text-3xl"
+                style={{
+                  fontFamily: '"Great Vibes", cursive',
                   color: '#602e17',
                   lineHeight: 1
                 }}
@@ -209,144 +209,6 @@ const Header = () => {
                 Reve Living
               </span>
             </Link>
-
-            {/* Desktop Navigation */}
-            <nav className="hidden lg:flex lg:flex-1 lg:items-center lg:justify-center lg:gap-6 xl:gap-8">
-              {mainNavLinks.map((link) => (
-                <div
-                  key={link.name}
-                  className="relative"
-                  onMouseEnter={() => link.children && setActiveDropdown(link.name)}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  {link.children ? (
-                    <button className="story-link inline-flex items-center gap-1 py-2 font-medium text-foreground transition-colors hover:text-primary">
-                      <span>{link.name}</span>
-                      <ChevronDown className="h-4 w-4" />
-                    </button>
-                  ) : (
-                    <Link
-                      to={link.href}
-                      className="story-link py-2 font-medium text-foreground transition-colors hover:text-primary"
-                    >
-                      {link.name}
-                    </Link>
-                  )}
-
-                  {/* Dropdown Menu */}
-                  {link.children && activeDropdown === link.name && (
-                    <div className="absolute left-0 top-full w-56 rounded-lg bg-card p-3 shadow-luxury">
-                      <div className="flex flex-col">
-                        {link.children.map((child) => (
-                          <Link
-                            key={child.name}
-                            to={child.href}
-                            className="rounded-md px-3 py-2 text-left font-medium text-foreground transition-colors hover:bg-background hover:text-primary"
-                          >
-                            {child.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-
-              <div ref={searchRef} className="hidden">
-                <div className="relative">
-                  {isSearchOpen ? (
-                    <>
-                      <form onSubmit={handleSearchSubmit} className="w-72">
-                        <Input
-                          placeholder="Search..."
-                          className="h-11 border-accent bg-card pr-12"
-                          autoFocus
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <button
-                          type="submit"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
-                          aria-label="Search"
-                        >
-                          <Search className="h-5 w-5" />
-                        </button>
-                      </form>
-
-                      {shouldShowSearchResults && (
-                        <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
-                          {limitedSearchResults.length > 0 ? (
-                            <div className="max-h-96 overflow-y-auto p-2">
-                              {limitedSearchResults.map((product) => (
-                                <button
-                                  key={product.id}
-                                  type="button"
-                                  onClick={() => handleSearchSelect(product.slug)}
-                                  className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
-                                >
-                                  {product.images?.[0]?.url ? (
-                                    <img
-                                      src={product.images[0].url}
-                                      alt={product.name}
-                                      className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
-                                    />
-                                  ) : (
-                                    <div className="h-14 w-14 flex-shrink-0 rounded-md bg-muted" />
-                                  )}
-                                  <div className="min-w-0">
-                                    <p className="truncate font-medium text-foreground">{product.name}</p>
-                                    {(product.category_name || product.subcategory_name) && (
-                                      <p className="truncate text-sm text-muted-foreground">
-                                        {[product.category_name, product.subcategory_name].filter(Boolean).join(' / ')}
-                                      </p>
-                                    )}
-                                    <p className="text-sm font-semibold text-primary">
-                                      {formatWholePrice(Number(product.price))}
-                                    </p>
-                                  </div>
-                                </button>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="px-4 py-3 text-sm text-muted-foreground">
-                              {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={openSearch}
-                      className="hover:bg-muted"
-                      aria-label="Open search"
-                    >
-                      <Search className="h-5 w-5" />
-                    </Button>
-                  )}
-                </div>
-
-                {utilityLinks[1] && (
-                  <Link
-                    to={utilityLinks[1].href}
-                    className="text-sm font-medium text-foreground transition-colors hover:text-primary"
-                  >
-                    {utilityLinks[1].name}
-                  </Link>
-                )}
-
-                {utilityLinks[0] && (
-                  <Link
-                    to={utilityLinks[0].href}
-                    className="text-sm font-medium text-foreground transition-colors hover:text-primary"
-                  >
-                    {utilityLinks[0].name}
-                  </Link>
-                )}
-              </div>
-            </nav>
 
             {/* Right Actions */}
             <div className="ml-auto flex items-center gap-4">
@@ -545,6 +407,189 @@ const Header = () => {
               </Button>
             </div>
           </div>
+
+          <div className="hidden lg:flex lg:flex-col lg:py-4">
+            <div className="flex items-start justify-between gap-8">
+              <Link to="/" className="flex shrink-0 items-center gap-2 leading-none">
+                <img
+                  src={logoLettersOnly}
+                  alt="RL monogram"
+                  className="block h-14 w-auto object-contain xl:h-16"
+                  style={{ mixBlendMode: 'multiply' }}
+                />
+                <span
+                  className="block text-3xl leading-none xl:text-4xl"
+                  style={{
+                    fontFamily: '"Great Vibes", cursive',
+                    color: '#602e17',
+                    lineHeight: 1
+                  }}
+                >
+                  Reve Living
+                </span>
+              </Link>
+
+              <div className="ml-auto flex items-start gap-5 pt-1">
+                <div ref={searchRef} className="flex items-center gap-4">
+                  <div className="relative">
+                    {isSearchOpen ? (
+                      <>
+                        <form onSubmit={handleSearchSubmit} className="w-72">
+                          <Input
+                            placeholder="Search..."
+                            className="h-11 border-accent bg-card pr-12"
+                            autoFocus
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                          <button
+                            type="submit"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                            aria-label="Search"
+                          >
+                            <Search className="h-5 w-5" />
+                          </button>
+                        </form>
+
+                        {shouldShowSearchResults && (
+                          <div className="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl">
+                            {limitedSearchResults.length > 0 ? (
+                              <div className="max-h-96 overflow-y-auto p-2">
+                                {limitedSearchResults.map((product) => (
+                                  <button
+                                    key={product.id}
+                                    type="button"
+                                    onClick={() => handleSearchSelect(product.slug)}
+                                    className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
+                                  >
+                                    {product.images?.[0]?.url ? (
+                                      <img
+                                        src={product.images[0].url}
+                                        alt={product.name}
+                                        className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
+                                      />
+                                    ) : (
+                                      <div className="h-14 w-14 flex-shrink-0 rounded-md bg-muted" />
+                                    )}
+                                    <div className="min-w-0">
+                                      <p className="truncate font-medium text-foreground">{product.name}</p>
+                                      {(product.category_name || product.subcategory_name) && (
+                                        <p className="truncate text-sm text-muted-foreground">
+                                          {[product.category_name, product.subcategory_name].filter(Boolean).join(' / ')}
+                                        </p>
+                                      )}
+                                      <p className="text-sm font-semibold text-primary">
+                                        {formatWholePrice(Number(product.price))}
+                                      </p>
+                                    </div>
+                                  </button>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-muted-foreground">
+                                {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={openSearch}
+                        className="hover:bg-muted"
+                        aria-label="Open search"
+                      >
+                        <Search className="h-5 w-5" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {utilityLinks[1] && (
+                    <Link
+                      to={utilityLinks[1].href}
+                      className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      {utilityLinks[1].name}
+                    </Link>
+                  )}
+
+                  {utilityLinks[0] && (
+                    <Link
+                      to={utilityLinks[0].href}
+                      className="text-sm font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      {utilityLinks[0].name}
+                    </Link>
+                  )}
+                </div>
+
+                <Button asChild variant="ghost" size="icon" className="hover:bg-muted">
+                  <Link to="/login">
+                    <User className="h-5 w-5" />
+                  </Link>
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={toggleCart}
+                  className="relative hover:bg-muted"
+                >
+                  <ShoppingBag className="h-5 w-5" />
+                  {totalItems > 0 && (
+                    <span
+                      className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+                    >
+                      {totalItems}
+                    </span>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <nav className="mt-4 flex items-center justify-center gap-6 xl:gap-8">
+              {mainNavLinks.map((link) => (
+                <div
+                  key={link.name}
+                  className="relative"
+                  onMouseEnter={() => link.children && setActiveDropdown(link.name)}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  {link.children ? (
+                    <button className="story-link inline-flex items-center gap-1 py-2 font-medium text-foreground transition-colors hover:text-primary">
+                      <span>{link.name}</span>
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  ) : (
+                    <Link
+                      to={link.href}
+                      className="story-link py-2 font-medium text-foreground transition-colors hover:text-primary"
+                    >
+                      {link.name}
+                    </Link>
+                  )}
+
+                  {link.children && activeDropdown === link.name && (
+                    <div className="absolute left-0 top-full w-56 rounded-lg bg-card p-3 shadow-luxury">
+                      <div className="flex flex-col">
+                        {link.children.map((child) => (
+                          <Link
+                            key={child.name}
+                            to={child.href}
+                            className="rounded-md px-3 py-2 text-left font-medium text-foreground transition-colors hover:bg-background hover:text-primary"
+                          >
+                            {child.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </nav>
+          </div>
         </div>
 
         {/* Mobile Menu */}
@@ -607,7 +652,7 @@ const Header = () => {
       </header>
 
       {/* Spacer for fixed header + announcement bar */}
-      <div className="h-[100px]" />
+      <div className="h-[100px] lg:h-[148px]" />
     </>
   );
 };
