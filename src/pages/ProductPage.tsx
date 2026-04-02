@@ -1058,7 +1058,16 @@ type MattressDetailView = {
       }
       return false;
     });
-    setMattressOptions(filteredBase);
+    const sorted = [...filteredBase].sort((a, b) => {
+      const aOrder = Number(a.sort_order ?? 0);
+      const bOrder = Number(b.sort_order ?? 0);
+      const aPriority = aOrder > 0 ? 0 : 1;
+      const bPriority = bOrder > 0 ? 0 : 1;
+      if (aPriority !== bPriority) return aPriority - bPriority;
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return String(a.name || '').localeCompare(String(b.name || ''));
+    });
+    setMattressOptions(sorted);
   }, [product?.mattresses, filterOutExcludedMattresses, product?.category]);
 
 
