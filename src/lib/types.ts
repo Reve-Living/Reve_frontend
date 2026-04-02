@@ -207,6 +207,7 @@ export interface ProductMattress {
   id: number;
   name?: string;
   description?: string;
+  features?: string;
   image_url?: string;
   price?: number | string | null;
   original_price?: number | string | null;
