@@ -547,17 +547,27 @@ const CartPage = () => {
 
                 {/* Checkout Button */}
 
-                <Button asChild size="lg" className="mt-6 w-full gradient-bronze gap-2">
+                <Button 
+  asChild 
+  size="lg" 
+  className="mt-6 w-full gradient-bronze gap-2"
+  onClick={() => {
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: "beginCheckout"
+    });
+  }}
+>
 
-                  <Link to="/checkout">
+  <Link to="/checkout">
 
-                    Proceed to Checkout
+    Proceed to Checkout
 
-                    <ArrowRight className="h-4 w-4" />
+    <ArrowRight className="h-4 w-4" />
 
-                  </Link>
+  </Link>
 
-                </Button>
+</Button>
 
 
 
