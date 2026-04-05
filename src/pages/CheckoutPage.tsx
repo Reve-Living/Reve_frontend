@@ -289,6 +289,30 @@ const CheckoutPage = () => {
   }, [clearCart]);
 
   useEffect(() => {
+  if (step === 'confirmation') {
+    const lastOrderId = localStorage.getItem('last_order_id');
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: "purchase",
+      ecommerce: {
+        transaction_id: String(lastOrderId || ""),
+        affiliation: "Reve Living",
+        value: orderTotal.toFixed(2),
+        currency: "GBP",
+        tax: "0",
+        shipping: deliveryFee.toFixed(2),
+        items: state.items.map((item) => ({
+          item_id: String(item.product.id),
+          item_name: item.product.name,
+          price: String(item.unit_price ?? item.product.price),
+          quantity: item.quantity,
+          item_category: item.product.category_name || "Uncategorized"
+        }))
+      }
+    });
+  }
+}, [step, orderTotal, deliveryFee, state.items]);
+  useEffect(() => {
     setPromoCode(state.appliedPromo?.code || '');
   }, [state.appliedPromo?.code]);
 
