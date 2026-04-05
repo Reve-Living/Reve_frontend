@@ -2061,6 +2061,30 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
   const handleAddToCart = () => {
+    // Push GA4 event to dataLayer
+    window.dataLayer = window.dataLayer || [];
+    window.dataLayer.push({
+      event: "add_to_cart",
+      ecommerce: {
+        items: [
+          {
+            item_id: String(product?.id || ""),
+            item_name: product?.name || "Product",
+            price: unitPrice,
+            quantity: quantity,
+            item_category: product?.category_name || "Uncategorized",
+            item_variant: Object.entries(
+              enabledGroups
+                ? Object.fromEntries(Object.entries(selectedStyles).filter(([name]) => enabledGroups[name]))
+                : selectedStyles
+            )
+              .map(([key, value]) => `${key}: ${value}`)
+              .join(", ") || undefined,
+          }
+        ]
+      }
+    });
+
     // If this is a mattress being selected for a bed, navigate back to the bed product
     if (selectForBedSlug && product?.id) {
       const bedSizeQuery = linkedBedSize ? `&bed-size=${encodeURIComponent(linkedBedSize)}` : '';
@@ -2105,7 +2129,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
     });
 
     toast.success(`${product.name} added to cart`);
-
   };
 
   const handleSubmitReview = async (e: React.FormEvent) => {
