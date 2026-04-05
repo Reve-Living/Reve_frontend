@@ -186,8 +186,11 @@ const Header = () => {
 
   return (
     <>
-      <header className="fixed left-0 right-0 top-0 z-50 border-b border-border/30 bg-background shadow-sm">
+      <div className="sticky top-0 z-50">
         <AnnouncementBar />
+      </div>
+
+      <header className="relative z-40 border-b border-border/30 bg-background shadow-sm">
         <div className="container mx-auto px-4">
           <div className="flex h-20 items-center gap-4 lg:hidden">
             {/* Logo */}
@@ -650,9 +653,6 @@ const Header = () => {
           </div>
         )}
       </header>
-
-      {/* Spacer for fixed header + announcement bar */}
-      <div className="h-[100px] lg:h-[148px]" />
     </>
   );
 };

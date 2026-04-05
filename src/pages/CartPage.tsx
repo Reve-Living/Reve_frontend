@@ -186,7 +186,7 @@ const CartPage = () => {
 
             <Button asChild size="lg" className="gradient-bronze">
 
-              <Link to="/collection">Start Shopping</Link>
+              <Link to="/collections">Start Shopping</Link>
 
             </Button>
 

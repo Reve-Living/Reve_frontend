@@ -180,7 +180,7 @@ const CartDrawer = () => {
 
                   <Button onClick={closeCart} asChild>
 
-                    <Link to="/collection">Shop Now</Link>
+                    <Link to="/collections">Shop Now</Link>
 
                   </Button>
 
