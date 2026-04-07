@@ -598,7 +598,7 @@ const CheckoutPage = () => {
               <ul className="space-y-2 text-muted-foreground">
                 <li>• You'll receive an order confirmation email shortly</li>
                 <li>• Our team will prepare your order for delivery</li>
-                <li>• Estimated delivery: 3-5 working days</li>
+                <li>• Estimated delivery: 1–7 working days</li>
               </ul>
             </div>
             <Button asChild size="lg" className="gradient-bronze">

@@ -379,7 +379,7 @@ const CartDrawer = () => {
 
                 <p className="mb-4 text-sm text-muted-foreground">
 
-                  Shipping calculated at checkout
+                  No additional charges at checkout
 
                 </p>
 
