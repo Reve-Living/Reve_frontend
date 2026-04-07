@@ -144,7 +144,7 @@ const TermsConditionsPage = () => {
                 <br />
                 Email: info@reveliving.co.uk
                 <br />
-                Phone: 020 7871 7675
+                Phone: +44 20 8064 1987
               </p>
             </section>
           </div>

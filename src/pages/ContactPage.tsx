@@ -229,14 +229,14 @@ const ContactPage = () => {
               <h3 className="mb-6 font-serif text-xl font-semibold">Contact Details</h3>
               <div className="space-y-4">
                 <a
-                  href="tel:+442078717675"
+                  href="tel:+442080641987"
                   className="flex items-center gap-4 text-muted-foreground transition-colors hover:text-primary"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     <Phone className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">020 7871 7675</p>
+                    <p className="font-medium text-foreground">+44 20 8064 1987</p>
                     <p className="text-sm">Mon - Fri: 9am - 6pm</p>
                   </div>
                 </a>

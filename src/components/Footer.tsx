@@ -61,11 +61,11 @@ const Footer = () => {
             {/* Contact Info */}
             <div className="mb-5 space-y-2">
               <a
-                href="tel:+442078717675"
+                href="tel:+442080641987"
                 className="flex items-center gap-3 text-sm text-cream/80 transition-colors hover:text-primary"
               >
                 <Phone className="h-4 w-4" />
-                <span>020 7871 7675</span>
+                <span>+44 20 8064 1987</span>
               </a>
               <a
                 href="mailto:info@reveliving.co.uk"
