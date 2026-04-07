@@ -1,207 +1,255 @@
 import { motion } from 'framer-motion';
-import { Award, Heart, Leaf, Hammer } from 'lucide-react';
+import { Award, HeartHandshake, Leaf, ShieldCheck, Sparkles, Star } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import NewsletterSection from '@/components/NewsletterSection';
+import brandMark from '@/assets/logo.png';
+import wordmark from '@/assets/Logo wordmark.svg';
 
-const values = [
+const badgeCopy = [
+  'Comfort-first living',
+  'Made with intention',
+  'Designed to feel personal',
+];
+
+const pillars = [
   {
-    icon: Award,
-    title: 'UK Handcrafted',
-    description: 'Every bed is handmade by skilled craftsmen in our UK workshop, ensuring exceptional quality.',
+    icon: Sparkles,
+    title: 'Beautiful by design',
+    description:
+      'We focus on bedrooms that feel calm, elevated and considered, with pieces that sit naturally in everyday life.',
   },
   {
-    icon: Heart,
-    title: 'Customer First',
-    description: 'We believe in creating lasting relationships with our customers through exceptional service.',
+    icon: HeartHandshake,
+    title: 'Easy to choose',
+    description:
+      'Our collection is curated to simplify decision-making, helping customers find the right look, fit and finish with confidence.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Built for daily use',
+    description:
+      'Comfort, support and durability stay at the centre of every range so each piece feels good long after delivery day.',
+  },
+];
+
+const highlights = [
+  {
+    icon: Award,
+    title: 'Refined quality',
+    description: 'Thoughtful materials, clean finishes and a premium feel in every detail.',
   },
   {
     icon: Leaf,
-    title: 'Sustainable',
-    description: 'We source materials responsibly and aim to minimise our environmental footprint.',
+    title: 'Practical comfort',
+    description: 'Style matters, but so does how a bed supports the rhythm of real life.',
   },
   {
-    icon: Hammer,
-    title: 'Built to Last',
-    description: 'Our 10-year guarantee reflects our confidence in the durability of every piece we make.',
+    icon: Star,
+    title: 'A personal touch',
+    description: 'From statement headboards to softer silhouettes, every choice is made to feel like home.',
   },
+];
+
+const promises = [
+  'A collection shaped around comfort, function and visual simplicity.',
+  'A warm, supportive shopping experience from discovery through delivery.',
+  'Design decisions that help every bedroom feel more restful and complete.',
 ];
 
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background">
-<Header />
+      <Header />
 
-      {/* Hero Section */}
-      <section className="relative h-80 overflow-hidden md:h-96">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1920&h=1080&fit=crop)',
-          }}
-        >
-          <div className="absolute inset-0 bg-espresso/70" />
-        </div>
-        <div className="container relative mx-auto flex h-full items-center justify-center px-4 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            <p className="mb-4 text-sm uppercase tracking-widest text-primary">Our Story</p>
-            <h1 className="font-serif text-4xl font-bold text-cream md:text-5xl lg:text-6xl">
-              About Reve Living
-            </h1>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Story Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="mx-auto max-w-3xl text-center">
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="mb-8 text-sm uppercase tracking-widest text-primary"
-            >
-              Est. 2020
-            </motion.p>
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="mb-8 font-serif text-3xl font-bold md:text-4xl"
-            >
-              Crafting Dreams into Reality
-            </motion.h2>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="mb-6 text-lg text-muted-foreground"
-            >
-              Reve Living was born from a simple belief: everyone deserves a beautiful, 
-              comfortable night's sleep. Our journey began in a small workshop in Manchester, 
-              where our founder, inspired by generations of furniture-making heritage, 
-              set out to create beds that combine timeless design with modern comfort.
-            </motion.p>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-lg text-muted-foreground"
-            >
-              Today, we continue that tradition, handcrafting each bed in our UK workshop 
-              using only the finest materials. From the sustainably sourced timber frames 
-              to the premium fabrics and pocket-spring mattresses, every element is chosen 
-              with care and assembled with pride.
-            </motion.p>
+      <main className="overflow-hidden">
+        <section className="relative bg-background py-16 md:py-24">
+          <div className="pointer-events-none absolute inset-0">
+            <div className="absolute left-[-6rem] top-8 h-48 w-48 rounded-full bg-primary/8 blur-3xl" />
+            <div className="absolute right-[-4rem] top-16 h-56 w-56 rounded-full bg-accent/10 blur-3xl" />
           </div>
-        </div>
-      </section>
 
-      {/* Values Section */}
-      <section className="bg-card py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-12 text-center"
-          >
-            <p className="mb-2 text-sm uppercase tracking-widest text-primary">Our Values</p>
-            <h2 className="font-serif text-3xl font-bold md:text-4xl">What We Stand For</h2>
-          </motion.div>
-
-          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {values.map((value, index) => (
+          <div className="container relative mx-auto px-4">
+            <div className="grid items-center gap-10 lg:grid-cols-[1.1fr,0.9fr]">
               <motion.div
-                key={value.title}
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-3xl"
+              >
+                <p className="mb-4 text-sm uppercase tracking-[0.28em] text-primary">About Reve Living</p>
+                <h1 className="font-serif text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
+                  Creating bedrooms that feel softer, calmer and more beautifully lived in.
+                </h1>
+                <p className="mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+                  Reve Living brings together comfort-led beds and bedroom pieces with a more refined,
+                  welcoming point of view. We believe the room you start and end your day in should
+                  feel considered, restful and unmistakably yours.
+                </p>
+                <p className="mt-4 max-w-2xl text-lg leading-8 text-muted-foreground">
+                  Our approach is simple: curate well, design thoughtfully and keep the experience warm
+                  from the first browse to the final setup. The result is a collection that balances
+                  elegance, practicality and everyday comfort.
+                </p>
+
+                <div className="mt-8 flex flex-wrap gap-3">
+                  {badgeCopy.map((badge) => (
+                    <span
+                      key={badge}
+                      className="rounded-full border border-accent/20 bg-card px-4 py-2 text-sm font-medium text-foreground shadow-sm"
+                    >
+                      {badge}
+                    </span>
+                  ))}
+                </div>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+                className="relative"
+              >
+                <div className="rounded-[32px] border border-accent/10 bg-[#F4EEE6] p-6 shadow-luxury md:p-8">
+                  <div className="rounded-[24px] border border-white/70 bg-[#FBF7F1] p-8">
+                    <div className="flex min-h-[320px] flex-col items-center justify-center gap-6 text-center">
+                      <img
+                        src={brandMark}
+                        alt="Reve Living logo"
+                        className="h-28 w-28 rounded-full object-cover shadow-[0_12px_30px_rgba(87,59,31,0.10)]"
+                      />
+                      <img
+                        src={wordmark}
+                        alt="Reve Living"
+                        className="h-16 w-auto max-w-[220px] object-contain"
+                      />
+                      <p className="max-w-sm text-base leading-7 text-muted-foreground">
+                        A softer take on modern bedroom living, where comfort, character and quiet luxury
+                        meet in one place.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#F5EEE5] py-16 md:py-20">
+          <div className="container mx-auto px-4">
+            <div className="grid gap-8 lg:grid-cols-3">
+              {pillars.map((pillar, index) => (
+                <motion.article
+                  key={pillar.title}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ delay: index * 0.08, duration: 0.45 }}
+                  className="rounded-[28px] border border-accent/10 bg-background/70 p-6 backdrop-blur-sm"
+                >
+                  <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+                    <pillar.icon className="h-6 w-6" />
+                  </div>
+                  <h2 className="font-serif text-2xl font-semibold text-foreground">{pillar.title}</h2>
+                  <p className="mt-3 text-base leading-7 text-muted-foreground">{pillar.description}</p>
+                </motion.article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#F1E9DF] py-16 md:py-20">
+          <div className="container mx-auto px-4">
+            <div className="grid items-start gap-10 lg:grid-cols-[1fr,0.95fr]">
+              <motion.div
+                initial={{ opacity: 0, x: -24 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.5 }}
+                className="max-w-3xl"
+              >
+                <p className="text-sm uppercase tracking-[0.28em] text-primary">Our Perspective</p>
+                <h2 className="mt-4 font-serif text-3xl font-bold leading-tight text-foreground md:text-4xl">
+                  We see the bedroom as more than a room. It is where restoration begins.
+                </h2>
+                <p className="mt-6 text-lg leading-8 text-muted-foreground">
+                  That is why Reve Living is built around pieces that support both the look and the
+                  feeling of home. We want every design to bring ease into the space, whether that means
+                  a stronger visual centre, better use of layout or a more inviting place to switch off.
+                </p>
+                <p className="mt-4 text-lg leading-8 text-muted-foreground">
+                  Rather than filling a catalogue for the sake of volume, we focus on a collection that
+                  feels edited and intentional. Each style is chosen to help customers create a bedroom
+                  that feels restful, elevated and easy to live with.
+                </p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, x: 24 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.5 }}
+                className="rounded-[32px] border border-accent/10 bg-background/80 p-7 shadow-luxury"
+              >
+                <h3 className="font-serif text-2xl font-semibold text-foreground">What guides us</h3>
+                <div className="mt-6 space-y-5">
+                  {highlights.map((item) => (
+                    <div key={item.title} className="flex gap-4">
+                      <div className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-foreground">{item.title}</p>
+                        <p className="mt-1 text-sm leading-7 text-muted-foreground">{item.description}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-[#EEE5DA] py-16 md:py-20">
+          <div className="container mx-auto px-4">
+            <div className="mx-auto max-w-4xl text-center">
+              <motion.p
+                initial={{ opacity: 0, y: 18 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center"
+                className="text-sm uppercase tracking-[0.28em] text-primary"
               >
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-accent bg-background">
-                  <value.icon className="h-8 w-8 text-primary" />
-                </div>
-                <h3 className="mb-2 font-serif text-xl font-semibold">{value.title}</h3>
-                <p className="text-muted-foreground">{value.description}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
+                The Reve Living Promise
+              </motion.p>
+              <motion.h2
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.05 }}
+                className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl"
+              >
+                Every decision should make the space feel better to live in.
+              </motion.h2>
+            </div>
 
-      {/* Workshop Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="grid items-center gap-12 lg:grid-cols-2">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-            >
-              <p className="mb-4 text-sm uppercase tracking-widest text-primary">Our Workshop</p>
-              <h2 className="mb-6 font-serif text-3xl font-bold md:text-4xl">
-                Where Craftsmanship Meets Comfort
-              </h2>
-              <p className="mb-6 text-muted-foreground">
-                Our 20,000 sq ft workshop in Manchester is where the magic happens. 
-                Here, our team of skilled craftsmen bring over 100 years of combined 
-                experience to every piece they create.
-              </p>
-              <p className="mb-6 text-muted-foreground">
-                From cutting and shaping the solid timber frames to hand-tufting our 
-                mattresses and carefully upholstering each headboard, every step is 
-                performed with meticulous attention to detail.
-              </p>
-              <ul className="space-y-3">
-                {[
-                  '25+ skilled craftsmen',
-                  '100+ years combined experience',
-                  'Traditional techniques, modern comfort',
-                  'Quality control at every stage',
-                ].map((item) => (
-                  <li key={item} className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-primary" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              className="grid gap-4"
-            >
-              <img
-                src="https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=800&h=500&fit=crop"
-                alt="Workshop"
-                className="rounded-lg shadow-luxury"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <img
-                  src="https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=400&h=300&fit=crop"
-                  alt="Craftsman at work"
-                  className="rounded-lg shadow-luxury"
-                />
-                <img
-                  src="https://images.unsplash.com/photo-1540518614846-7eded433c457?w=400&h=300&fit=crop"
-                  alt="Quality materials"
-                  className="rounded-lg shadow-luxury"
-                />
-              </div>
-            </motion.div>
+            <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:grid-cols-3">
+              {promises.map((promise, index) => (
+                <motion.div
+                  key={promise}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.3 }}
+                  transition={{ delay: index * 0.08, duration: 0.45 }}
+                  className="rounded-[24px] border border-accent/10 bg-background/75 p-6 text-left"
+                >
+                  <div className="mb-4 h-1.5 w-12 rounded-full bg-primary" />
+                  <p className="text-base leading-7 text-foreground">{promise}</p>
+                </motion.div>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       <NewsletterSection />
       <Footer />

@@ -490,7 +490,6 @@ const CartPage = () => {
 
                     </div>
 
-                    <p className="mt-1 text-xs text-muted-foreground">Including VAT</p>
 
                   </div>
 

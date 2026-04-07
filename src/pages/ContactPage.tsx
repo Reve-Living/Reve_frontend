@@ -17,28 +17,34 @@ import { toast } from 'sonner';
 
 const faqs = [
   {
-    question: 'What is your delivery time?',
-    answer: 'Standard delivery takes 3-5 working days for most of the UK. For larger items like beds, we offer a room of choice delivery service. Premium delivery options are available at checkout.',
+    question: 'Where do you deliver?',
+    answer:
+      'We deliver across most of the UK Mainland using trusted delivery partners and in-house teams for a reliable service.',
+  },
+  {
+    question: 'How long does delivery take?',
+    answer:
+      'Delivery timeframes vary by product and are shown on each product page. Most in-stock items are dispatched within 1-3 working days, while made-to-order items are typically delivered within 3-7 working days.',
+  },
+  {
+    question: 'Can you deliver upstairs or to a specific room?',
+    answer:
+      'Standard delivery is to the ground floor only. Upper-floor delivery can be arranged for an additional GBP 10 per floor, payable to the delivery team.',
   },
   {
     question: 'Do you offer assembly?',
-    answer: 'Yes! Our premium delivery service includes full assembly in your room of choice. Our delivery team will also remove all packaging for you.',
+    answer:
+      'Assembly is not included as standard. If you need assembly, please contact the customer team before ordering to confirm availability and any service charges.',
   },
   {
-    question: 'What is your returns policy?',
-    answer: 'We offer a 14-day returns policy for all products. Mattresses have a 30-day comfort trial - if you\'re not completely satisfied, we\'ll exchange it for a different comfort level.',
+    question: 'Can I return my order?',
+    answer:
+      'Returns are accepted within 30 days of delivery. Items must be in resaleable condition, and custom-made or made-to-order items are non-refundable unless faulty or supplied incorrectly.',
   },
   {
-    question: 'Do you deliver to Scotland and Northern Ireland?',
-    answer: 'Yes, we deliver across the whole of the UK including Scotland, Northern Ireland, and the Scottish Highlands. Delivery times may be slightly longer for remote areas.',
-  },
-  {
-    question: 'What payment methods do you accept?',
-    answer: 'We accept all major credit and debit cards (Visa, Mastercard, American Express), PayPal (including Pay in 3), and Cash on Delivery for orders within mainland UK.',
-  },
-  {
-    question: 'Can I track my order?',
-    answer: 'Absolutely! Once your order is dispatched, you\'ll receive an email with tracking information. You can also track your order by logging into your account on our website.',
+    question: 'What if my item arrives damaged or faulty?',
+    answer:
+      'Please inspect your order on arrival and report any visible damage at delivery. If an issue is found after unpacking, it must be reported within 48 hours.',
   },
 ];
 

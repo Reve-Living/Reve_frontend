@@ -45,7 +45,7 @@ const TermsConditionsPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Pricing</h2>
               <p>
-                All prices are shown in GBP (£) and include VAT unless stated otherwise. Prices may change, but
+                All prices are shown in GBP (£). Prices may change, but
                 confirmed orders will not be affected.
               </p>
             </section>

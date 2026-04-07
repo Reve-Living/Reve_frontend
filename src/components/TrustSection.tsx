@@ -3,23 +3,23 @@ import { Truck, Shield, CreditCard, Award } from 'lucide-react';
 const trustFeatures = [
   {
     icon: Award,
-    title: 'Handcrafted in the UK',
-    description: 'Made with care & quality materials',
+    title: 'Made With Care',
+    description: 'Thoughtful materials and carefully finished details',
   },
   {
     icon: Truck,
-    title: 'Fast UK Delivery',
-    description: 'Next-day delivery available on most items',
+    title: 'Mainland UK Delivery',
+    description: 'Delivery information is clearly shown across key pages',
   },
   {
     icon: CreditCard,
-    title: 'Secure & Flexible Payments',
-    description: 'Card, PayPal, bank transfer & cash on delivery',
+    title: 'Secure Payments',
+    description: 'A safer checkout experience with standard payment options',
   },
   {
     icon: Shield,
-    title: '10-Year Guarantee',
-    description: 'Quality you can trust',
+    title: 'Clear Support',
+    description: 'Straightforward delivery and returns guidance when you need it',
   },
 ];
 
