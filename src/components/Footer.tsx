@@ -1,11 +1,23 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Phone, Mail, MapPin, Facebook, Instagram, Twitter } from 'lucide-react';
+import { Phone, Mail, MapPin, Facebook, Instagram } from 'lucide-react';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 import logoTextOnly from '@/assets/Logo wordmark.svg';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
+  const socialLinks = [
+    {
+      name: 'Facebook',
+      href: 'https://www.facebook.com/profile.php?id=61587143092862',
+      Icon: Facebook,
+    },
+    {
+      name: 'Instagram',
+      href: 'https://www.instagram.com/61587143092862/',
+      Icon: Instagram,
+    },
+  ];
 
   const footerLinks = {
     customerService: [
@@ -82,10 +94,13 @@ const Footer = () => {
 
             {/* Social Links */}
             <div className="flex gap-3">
-              {[Facebook, Instagram, Twitter].map((Icon, i) => (
+              {socialLinks.map(({ name, href, Icon }) => (
                 <motion.a
-                  key={i}
-                  href="#"
+                  key={name}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={name}
                   whileHover={{ scale: 1.1 }}
                   className="flex h-9 w-9 items-center justify-center rounded-full border border-cream/30 transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground"
                 >
