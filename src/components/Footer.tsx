@@ -14,7 +14,7 @@ const Footer = () => {
     },
     {
       name: 'Instagram',
-      href: 'https://www.instagram.com/61587143092862/',
+      href: 'https://www.instagram.com/revelivingofficial/',
       Icon: Instagram,
     },
   ];
