@@ -86,7 +86,7 @@ const ReturnsRefundsPage = () => {
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Refund Processing</h2>
               <p>Approved refunds are issued using the original payment method.</p>
               <p>
-                Please allow up to 5 working days after processing for the refund to appear in your account.
+                Please allow up to 7 working days after processing for the refund to appear in your account.
               </p>
             </section>
 
