@@ -10,9 +10,9 @@ const WhatsAppButton = () => {
       target="_blank"
       rel="noreferrer"
       aria-label="Chat with us on WhatsApp"
-      className="group fixed bottom-4 right-4 z-50 inline-flex h-[72px] min-w-[182px] items-center gap-4 rounded-[28px] border border-black/10 bg-white px-5 py-3 text-[hsl(var(--espresso))] shadow-[0_8px_18px_-16px_rgba(0,0,0,0.08)] transition-all duration-200 hover:scale-[1.02] hover:bg-[#fcfbf8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 sm:bottom-6 sm:right-6"
+      className="group fixed bottom-4 right-4 z-50 inline-flex h-[62px] min-w-[182px] items-center gap-3 rounded-[24px] border border-[hsl(var(--bronze)/0.18)] bg-[hsl(var(--cream)/0.92)] px-5 py-2 text-[hsl(var(--espresso))] shadow-[0_8px_18px_-16px_rgba(0,0,0,0.08)] transition-all duration-200 hover:scale-[1.02] hover:bg-[hsl(var(--ivory))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#25D366] focus-visible:ring-offset-2 sm:bottom-6 sm:right-6"
     >
-      <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center">
+      <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center">
         <img
           src={whatsappIcon}
           alt=""
@@ -24,8 +24,8 @@ const WhatsAppButton = () => {
         <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[hsl(var(--bronze-deep))]">
           Need help?
         </span>
-        <span className="text-[1.5rem] font-semibold tracking-[-0.04em] text-[hsl(var(--espresso))]">
-          Chat
+        <span className="text-[1.05rem] font-semibold tracking-[-0.02em] text-[hsl(var(--espresso))]">
+          Chat with us
         </span>
       </span>
     </a>
