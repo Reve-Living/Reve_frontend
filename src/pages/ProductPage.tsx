@@ -1072,15 +1072,40 @@ type MattressDetailView = {
 
 
   const productImages = product?.images || [];
+  const activeStyleSelections = useMemo(
+    () =>
+      Object.entries(selectedStyles)
+        .filter(([styleName, option]) => enabledGroups[styleName] !== false && Boolean(option))
+        .map(([, option]) => option.toLowerCase()),
+    [enabledGroups, selectedStyles]
+  );
   const displayImages = useMemo(() => {
-    if (!selectedColor) return productImages;
-    const matched = productImages.filter((img) =>
-      (img as ProductImage).color_name
-        ? (img as ProductImage).color_name!.toLowerCase() === selectedColor.toLowerCase()
-        : false
-    );
-    return matched.length > 0 ? matched : productImages;
-  }, [productImages, selectedColor]);
+    let resolved = productImages;
+
+    if (selectedColor) {
+      const colorMatched = resolved.filter((img) =>
+        (img as ProductImage).color_name
+          ? (img as ProductImage).color_name!.toLowerCase() === selectedColor.toLowerCase()
+          : false
+      );
+      if (colorMatched.length > 0) {
+        resolved = colorMatched;
+      }
+    }
+
+    if (activeStyleSelections.length > 0) {
+      const styleMatched = resolved.filter((img) =>
+        (img as ProductImage).style_name
+          ? activeStyleSelections.includes((img as ProductImage).style_name!.toLowerCase())
+          : false
+      );
+      if (styleMatched.length > 0) {
+        resolved = styleMatched;
+      }
+    }
+
+    return resolved;
+  }, [activeStyleSelections, productImages, selectedColor]);
   const totalImages = displayImages.length;
   const hasDisplayImages = totalImages > 0;
 
