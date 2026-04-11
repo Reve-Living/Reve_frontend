@@ -12,6 +12,14 @@ import logoLettersOnly from '@/assets/Logo letters only.svg';
 
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
+const prefetchCategoryPayload = (categorySlug?: string) => {
+  const slug = (categorySlug || '').trim();
+  if (!slug) return;
+
+  void apiGet<Product[]>(`/products/?category=${slug}`).catch(() => []);
+  void apiGet<{ filters: unknown[] }>(`/categories/${slug}/filters/`).catch(() => ({ filters: [] }));
+};
+
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -96,6 +104,23 @@ const Header = () => {
             children: children && children.length ? children : undefined,
           };
         });
+
+        const warmTopCategories = () => {
+          dynamicLinks.slice(0, 4).forEach((link, index) => {
+            window.setTimeout(() => {
+              const slug = link.href.replace('/category/', '').split('?')[0];
+              prefetchCategoryPayload(slug);
+            }, 250 * (index + 1));
+          });
+        };
+
+        if (typeof window !== 'undefined') {
+          if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(() => warmTopCategories(), { timeout: 1500 });
+          } else {
+            window.setTimeout(warmTopCategories, 800);
+          }
+        }
 
         setNavLinks((prev) => {
           // Keep Home/About/Contact in place; insert dynamic categories after Home.
@@ -557,7 +582,10 @@ const Header = () => {
                 <div
                   key={link.name}
                   className="relative"
-                  onMouseEnter={() => link.children && setActiveDropdown(link.name)}
+                  onMouseEnter={() => {
+                    prefetchCategoryPayload(link.href.replace('/category/', '').split('?')[0]);
+                    if (link.children) setActiveDropdown(link.name);
+                  }}
                   onMouseLeave={() => setActiveDropdown(null)}
                 >
                   {link.children ? (
@@ -581,6 +609,7 @@ const Header = () => {
                           <Link
                             key={child.name}
                             to={child.href}
+                            onMouseEnter={() => prefetchCategoryPayload(link.href.replace('/category/', '').split('?')[0])}
                             className="rounded-md px-3 py-2 text-left font-medium text-foreground transition-colors hover:bg-background hover:text-primary"
                           >
                             {child.name}
