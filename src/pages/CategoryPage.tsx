@@ -153,6 +153,14 @@ const CategoryPage = () => {
           apiGet<Category[]>(`/categories/?slug=${candidate}`).catch(() => []);
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
+        const initialResolvedSlug = slug;
+
+        const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
+          subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${initialResolvedSlug}`
+        );
+        const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
+          `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
+        );
 
         let categoryRes = await tryFetchBySlug(slug);
         if ((!categoryRes || categoryRes.length === 0) && aliasSlug) {
@@ -168,17 +176,20 @@ const CategoryPage = () => {
             null;
         }
 
-        const resolvedSlug = categoryItem?.slug || slug;
-
         setCategory(categoryItem);
+
+        const resolvedSlug = categoryItem?.slug || slug;
+        const needsSlugRetry = resolvedSlug !== initialResolvedSlug;
 
         const [subcategoryRes, productsRes] = await Promise.allSettled([
           categoryItem?.id
             ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`)
             : Promise.resolve([]),
-          apiGet<Product[] | { results?: Product[] }>(
-            subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
-          ),
+          needsSlugRetry
+            ? apiGet<Product[] | { results?: Product[] }>(
+                subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
+              )
+            : initialProductsPromise,
         ]);
 
         if (subcategoryRes.status === 'fulfilled' && Array.isArray(subcategoryRes.value)) {
@@ -210,9 +221,11 @@ const CategoryPage = () => {
 
         setIsLoading(false);
 
-        void apiGet<{ filters: FilterType[] }>(
-          `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
-        )
+        void (needsSlugRetry
+          ? apiGet<{ filters: FilterType[] }>(
+              `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
+            )
+          : initialFiltersPromise)
           .then((filtersRes) => {
             if (Array.isArray(filtersRes?.filters)) {
               setAvailableFilters(filtersRes.filters);

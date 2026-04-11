@@ -71,6 +71,8 @@ const CategorySubcategoriesPage = () => {
       }
 
       try {
+        const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(`/products/?category=${slug}`);
+
         const categoryMatches = await apiGet<Category[]>(`/categories/?slug=${slug}`).catch(() => []);
         let categoryItem = categoryMatches?.[0] || null;
 
@@ -92,9 +94,14 @@ const CategorySubcategoriesPage = () => {
 
         setCategory(categoryItem);
 
+        const resolvedSlug = categoryItem.slug || slug;
+        const needsSlugRetry = resolvedSlug !== slug;
+
         const [subcategoriesRes, productsRes] = await Promise.allSettled([
           apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`),
-          apiGet<Product[] | { results?: Product[] }>(`/products/?category=${categoryItem.slug}`),
+          needsSlugRetry
+            ? apiGet<Product[] | { results?: Product[] }>(`/products/?category=${resolvedSlug}`)
+            : initialProductsPromise,
         ]);
 
         if (subcategoriesRes.status === 'fulfilled' && Array.isArray(subcategoriesRes.value)) {
