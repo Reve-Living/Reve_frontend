@@ -109,6 +109,7 @@ const CategoryPage = () => {
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFiltersLoading, setIsFiltersLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
   const [sortBy, setSortBy] = useState('featured');
@@ -136,6 +137,7 @@ const CategoryPage = () => {
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
+      setIsFiltersLoading(true);
       setLoadError(false);
       if (!slug) {
         setCategory(null);
@@ -143,11 +145,12 @@ const CategoryPage = () => {
         setAllProducts([]);
         setAvailableFilters([]);
         setIsLoading(false);
+        setIsFiltersLoading(false);
         return;
       }
       try {
         const tryFetchBySlug = async (candidate: string) =>
-          apiGet<Category[]>(`/categories/?slug=${candidate}`, { noStore: true }).catch(() => []);
+          apiGet<Category[]>(`/categories/?slug=${candidate}`).catch(() => []);
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
 
@@ -159,7 +162,7 @@ const CategoryPage = () => {
         let categoryItem = categoryRes?.[0] || null;
 
         if (!categoryItem) {
-          const allCategories = await apiGet<Category[]>('/categories/', { noStore: true }).catch(() => []);
+          const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
           categoryItem =
             allCategories.find((c) => c.name?.trim().toLowerCase() === slug.replace(/-/g, ' ').toLowerCase()) ||
             null;
@@ -169,15 +172,12 @@ const CategoryPage = () => {
 
         setCategory(categoryItem);
 
-        const [subcategoryRes, productsRes, filtersRes] = await Promise.allSettled([
+        const [subcategoryRes, productsRes] = await Promise.allSettled([
           categoryItem?.id
-            ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`, { noStore: true })
+            ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`)
             : Promise.resolve([]),
           apiGet<Product[] | { results?: Product[] }>(
             subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
-          ),
-          apiGet<{ filters: FilterType[] }>(
-            `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
           ),
         ]);
 
@@ -204,17 +204,28 @@ const CategoryPage = () => {
         });
         setAllProducts(orderedProducts);
 
-        if (filtersRes.status === 'fulfilled' && Array.isArray(filtersRes.value?.filters)) {
-          setAvailableFilters(filtersRes.value.filters);
-        } else {
-          setAvailableFilters([]);
-        }
-
         if (!categoryItem && orderedProducts.length === 0) {
           setLoadError(true);
         }
 
         setIsLoading(false);
+
+        void apiGet<{ filters: FilterType[] }>(
+          `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
+        )
+          .then((filtersRes) => {
+            if (Array.isArray(filtersRes?.filters)) {
+              setAvailableFilters(filtersRes.filters);
+            } else {
+              setAvailableFilters([]);
+            }
+          })
+          .catch(() => {
+            setAvailableFilters([]);
+          })
+          .finally(() => {
+            setIsFiltersLoading(false);
+          });
       } catch {
         setCategory(null);
         setSubcategories([]);
@@ -222,6 +233,7 @@ const CategoryPage = () => {
         setAvailableFilters([]);
         setLoadError(true);
         setIsLoading(false);
+        setIsFiltersLoading(false);
       }
     };
     load();
@@ -449,7 +461,7 @@ const CategoryPage = () => {
                 availableFilters={availableFilters}
                 isFilterSelected={isFilterSelected}
                 toggleFilterOption={toggleFilterOption}
-                isLoading={isLoading}
+                isLoading={isFiltersLoading}
                 clearFilters={clearFilters}
                 showSizeFilter={showSizeFilter}
               />
@@ -556,7 +568,7 @@ const CategoryPage = () => {
                     availableFilters={availableFilters}
                     isFilterSelected={isFilterSelected}
                     toggleFilterOption={toggleFilterOption}
-                    isLoading={isLoading}
+                    isLoading={isFiltersLoading}
                     clearFilters={clearFilters}
                     showSizeFilter={showSizeFilter}
                   />
