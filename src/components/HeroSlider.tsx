@@ -18,7 +18,7 @@ type Slide = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// Visual fallback to avoid blank hero if API returns no data
+// Visual fallback to avoid a blank first paint while backend content loads.
 const initialSlides: Slide[] = [
   {
     id: 'default-1',
@@ -65,9 +65,7 @@ const resolveImageUrl = (value?: string): string => {
 };
 
 const HeroSlider = () => {
-  const [slides, setSlides] = useState<Slide[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [slides, setSlides] = useState<Slide[]>(initialSlides);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -87,11 +85,8 @@ const HeroSlider = () => {
 
   useEffect(() => {
     const load = async () => {
-      setIsLoading(true);
-      setLoadError('');
       const loadFromProducts = async () => {
         try {
-          // Prefer fresh/new products for the hero. Fall back to bestsellers, then any products.
           const trySources: Array<Promise<Product[]>> = [
             apiGet<Product[]>('/products/?is_new=1'),
             apiGet<Product[]>('/products/?bestseller=1'),
@@ -107,7 +102,7 @@ const HeroSlider = () => {
                 break;
               }
             } catch {
-              // keep trying the next source
+              // Keep trying the next source.
             }
           }
 
@@ -134,15 +129,9 @@ const HeroSlider = () => {
           });
 
           const hydratedSlides = normalizedSlides.filter((slide) => slide.image);
-          if (hydratedSlides.length === 0) {
-            setSlides(initialSlides);
-            setLoadError('No hero slides found yet; showing defaults.');
-          } else {
-            setSlides(hydratedSlides);
-          }
+          setSlides(hydratedSlides.length > 0 ? hydratedSlides : initialSlides);
         } catch (err) {
           console.error('Failed to load hero content from products', err);
-          setLoadError('Unable to load hero content right now; showing defaults.');
           setSlides(initialSlides);
         }
       };
@@ -175,18 +164,18 @@ const HeroSlider = () => {
         }
       } catch (err) {
         console.error('Failed to load hero slides', err);
-        setLoadError('Using featured products while hero slides are unavailable.');
         await loadFromProducts();
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    load();
+    void load();
   }, []);
 
   const hasSlides = slides.length > 0;
-  const activeSlide = useMemo(() => (hasSlides ? slides[currentSlide % slides.length] : null), [slides, currentSlide, hasSlides]);
+  const activeSlide = useMemo(
+    () => (hasSlides ? slides[currentSlide % slides.length] : null),
+    [slides, currentSlide, hasSlides]
+  );
 
   return (
     <section
@@ -194,7 +183,6 @@ const HeroSlider = () => {
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Slides */}
       <AnimatePresence mode="wait">
         {activeSlide && (
           <motion.div
@@ -205,7 +193,6 @@ const HeroSlider = () => {
             transition={{ duration: 0.6, ease: 'easeInOut' }}
             className="absolute inset-0"
           >
-            {/* Background Image */}
             <div
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${activeSlide.image})` }}
@@ -213,7 +200,6 @@ const HeroSlider = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-espresso/70 via-espresso/40 to-transparent" />
             </div>
 
-            {/* Content */}
             <div className="container relative mx-auto flex h-full items-end px-4 pb-20 md:pb-24 md:pl-16 lg:pl-20">
               <div className="max-w-2xl pl-8 md:pl-0">
                 <motion.p
@@ -251,7 +237,6 @@ const HeroSlider = () => {
         )}
       </AnimatePresence>
 
-      {/* Left Arrow */}
       <button
         onClick={prevSlide}
         className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur-sm transition-all hover:bg-black/50 md:left-5 md:p-3"
@@ -260,7 +245,6 @@ const HeroSlider = () => {
         <ChevronLeft className="h-5 w-5 text-white md:h-6 md:w-6" />
       </button>
 
-      {/* Right Arrow */}
       <button
         onClick={nextSlide}
         className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-black/30 p-2 backdrop-blur-sm transition-all hover:bg-black/50 md:right-5 md:p-3"
@@ -269,7 +253,6 @@ const HeroSlider = () => {
         <ChevronRight className="h-5 w-5 text-white md:h-6 md:w-6" />
       </button>
 
-      {/* Dots */}
       {hasSlides && (
         <div className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 gap-3 md:bottom-8">
           {slides.map((_, index) => (
@@ -277,21 +260,10 @@ const HeroSlider = () => {
               key={index}
               onClick={() => setCurrentSlide(index)}
               className={`h-2 rounded-full transition-all duration-300 ${
-                index === currentSlide
-                  ? 'w-8 bg-primary'
-                  : 'w-2 bg-cream/50 hover:bg-cream'
+                index === currentSlide ? 'w-8 bg-primary' : 'w-2 bg-cream/50 hover:bg-cream'
               }`}
             />
           ))}
-        </div>
-      )}
-
-      {isLoading && (
-        <div className="absolute inset-0 z-20 flex items-end bg-espresso/40 p-6 backdrop-blur-sm md:p-10">
-          <div className="text-cream">
-            <p className="text-xs uppercase tracking-[0.2em] text-cream/70">Loading</p>
-            <p className="mt-2 text-lg font-semibold">Fetching featured products from the admin…</p>
-          </div>
         </div>
       )}
     </section>

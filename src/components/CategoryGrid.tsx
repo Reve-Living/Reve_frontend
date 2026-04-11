@@ -61,15 +61,31 @@ const CategoryGrid = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [categoryData, subcategoryData] = await Promise.all([
-          apiGet<Category[]>('/categories/', { noStore: true }),
-          apiGet<SubCategory[]>('/subcategories/', { noStore: true }),
+        const [categoryData, subcategoryData, productData] = await Promise.all([
+          apiGet<Category[]>('/categories/'),
+          apiGet<SubCategory[]>('/subcategories/'),
+          apiGet<Product[]>('/products/'),
         ]);
 
         const selectedCategories = categoryData.filter((category) => category.show_in_collections);
         const selectedSubcategories = subcategoryData.filter((subcategory) => subcategory.show_in_collections);
 
         const categoryMap = new Map(categoryData.map((category) => [category.id, category]));
+        const firstProductImageByCategory = new Map<string, string>();
+        const firstProductImageBySubcategory = new Map<string, string>();
+
+        for (const product of productData) {
+          const fallbackImage = resolveImageUrl(product.images?.[0]?.url);
+          if (!fallbackImage) continue;
+
+          if (product.category_slug && !firstProductImageByCategory.has(product.category_slug)) {
+            firstProductImageByCategory.set(product.category_slug, fallbackImage);
+          }
+
+          if (product.subcategory_slug && !firstProductImageBySubcategory.has(product.subcategory_slug)) {
+            firstProductImageBySubcategory.set(product.subcategory_slug, fallbackImage);
+          }
+        }
 
         const buildCard = async (
           item: Category | SubCategory,
@@ -80,15 +96,9 @@ const CategoryGrid = () => {
           let image = resolveImageUrl((item as Category).image || (item as SubCategory).image);
 
           if (!image) {
-            try {
-              const endpoint = isSubcategory
-                ? `/products/?subcategory=${item.slug}`
-                : `/products/?category=${item.slug}`;
-              const products = await apiGet<Product[]>(endpoint);
-              image = resolveImageUrl(products?.[0]?.images?.[0]?.url);
-            } catch {
-              image = '';
-            }
+            image = isSubcategory
+              ? firstProductImageBySubcategory.get(item.slug) || ''
+              : firstProductImageByCategory.get(item.slug) || '';
           }
 
           if (!image) return null;
