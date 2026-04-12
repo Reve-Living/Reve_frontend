@@ -155,3 +155,36 @@
   }
 }
 
+/* Make Cookiebot banner smaller + clean */
+#CybotCookiebotDialog {
+  max-width: 600px !important;
+  width: 90% !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  bottom: 20px !important;
+  top: auto !important;
+  border-radius: 10px !important;
+  padding: 12px !important;
+}
+
+/* Reduce text size */
+#CybotCookiebotDialogBodyContent {
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
+/* Reduce button size */
+#CybotCookiebotDialogFooter button {
+  font-size: 12px !important;
+  padding: 6px 10px !important;
+}
+
+/* Mobile optimization */
+@media screen and (max-width: 600px) {
+  #CybotCookiebotDialog {
+    width: 95% !important;
+    max-width: 95% !important;
+    bottom: 10px !important;
+  }
+}
+
