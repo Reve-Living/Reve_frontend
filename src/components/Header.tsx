@@ -11,6 +11,8 @@ import type { Category, Product, SubCategory } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+const getLinkedCategoryIds = (subcategory: SubCategory) =>
+  Array.from(new Set([Number(subcategory.category), ...((subcategory.linked_category_ids || []).map(Number))])).filter(Boolean);
 
 const prefetchCategoryPayload = (categorySlug?: string) => {
   const slug = (categorySlug || '').trim();
@@ -77,8 +79,10 @@ const Header = () => {
         });
         const subsByCategory = subcategories.reduce<Record<number, SubCategory[]>>(
           (acc, sub) => {
-            acc[sub.category] = acc[sub.category] || [];
-            acc[sub.category].push(sub);
+            getLinkedCategoryIds(sub).forEach((categoryId) => {
+              acc[categoryId] = acc[categoryId] || [];
+              acc[categoryId].push(sub);
+            });
             return acc;
           },
           {}
