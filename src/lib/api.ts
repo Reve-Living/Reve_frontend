@@ -51,14 +51,8 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const cached = getCache.get(cacheKey);
   const now = Date.now();
 
-  // Serve fresh cache immediately
+  // Serve only fresh cache immediately.
   if (cached && now - cached.ts < CACHE_TTL_MS) {
-    return cloneData(cached.data) as T;
-  }
-
-  // If cache is stale but present, return it instantly and revalidate in background
-  if (cached && !inFlight.has(cacheKey)) {
-    void revalidate(cacheKey);
     return cloneData(cached.data) as T;
   }
 
@@ -69,27 +63,20 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
 
   const fetchPromise = fetchWithTimeout(`${API_BASE_URL}${path}`, {
     headers: buildHeaders(false),
+    cache: "no-store",
   }).then(async (res) => {
     if (!res.ok) throw new Error(await res.text());
     const data = (await res.json()) as T;
     getCache.set(cacheKey, { ts: Date.now(), data });
     inFlight.delete(cacheKey);
     return data;
+  }).catch((error) => {
+    inFlight.delete(cacheKey);
+    throw error;
   });
 
   inFlight.set(cacheKey, fetchPromise);
   return (await fetchPromise) as T;
-};
-
-const revalidate = async (cacheKey: string) => {
-  try {
-    const res = await fetchWithTimeout(`${API_BASE_URL}${cacheKey}`, { headers: buildHeaders(false) });
-    if (!res.ok) return;
-    const data = await res.json();
-    getCache.set(cacheKey, { ts: Date.now(), data });
-  } catch {
-    // swallow background errors
-  }
 };
 
 const fetchWithTimeout = (url: string, options: RequestInit, timeoutMs = 12000) => {
