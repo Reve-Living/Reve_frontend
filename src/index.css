@@ -154,3 +154,22 @@
     box-shadow: 0 10px 40px -10px hsl(var(--espresso) / 0.15);
   }
 }
+#CybotCookiebotDialog {
+  max-width: 500px !important;
+  font-size: 12px !important;
+  padding: 10px !important;
+}
+
+#CybotCookiebotDialogBodyContent {
+  font-size: 12px !important;
+  line-height: 1.4 !important;
+}
+
+#CybotCookiebotDialogFooter {
+  padding: 5px !important;
+}
+
+#CybotCookiebotDialog button {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+}
