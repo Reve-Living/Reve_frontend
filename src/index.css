@@ -154,3 +154,97 @@
     box-shadow: 0 10px 40px -10px hsl(var(--espresso) / 0.15);
   }
 }
+
+/* ===== Compact Cookiebot banner ===== */
+#CybotCookiebotDialog {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  padding: 10px 16px !important;
+  box-sizing: border-box !important;
+}
+
+/* make main content tighter */
+#CybotCookiebotDialogBody {
+  padding: 0 !important;
+}
+
+#CybotCookiebotDialogBodyContent {
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+#CybotCookiebotDialogBodyContentTitle {
+  font-size: 16px !important;
+  margin-bottom: 6px !important;
+}
+
+#CybotCookiebotDialogBodyContentText {
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+  margin-bottom: 8px !important;
+}
+
+/* HIDE the big Reve Living logo block on left */
+
+
+/* shrink footer area */
+#CybotCookiebotDialogFooter {
+  padding: 8px 0 0 0 !important;
+  margin: 0 !important;
+}
+
+/* buttons smaller */
+#CybotCookiebotDialogFooter .CybotCookiebotDialogBodyButton {
+  min-height: 38px !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  margin: 0 !important;
+}
+
+/* tighter toggle area */
+#CybotCookiebotDialogTabContent,
+#CybotCookiebotDialogNav {
+  padding-top: 6px !important;
+  margin-top: 0 !important;
+}
+
+/* desktop layout */
+@media screen and (min-width: 768px) {
+  #CybotCookiebotDialogFooter {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+  }
+
+  #CybotCookiebotDialogFooter .CybotCookiebotDialogBodyButtons {
+    display: flex !important;
+    gap: 8px !important;
+    margin: 0 !important;
+  }
+
+  #CybotCookiebotDialogBodyContentText {
+    max-width: 820px !important;
+  }
+}
+
+/* mobile */
+@media screen and (max-width: 767px) {
+  #CybotCookiebotDialog {
+    padding: 8px 12px !important;
+  }
+
+  #CybotCookiebotDialogBodyContentTitle {
+    font-size: 15px !important;
+  }
+
+  #CybotCookiebotDialogBodyContentText {
+    font-size: 12px !important;
+  }
+
+  #CybotCookiebotDialogFooter .CybotCookiebotDialogBodyButton {
+    width: 100% !important;
+  }
+}
