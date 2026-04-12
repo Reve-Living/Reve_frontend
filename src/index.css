@@ -186,11 +186,7 @@
 }
 
 /* HIDE the big Reve Living logo block on left */
-#CybotCookiebotDialogBodyLogo,
-#CybotCookiebotDialogPoweredByLogo,
-#CybotCookiebotDialogPoweredbyImage {
-  display: none !important;
-}
+
 
 /* shrink footer area */
 #CybotCookiebotDialogFooter {
