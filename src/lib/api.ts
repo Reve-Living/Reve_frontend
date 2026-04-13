@@ -14,6 +14,14 @@ type ApiGetOptions = {
   noStore?: boolean;
 };
 
+const isVolatilePath = (path: string) =>
+  path.startsWith("/products/") ||
+  path === "/products/" ||
+  path.startsWith("/categories/") ||
+  path === "/categories/" ||
+  path.startsWith("/subcategories/") ||
+  path === "/subcategories/";
+
 const getMutationKey = (method: string, path: string, body?: unknown) =>
   `${method}:${path}:${body === undefined ? "" : JSON.stringify(body)}`;
 
@@ -41,7 +49,7 @@ const buildHeaders = (hasBody: boolean, requiresAuth: boolean = false) => {
 
 export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Promise<T> => {
   const cacheKey = path;
-  const shouldBypassCache = options.noStore === true;
+  const shouldBypassCache = options.noStore === true || isVolatilePath(path);
 
   if (shouldBypassCache) {
     const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
