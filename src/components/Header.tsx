@@ -10,9 +10,80 @@ import { formatWholePrice } from '@/lib/pricing';
 import type { Category, Product, SubCategory } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 
+const NAV_CACHE_KEY = 'reve-header-nav-v1';
+const STATIC_START_LINKS = [{ name: 'Home', href: '/' }];
+const STATIC_END_LINKS = [
+  { name: 'About Us', href: '/about' },
+  { name: 'Contact Us', href: '/contact' },
+];
+
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 const getLinkedCategoryIds = (subcategory: SubCategory) =>
   Array.from(new Set([Number(subcategory.category), ...((subcategory.linked_category_ids || []).map(Number))])).filter(Boolean);
+
+const buildDynamicLinks = (categories: Category[], subcategories: SubCategory[]) => {
+  const sortedCategories = [...categories].sort((a, b) => {
+    const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
+    if (orderDiff !== 0) return orderDiff;
+    return a.name.localeCompare(b.name);
+  });
+
+  const subsByCategory = subcategories.reduce<Record<number, SubCategory[]>>((acc, sub) => {
+    getLinkedCategoryIds(sub).forEach((categoryId) => {
+      acc[categoryId] = acc[categoryId] || [];
+      acc[categoryId].push(sub);
+    });
+    return acc;
+  }, {});
+
+  Object.values(subsByCategory).forEach((list) =>
+    list.sort((a, b) => {
+      const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
+      if (orderDiff !== 0) return orderDiff;
+      return a.name.localeCompare(b.name);
+    })
+  );
+
+  return sortedCategories.map((cat) => {
+    const children = subsByCategory[cat.id]?.map((sub) => ({
+      name: sub.name,
+      href: `/category/${cat.slug}?sub=${sub.slug}`,
+    }));
+
+    return {
+      name: cat.name,
+      href: `/category/${cat.slug}`,
+      children: children && children.length ? children : undefined,
+    };
+  });
+};
+
+const buildNavLinks = (categories: Category[], subcategories: SubCategory[]) => [
+  ...STATIC_START_LINKS,
+  ...buildDynamicLinks(categories, subcategories),
+  ...STATIC_END_LINKS,
+];
+
+const readCachedNavLinks = () => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(NAV_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { links?: { name: string; href: string; children?: { name: string; href: string }[] }[] };
+    return Array.isArray(parsed?.links) && parsed.links.length > 0 ? parsed.links : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeCachedNavLinks = (links: { name: string; href: string; children?: { name: string; href: string }[] }[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(NAV_CACHE_KEY, JSON.stringify({ links }));
+  } catch {
+    // Ignore storage failures.
+  }
+};
 
 const prefetchCategoryPayload = (categorySlug?: string) => {
   const slug = (categorySlug || '').trim();
@@ -33,11 +104,7 @@ const Header = () => {
   const searchRef = useRef<HTMLDivElement | null>(null);
   const [navLinks, setNavLinks] = useState<
     { name: string; href: string; children?: { name: string; href: string }[] }[]
-  >([
-    { name: 'Home', href: '/' },
-    { name: 'About Us', href: '/about' },
-    { name: 'Contact Us', href: '/contact' },
-  ]);
+  >(() => readCachedNavLinks() || [...STATIC_START_LINKS, ...STATIC_END_LINKS]);
   const { toggleCart, totalItems } = useCart();
   const location = useLocation();
   const navigate = useNavigate();
@@ -65,49 +132,14 @@ const Header = () => {
   useEffect(() => {
     const loadNav = async () => {
       try {
-        // Fetch in parallel to avoid waiting for one before the other
         const [categories, subcategories] = await Promise.all([
           apiGet<Category[]>('/categories/'),
           apiGet<SubCategory[]>('/subcategories/'),
         ]);
 
-        // Respect admin display order first, then fall back to name for ties.
-        const sortedCategories = [...categories].sort((a, b) => {
-          const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
-          if (orderDiff !== 0) return orderDiff;
-          return a.name.localeCompare(b.name);
-        });
-        const subsByCategory = subcategories.reduce<Record<number, SubCategory[]>>(
-          (acc, sub) => {
-            getLinkedCategoryIds(sub).forEach((categoryId) => {
-              acc[categoryId] = acc[categoryId] || [];
-              acc[categoryId].push(sub);
-            });
-            return acc;
-          },
-          {}
-        );
-
-        Object.values(subsByCategory).forEach((list) =>
-          list.sort((a, b) => {
-            const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
-            if (orderDiff !== 0) return orderDiff;
-            return a.name.localeCompare(b.name);
-          })
-        );
-
-        const dynamicLinks = sortedCategories.map((cat) => {
-          const children = subsByCategory[cat.id]?.map((sub) => ({
-            name: sub.name,
-            href: `/category/${cat.slug}?sub=${sub.slug}`,
-          }));
-
-          return {
-            name: cat.name,
-            href: `/category/${cat.slug}`,
-            children: children && children.length ? children : undefined,
-          };
-        });
+        const dynamicLinks = buildDynamicLinks(categories, subcategories);
+        const nextNavLinks = buildNavLinks(categories, subcategories);
+        writeCachedNavLinks(nextNavLinks);
 
         const warmTopCategories = () => {
           dynamicLinks.slice(0, 4).forEach((link, index) => {
@@ -126,12 +158,7 @@ const Header = () => {
           }
         }
 
-        setNavLinks((prev) => {
-          // Keep Home/About/Contact in place; insert dynamic categories after Home.
-          const staticStart = prev.filter((l) => ['Home'].includes(l.name));
-          const staticEnd = prev.filter((l) => ['About Us', 'Contact Us'].includes(l.name));
-          return [...staticStart, ...dynamicLinks, ...staticEnd];
-        });
+        setNavLinks(nextNavLinks);
       } catch {
         // leave default links on failure
       }

@@ -156,6 +156,7 @@ export interface ProductImage {
   color_name?: string;
   style_name?: string;
   alt_text?: string;
+  sort_order?: number;
 }
 
 export interface ProductVideo {
