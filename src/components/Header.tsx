@@ -7,7 +7,7 @@ import AnnouncementBar from '@/components/AnnouncementBar';
 import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import { formatWholePrice } from '@/lib/pricing';
-import type { Category, Product, SubCategory } from '@/lib/types';
+import type { Category, Product } from '@/lib/types';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 
 const NAV_CACHE_KEY = 'reve-header-nav-v1';
@@ -18,37 +18,25 @@ const STATIC_END_LINKS = [
 ];
 
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
-const getLinkedCategoryIds = (subcategory: SubCategory) =>
-  Array.from(new Set([Number(subcategory.category), ...((subcategory.linked_category_ids || []).map(Number))])).filter(Boolean);
 
-const buildDynamicLinks = (categories: Category[], subcategories: SubCategory[]) => {
+const buildDynamicLinks = (categories: Category[]) => {
   const sortedCategories = [...categories].sort((a, b) => {
     const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
     if (orderDiff !== 0) return orderDiff;
     return a.name.localeCompare(b.name);
   });
 
-  const subsByCategory = subcategories.reduce<Record<number, SubCategory[]>>((acc, sub) => {
-    getLinkedCategoryIds(sub).forEach((categoryId) => {
-      acc[categoryId] = acc[categoryId] || [];
-      acc[categoryId].push(sub);
-    });
-    return acc;
-  }, {});
-
-  Object.values(subsByCategory).forEach((list) =>
-    list.sort((a, b) => {
-      const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
-      if (orderDiff !== 0) return orderDiff;
-      return a.name.localeCompare(b.name);
-    })
-  );
-
   return sortedCategories.map((cat) => {
-    const children = subsByCategory[cat.id]?.map((sub) => ({
-      name: sub.name,
-      href: `/category/${cat.slug}?sub=${sub.slug}`,
-    }));
+    const children = [...(cat.subcategories || [])]
+      .sort((a, b) => {
+        const orderDiff = getSortOrder(a.sort_order) - getSortOrder(b.sort_order);
+        if (orderDiff !== 0) return orderDiff;
+        return a.name.localeCompare(b.name);
+      })
+      .map((sub) => ({
+        name: sub.name,
+        href: `/category/${cat.slug}?sub=${sub.slug}`,
+      }));
 
     return {
       name: cat.name,
@@ -58,9 +46,9 @@ const buildDynamicLinks = (categories: Category[], subcategories: SubCategory[])
   });
 };
 
-const buildNavLinks = (categories: Category[], subcategories: SubCategory[]) => [
+const buildNavLinks = (categories: Category[]) => [
   ...STATIC_START_LINKS,
-  ...buildDynamicLinks(categories, subcategories),
+  ...buildDynamicLinks(categories),
   ...STATIC_END_LINKS,
 ];
 
@@ -132,13 +120,10 @@ const Header = () => {
   useEffect(() => {
     const loadNav = async () => {
       try {
-        const [categories, subcategories] = await Promise.all([
-          apiGet<Category[]>('/categories/'),
-          apiGet<SubCategory[]>('/subcategories/'),
-        ]);
+        const categories = await apiGet<Category[]>('/categories/');
 
-        const dynamicLinks = buildDynamicLinks(categories, subcategories);
-        const nextNavLinks = buildNavLinks(categories, subcategories);
+        const dynamicLinks = buildDynamicLinks(categories);
+        const nextNavLinks = buildNavLinks(categories);
         writeCachedNavLinks(nextNavLinks);
 
         const warmTopCategories = () => {
