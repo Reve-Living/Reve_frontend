@@ -19,6 +19,8 @@ import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
+const PRODUCTS_PER_PAGE = 9;
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -113,6 +115,7 @@ const CategoryPage = () => {
   const [loadError, setLoadError] = useState(false);
 
   const [sortBy, setSortBy] = useState('featured');
+  const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState([0, 1500]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -384,6 +387,23 @@ const CategoryPage = () => {
     return products;
   }, [allProducts, priceRange, selectedSizes, selectedFilters, sortBy]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [currentPage, filteredProducts]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [slug, subSlug, linkedBedSize, sortBy, priceRange, selectedSizes, selectedFilters]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const toggleSize = (size: string) => {
     setSelectedSizes((prev) => (prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]));
   };
@@ -522,7 +542,9 @@ const CategoryPage = () => {
 
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/60 pb-4">
               <p className="text-muted-foreground">
-                Showing {filteredProducts.length} of {allProducts.length} products
+                Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1}
+                {' '}-{' '}
+                {Math.min(currentPage * PRODUCTS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
               </p>
 
               <div className="flex flex-wrap items-center gap-4">
@@ -600,17 +622,44 @@ const CategoryPage = () => {
                   </div>
                 </div>
               ) : (
-                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                  {filteredProducts.map((product, index) => (
+                <>
+                  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {paginatedProducts.map((product, index) => (
                     <ProductCard
                       key={product.id}
                       product={product}
-                      index={index}
+                      index={(currentPage - 1) * PRODUCTS_PER_PAGE + index}
                       fromBedProduct={linkedBedProduct}
                       selectedBedSize={linkedBedSize}
                     />
                   ))}
-                </div>
+                  </div>
+
+                  {totalPages > 1 && (
+                    <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+                      {Array.from({ length: totalPages }, (_, index) => {
+                        const page = index + 1;
+                        const isActive = page === currentPage;
+                        return (
+                          <button
+                            key={page}
+                            type="button"
+                            aria-label={`Go to page ${page}`}
+                            aria-current={isActive ? 'page' : undefined}
+                            onClick={() => setCurrentPage(page)}
+                            className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium transition-all duration-200 ${
+                              isActive
+                                ? 'scale-105 border-primary bg-primary text-primary-foreground shadow-sm'
+                                : 'border-border bg-transparent text-foreground hover:border-primary/70 hover:bg-primary/10'
+                            }`}
+                          >
+                            {page}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

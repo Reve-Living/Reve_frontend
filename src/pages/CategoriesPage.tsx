@@ -19,6 +19,8 @@ import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Product, ProductStyleOption } from '@/lib/types';
 
+const PRODUCTS_PER_PAGE = 9;
+
 // Helper function to determine if a hex color is light
 const isLightColor = (hexColor: string): boolean => {
   const hex = hexColor.replace('#', '');
@@ -41,6 +43,7 @@ const CategoriesPage = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   const [sortBy, setSortBy] = useState('featured');
+  const [currentPage, setCurrentPage] = useState(1);
   const [priceRange, setPriceRange] = useState([0, 1500]);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
@@ -183,6 +186,23 @@ const CategoriesPage = () => {
     return products;
   }, [allProducts, priceRange, selectedOptions, selectedColors, sortBy]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+
+  const paginatedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
+  }, [currentPage, filteredProducts]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [isBestsellerOnly, sortBy, priceRange, selectedOptions, selectedColors]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
+
   const toggleOption = (option: string) => {
     setSelectedOptions((prev) =>
       prev.includes(option) ? prev.filter((o) => o !== option) : [...prev, option]
@@ -250,7 +270,9 @@ const CategoriesPage = () => {
         {/* Toolbar */}
         <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <p className="text-muted-foreground">
-            Showing {filteredProducts.length} of {allProducts.length} products
+            Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1}
+            {' '}-{' '}
+            {Math.min(currentPage * PRODUCTS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
           </p>
 
           <div className="flex flex-wrap items-center gap-4">
@@ -349,11 +371,42 @@ const CategoriesPage = () => {
                 </div>
               </div>
             ) : (
-              <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-                {filteredProducts.map((product, index) => (
-                  <ProductCard key={product.id} product={product} index={index} />
-                ))}
-              </div>
+              <>
+                <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                  {paginatedProducts.map((product, index) => (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      index={(currentPage - 1) * PRODUCTS_PER_PAGE + index}
+                    />
+                  ))}
+                </div>
+
+                {totalPages > 1 && (
+                  <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
+                    {Array.from({ length: totalPages }, (_, index) => {
+                      const page = index + 1;
+                      const isActive = page === currentPage;
+                      return (
+                        <button
+                          key={page}
+                          type="button"
+                          aria-label={`Go to page ${page}`}
+                          aria-current={isActive ? 'page' : undefined}
+                          onClick={() => setCurrentPage(page)}
+                          className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium transition-all duration-200 ${
+                            isActive
+                              ? 'scale-105 border-primary bg-primary text-primary-foreground shadow-sm'
+                              : 'border-border bg-transparent text-foreground hover:border-primary/70 hover:bg-primary/10'
+                          }`}
+                        >
+                          {page}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
