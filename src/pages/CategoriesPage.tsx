@@ -19,7 +19,7 @@ import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Product, ProductStyleOption } from '@/lib/types';
 
-const PRODUCTS_PER_PAGE = 9;
+const PRODUCTS_PER_PAGE = 12;
 
 // Helper function to determine if a hex color is light
 const isLightColor = (hexColor: string): boolean => {
@@ -202,6 +202,10 @@ const CategoriesPage = () => {
       setCurrentPage(totalPages);
     }
   }, [currentPage, totalPages]);
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [currentPage]);
 
   const toggleOption = (option: string) => {
     setSelectedOptions((prev) =>
