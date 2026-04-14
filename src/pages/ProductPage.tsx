@@ -943,10 +943,15 @@ type MattressDetailView = {
           const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
 
           setCategory(categoryRes[0] || null);
-
-          const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
-
-          setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
+          const adminSelectedSuggestions = Array.isArray(fetched.suggested_products_data)
+            ? fetched.suggested_products_data.filter((p) => p.id !== fetched.id).slice(0, 4)
+            : [];
+          if (adminSelectedSuggestions.length > 0) {
+            setRelatedProducts(adminSelectedSuggestions);
+          } else {
+            const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
+            setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
+          }
 
         } else {
 

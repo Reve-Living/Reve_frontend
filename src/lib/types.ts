@@ -330,6 +330,8 @@ export interface Product {
   dimension_template?: number | null;
   dimension_template_name?: string;
   wingback_width_delta_cm?: number;
+  suggested_products?: number[];
+  suggested_products_data?: Product[];
 }
 
 export interface OrderItem {
