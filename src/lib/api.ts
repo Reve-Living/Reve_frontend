@@ -15,12 +15,10 @@ type ApiGetOptions = {
 };
 
 const isVolatilePath = (path: string) =>
-  path.startsWith("/products/") ||
-  path === "/products/" ||
-  path.startsWith("/categories/") ||
-  path === "/categories/" ||
-  path.startsWith("/subcategories/") ||
-  path === "/subcategories/";
+  path.startsWith("/orders/") ||
+  path === "/orders/" ||
+  path.startsWith("/cart/") ||
+  path.startsWith("/auth/");
 
 const getMutationKey = (method: string, path: string, body?: unknown) =>
   `${method}:${path}:${body === undefined ? "" : JSON.stringify(body)}`;
