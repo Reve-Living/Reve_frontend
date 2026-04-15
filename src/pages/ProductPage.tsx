@@ -657,10 +657,14 @@ const ProductPage = () => {
   const location = useLocation();
   const selectForBedSlug = searchParams.get('select-for-bed') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
+  const routePreviewProduct = (location.state as { previewProduct?: Product } | null)?.previewProduct;
+  const hasRoutePreviewProduct = routePreviewProduct?.slug === slug;
   
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<Product | null>(() =>
+    hasRoutePreviewProduct ? routePreviewProduct || null : null
+  );
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!hasRoutePreviewProduct);
 
   const [category, setCategory] = useState<Category | null>(null);
 
@@ -859,8 +863,9 @@ type MattressDetailView = {
 
   useEffect(() => {
     const load = async () => {
+      const previewProduct = hasRoutePreviewProduct ? routePreviewProduct || null : null;
 
-      setIsLoading(true);
+      setIsLoading(!previewProduct);
 
       if (!slug) {
 
@@ -875,7 +880,7 @@ type MattressDetailView = {
 
       try {
         // Clear previous product to prevent stale options flashing while new product loads
-        setProduct(null);
+        setProduct(previewProduct);
         setCategory(null);
         setSelectedImage(0);
         setSelectedSize('');
@@ -905,7 +910,7 @@ type MattressDetailView = {
         const fetched = normalizedProducts[0] || null;
 
         setProduct(fetched);
-        await loadSeriesProducts(fetched);
+        void loadSeriesProducts(fetched);
         setSelectedImage(0);
         setIsGalleryOpen(false);
         setIsZoomed(false);
@@ -939,27 +944,31 @@ type MattressDetailView = {
         // Don't auto-select mattresses - let the customer choose
 
         if (fetched?.category_slug) {
+          void (async () => {
+            try {
+              const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
+              setCategory(categoryRes[0] || null);
 
-          const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
+              const adminSelectedSuggestions = Array.isArray(fetched.suggested_products_data)
+                ? fetched.suggested_products_data.filter((p) => p.id !== fetched.id).slice(0, 4)
+                : [];
 
-          setCategory(categoryRes[0] || null);
-          const adminSelectedSuggestions = Array.isArray(fetched.suggested_products_data)
-            ? fetched.suggested_products_data.filter((p) => p.id !== fetched.id).slice(0, 4)
-            : [];
-          if (adminSelectedSuggestions.length > 0) {
-            setRelatedProducts(adminSelectedSuggestions);
-          } else {
-            const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
-            setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
-          }
+              if (adminSelectedSuggestions.length > 0) {
+                setRelatedProducts(adminSelectedSuggestions);
+                return;
+              }
 
+              const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
+              setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
+            } catch {
+              setCategory(null);
+              setRelatedProducts([]);
+            }
+          })();
         } else {
-
           setCategory(null);
-
-        setRelatedProducts([]);
-
-      }
+          setRelatedProducts([]);
+        }
 
       if (fetched?.sizes?.length) {
         const parsedSizes = sortParsedSizeOptions(
@@ -1038,7 +1047,7 @@ type MattressDetailView = {
 
     load();
 
-  }, [slug, loadSeriesProducts]);
+  }, [slug, loadSeriesProducts, hasRoutePreviewProduct, routePreviewProduct]);
 
 
 

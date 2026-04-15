@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
 import { formatWholePrice } from '@/lib/pricing';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
+import { apiGet } from '@/lib/api';
 
 const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number): number => {
   const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
@@ -65,11 +66,19 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
 
   const isInMattressSelection = !!fromBedProduct;
   const buttonText = isInMattressSelection ? 'Select Mattress' : 'View Options';
+  const prefetchProductDetail = () => {
+    if (!product.slug) return;
+    void apiGet(`/products/?slug=${encodeURIComponent(product.slug)}`).catch(() => undefined);
+  };
 
   return (
     <div className="h-full">
       <Link
         to={productLink}
+        state={{ previewProduct: product }}
+        onMouseEnter={prefetchProductDetail}
+        onFocus={prefetchProductDetail}
+        onTouchStart={prefetchProductDetail}
         className="group flex h-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       >
         {hasImage && (
