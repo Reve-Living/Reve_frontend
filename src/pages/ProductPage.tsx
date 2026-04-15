@@ -657,14 +657,10 @@ const ProductPage = () => {
   const location = useLocation();
   const selectForBedSlug = searchParams.get('select-for-bed') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
-  const routePreviewProduct = (location.state as { previewProduct?: Product } | null)?.previewProduct;
-  const hasRoutePreviewProduct = routePreviewProduct?.slug === slug;
   
-  const [product, setProduct] = useState<Product | null>(() =>
-    hasRoutePreviewProduct ? routePreviewProduct || null : null
-  );
+  const [product, setProduct] = useState<Product | null>(null);
 
-  const [isLoading, setIsLoading] = useState(!hasRoutePreviewProduct);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [category, setCategory] = useState<Category | null>(null);
 
@@ -863,9 +859,8 @@ type MattressDetailView = {
 
   useEffect(() => {
     const load = async () => {
-      const previewProduct = hasRoutePreviewProduct ? routePreviewProduct || null : null;
 
-      setIsLoading(!previewProduct);
+      setIsLoading(true);
 
       if (!slug) {
 
@@ -880,7 +875,7 @@ type MattressDetailView = {
 
       try {
         // Clear previous product to prevent stale options flashing while new product loads
-        setProduct(previewProduct);
+        setProduct(null);
         setCategory(null);
         setSelectedImage(0);
         setSelectedSize('');
@@ -910,7 +905,7 @@ type MattressDetailView = {
         const fetched = normalizedProducts[0] || null;
 
         setProduct(fetched);
-        void loadSeriesProducts(fetched);
+        await loadSeriesProducts(fetched);
         setSelectedImage(0);
         setIsGalleryOpen(false);
         setIsZoomed(false);
@@ -944,31 +939,22 @@ type MattressDetailView = {
         // Don't auto-select mattresses - let the customer choose
 
         if (fetched?.category_slug) {
-          void (async () => {
-            try {
-              const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
-              setCategory(categoryRes[0] || null);
 
-              const adminSelectedSuggestions = Array.isArray(fetched.suggested_products_data)
-                ? fetched.suggested_products_data.filter((p) => p.id !== fetched.id).slice(0, 4)
-                : [];
+          const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
 
-              if (adminSelectedSuggestions.length > 0) {
-                setRelatedProducts(adminSelectedSuggestions);
-                return;
-              }
+          setCategory(categoryRes[0] || null);
 
-              const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
-              setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
-            } catch {
-              setCategory(null);
-              setRelatedProducts([]);
-            }
-          })();
+          const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
+
+          setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
+
         } else {
+
           setCategory(null);
-          setRelatedProducts([]);
-        }
+
+        setRelatedProducts([]);
+
+      }
 
       if (fetched?.sizes?.length) {
         const parsedSizes = sortParsedSizeOptions(
@@ -1047,7 +1033,7 @@ type MattressDetailView = {
 
     load();
 
-  }, [slug, loadSeriesProducts, hasRoutePreviewProduct, routePreviewProduct]);
+  }, [slug, loadSeriesProducts]);
 
 
 
@@ -2487,7 +2473,20 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
               </div>
 
-             
+              <div className="mt-3 flex items-center gap-2 text-sm">
+                {product.in_stock ? (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    <span className="font-medium text-emerald-700">In stock</span>
+                  </>
+                ) : (
+                  <>
+                    <X className="h-4 w-4 text-rose-600" />
+                    <span className="font-medium text-rose-700">Out of stock</span>
+                  </>
+                )}
+              </div>
+
             </div>
 
             {variantGroups.length > 0 && (
