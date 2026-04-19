@@ -291,9 +291,20 @@ const CheckoutPage = () => {
   useEffect(() => {
   if (step === 'confirmation') {
     const lastOrderId = localStorage.getItem('last_order_id');
+    const trackedOrderId = localStorage.getItem('gtm_tracked_order_id');
+    
+    // Prevent duplicate tracking on re-renders
+    if (trackedOrderId === lastOrderId) {
+      return;
+    }
+
     window.dataLayer = window.dataLayer || [];
-    window.dataLayer.push({
+    
+    const purchaseEvent = {
       event: "purchase",
+      transaction_id: String(lastOrderId || ""),
+      value: orderTotal.toFixed(2),
+      currency: "GBP",
       ecommerce: {
         transaction_id: String(lastOrderId || ""),
         affiliation: "Reve Living",
@@ -309,6 +320,16 @@ const CheckoutPage = () => {
           item_category: item.product.category_name || "Uncategorized"
         }))
       }
+    };
+    
+    window.dataLayer.push(purchaseEvent);
+    localStorage.setItem('gtm_tracked_order_id', String(lastOrderId || ""));
+    
+    // Debug log to verify transaction_id is present
+    console.log('🎯 GTM Purchase Event Tracked:', {
+      transaction_id: lastOrderId,
+      value: orderTotal.toFixed(2),
+      currency: "GBP"
     });
   }
 }, [step, orderTotal, deliveryFee, state.items]);
