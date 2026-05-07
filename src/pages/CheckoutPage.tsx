@@ -298,24 +298,32 @@ const CheckoutPage = () => {
       return;
     }
 
+    // 👈 GET ITEMS FROM STORAGE (not state, which is now empty)
+    const lastOrderItemsStr = localStorage.getItem('last_order_items');
+    const lastOrderItems = lastOrderItemsStr ? JSON.parse(lastOrderItemsStr) : [];
+
     window.dataLayer = window.dataLayer || [];
+    
+    // Convert value to number (GA4 REQUIRES this for revenue tracking)
+    const totalValue = Number(orderTotal.toFixed(2));
+    const shippingValue = Number(deliveryFee.toFixed(2));
     
     const purchaseEvent = {
       event: "purchase",
       transaction_id: String(lastOrderId || ""),
-      value: orderTotal.toFixed(2),
+      value: totalValue,  // 👈 NUMBER not string
       currency: "GBP",
       ecommerce: {
         transaction_id: String(lastOrderId || ""),
         affiliation: "Reve Living",
-        value: orderTotal.toFixed(2),
+        value: totalValue,  // 👈 NUMBER not string
         currency: "GBP",
-        tax: "0",
-        shipping: deliveryFee.toFixed(2),
-        items: state.items.map((item) => ({
+        tax: 0,
+        shipping: shippingValue,
+        items: lastOrderItems.map((item: any) => ({
           item_id: String(item.product.id),
           item_name: item.product.name,
-          price: String(item.unit_price ?? item.product.price),
+          price: Number((item.unit_price ?? item.product.price).toFixed(2)),
           quantity: item.quantity,
           item_category: item.product.category_name || "Uncategorized"
         }))
@@ -324,15 +332,18 @@ const CheckoutPage = () => {
     
     window.dataLayer.push(purchaseEvent);
     localStorage.setItem('gtm_tracked_order_id', String(lastOrderId || ""));
+    localStorage.removeItem('last_order_items'); // Clean up
     
-    // Debug log to verify transaction_id is present
-    console.log('🎯 GTM Purchase Event Tracked:', {
-      transaction_id: lastOrderId,
-      value: orderTotal.toFixed(2),
-      currency: "GBP"
+    // Debug log to verify data types and values
+    console.log('🎯 GA4 Purchase Event Tracked:', {
+      transaction_id: String(lastOrderId || ""),
+      value: totalValue,
+      value_type: typeof totalValue,
+      currency: "GBP",
+      items_count: lastOrderItems.length
     });
   }
-}, [step, orderTotal, deliveryFee, state.items]);
+}, [step, orderTotal, deliveryFee]);
   useEffect(() => {
     setPromoCode(state.appliedPromo?.code || '');
   }, [state.appliedPromo?.code]);
@@ -491,6 +502,9 @@ const CheckoutPage = () => {
 
       const orderRes = await apiPost<{ id: number }>('/orders/', orderPayload);
       localStorage.setItem('last_order_id', String(orderRes.id));
+      
+      // 👈 CAPTURE ITEMS BEFORE CLEARING CART
+      localStorage.setItem('last_order_items', JSON.stringify(state.items));
 
       if (paymentMethod === 'cod') {
         setStep('confirmation');
