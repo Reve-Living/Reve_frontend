@@ -298,7 +298,7 @@ const CheckoutPage = () => {
       return;
     }
 
-    // 👈 GET ITEMS FROM STORAGE (not state, which is now empty)
+    // 👈 GET ITEMS FROM STORAGE
     let lastOrderItems: any[] = [];
     try {
       const lastOrderItemsStr = localStorage.getItem('last_order_items');
@@ -307,71 +307,50 @@ const CheckoutPage = () => {
       }
     } catch (e) {
       console.error('🚨 Failed to parse order items:', e);
-      lastOrderItems = [];
     }
 
     window.dataLayer = window.dataLayer || [];
     
-    // Convert value to number EXPLICITLY (GA4 REQUIRES this for revenue tracking)
-    const totalValue = parseFloat(Number(orderTotal).toFixed(2));
-    const subtotalValue = parseFloat(Number(discountedTotalPrice).toFixed(2));
-    const shippingValue = parseFloat(Number(deliveryFee).toFixed(2));
-    
-    // Validate values are valid numbers
-    if (isNaN(totalValue) || totalValue <= 0) {
-      console.error('🚨 Invalid total value:', totalValue);
-      return;
-    }
+    // Convert values to numbers
+    const totalValue = Number(orderTotal.toFixed(2));
+    const shippingValue = Number(deliveryFee.toFixed(2));
     
     const purchaseEvent = {
       event: "purchase",
       transaction_id: String(lastOrderId || ""),
-      value: totalValue,  // 👈 NUMBER - TOP LEVEL for Ads conversion
-      currency: "GBP",    // 👈 STRING - TOP LEVEL for Ads
+      value: totalValue,
+      currency: "GBP",
       ecommerce: {
         transaction_id: String(lastOrderId || ""),
         affiliation: "Reve Living",
-        value: totalValue,  // 👈 NUMBER - for GA4 revenue tracking
-        currency: "GBP",    // 👈 STRING
-        subtotal: subtotalValue,
+        value: totalValue,
+        currency: "GBP",
         tax: 0,
         shipping: shippingValue,
-        items: (lastOrderItems && lastOrderItems.length > 0) ? lastOrderItems.map((item: any) => {
-          if (!item || !item.product) {
-            console.warn('⚠️ Invalid item structure:', item);
-            return null;
-          }
-          return {
-            item_id: String(item.product.id),
-            item_name: String(item.product.name || 'Unknown'),
-            price: parseFloat(Number((item.unit_price ?? item.product.price) || 0).toFixed(2)),
-            quantity: parseInt(String(item.quantity || 1), 10),
-            item_category: String(item.product.category_name || "Uncategorized")
-          };
-        }).filter(Boolean) : []
+        items: lastOrderItems.map((item: any) => ({
+          item_id: String(item.product.id),
+          item_name: item.product.name,
+          price: Number((item.unit_price ?? item.product.price).toFixed(2)),
+          quantity: item.quantity,
+          item_category: item.product.category_name || "Uncategorized"
+        }))
       }
     };
     
     window.dataLayer.push(purchaseEvent);
     localStorage.setItem('gtm_tracked_order_id', String(lastOrderId || ""));
-    localStorage.removeItem('last_order_items'); // Clean up
+    localStorage.removeItem('last_order_items');
     
-    // 🎯 DETAILED DEBUG LOG - CRITICAL FOR TROUBLESHOOTING
-    console.log('🎯 GA4 PURCHASE EVENT PUSHED:', {
-      event: purchaseEvent.event,
-      transaction_id: purchaseEvent.transaction_id,
-      value: purchaseEvent.value,
-      value_type: typeof purchaseEvent.value,
-      value_is_number: !isNaN(purchaseEvent.value),
-      currency: purchaseEvent.currency,
-      subtotal: purchaseEvent.ecommerce.subtotal,
-      shipping: purchaseEvent.ecommerce.shipping,
-      tax: purchaseEvent.ecommerce.tax,
-      items_count: purchaseEvent.ecommerce.items.length,
-      items: purchaseEvent.ecommerce.items.map(i => ({ name: i.item_name, price: i.price, qty: i.quantity }))
+    console.log('🎯 GA4 Purchase Event Tracked:', {
+      transaction_id: String(lastOrderId || ""),
+      value: totalValue,
+      value_type: typeof totalValue,
+      currency: "GBP",
+      items_count: lastOrderItems.length,
+      items: lastOrderItems.map((i: any) => ({ name: i.product.name, price: i.unit_price ?? i.product.price, qty: i.quantity }))
     });
   }
-}, [step, orderTotal, deliveryFee, discountedTotalPrice]);
+}, [step, orderTotal, deliveryFee]);
   useEffect(() => {
     setPromoCode(state.appliedPromo?.code || '');
   }, [state.appliedPromo?.code]);
