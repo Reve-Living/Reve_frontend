@@ -311,9 +311,14 @@ const CheckoutPage = () => {
 
     window.dataLayer = window.dataLayer || [];
     
-    // Convert values to numbers
+    // Convert values to numbers - EXPLICIT
     const totalValue = Number(orderTotal.toFixed(2));
     const shippingValue = Number(deliveryFee.toFixed(2));
+    
+    // 🚨 IMMEDIATE LOG BEFORE PUSH - Debug what we're sending
+    console.log('📊 BEFORE PUSH - orderTotal:', orderTotal, 'type:', typeof orderTotal);
+    console.log('📊 BEFORE PUSH - totalValue:', totalValue, 'type:', typeof totalValue);
+    console.log('📊 BEFORE PUSH - lastOrderItems.length:', lastOrderItems.length);
     
     const purchaseEvent = {
       event: "purchase",
@@ -337,18 +342,18 @@ const CheckoutPage = () => {
       }
     };
     
+    // 🔥 IMMEDIATE LOG THE ACTUAL EVENT OBJECT
+    console.log('🔥 PURCHASE EVENT OBJECT BEING PUSHED:');
+    console.log(JSON.stringify(purchaseEvent, null, 2));
+    
     window.dataLayer.push(purchaseEvent);
+    
+    // 🔥 LOG AFTER PUSH
+    console.log('✅ EVENT PUSHED TO dataLayer');
+    console.log('📊 dataLayer contents:', window.dataLayer);
+    
     localStorage.setItem('gtm_tracked_order_id', String(lastOrderId || ""));
     localStorage.removeItem('last_order_items');
-    
-    console.log('🎯 GA4 Purchase Event Tracked:', {
-      transaction_id: String(lastOrderId || ""),
-      value: totalValue,
-      value_type: typeof totalValue,
-      currency: "GBP",
-      items_count: lastOrderItems.length,
-      items: lastOrderItems.map((i: any) => ({ name: i.product.name, price: i.unit_price ?? i.product.price, qty: i.quantity }))
-    });
   }
 }, [step, orderTotal, deliveryFee]);
   useEffect(() => {
