@@ -298,22 +298,32 @@ const CheckoutPage = () => {
       return;
     }
 
-    // 👈 GET ITEMS FROM STORAGE
+    // 👈 GET ITEMS AND TOTALS FROM STORAGE
     let lastOrderItems: any[] = [];
+    let lastOrderTotal = 0;
+    let lastDeliveryFee = 0;
     try {
       const lastOrderItemsStr = localStorage.getItem('last_order_items');
       if (lastOrderItemsStr) {
         lastOrderItems = JSON.parse(lastOrderItemsStr);
       }
+      const lastOrderTotalStr = localStorage.getItem('last_order_total');
+      if (lastOrderTotalStr) {
+        lastOrderTotal = Number(lastOrderTotalStr);
+      }
+      const lastDeliveryFeeStr = localStorage.getItem('last_delivery_fee');
+      if (lastDeliveryFeeStr) {
+        lastDeliveryFee = Number(lastDeliveryFeeStr);
+      }
     } catch (e) {
-      console.error('🚨 Failed to parse order items:', e);
+      console.error('🚨 Failed to parse order data:', e);
     }
 
     window.dataLayer = window.dataLayer || [];
     
     // Convert values to numbers
-    const totalValue = Number(orderTotal.toFixed(2));
-    const shippingValue = Number(deliveryFee.toFixed(2));
+    const totalValue = Number(lastOrderTotal.toFixed(2));
+    const shippingValue = Number(lastDeliveryFee.toFixed(2));
     
     // 🔥 USE gtag() DIRECTLY - THIS GOES STRAIGHT TO GA4
     if (typeof gtag !== 'undefined') {
@@ -370,8 +380,10 @@ const CheckoutPage = () => {
     
     localStorage.setItem('gtm_tracked_order_id', String(lastOrderId || ""));
     localStorage.removeItem('last_order_items');
+    localStorage.removeItem('last_order_total');
+    localStorage.removeItem('last_delivery_fee');
   }
-}, [step, orderTotal, deliveryFee]);
+}, [step]);
   useEffect(() => {
     setPromoCode(state.appliedPromo?.code || '');
   }, [state.appliedPromo?.code]);
@@ -531,8 +543,10 @@ const CheckoutPage = () => {
       const orderRes = await apiPost<{ id: number }>('/orders/', orderPayload);
       localStorage.setItem('last_order_id', String(orderRes.id));
       
-      // 👈 CAPTURE ITEMS BEFORE CLEARING CART
+      // 👈 CAPTURE ITEMS AND TOTALS BEFORE CLEARING CART
       localStorage.setItem('last_order_items', JSON.stringify(state.items));
+      localStorage.setItem('last_order_total', String(orderTotal));
+      localStorage.setItem('last_delivery_fee', String(deliveryFee));
 
       if (paymentMethod === 'cod') {
         setStep('confirmation');
