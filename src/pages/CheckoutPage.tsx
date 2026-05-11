@@ -236,6 +236,7 @@ const CheckoutPage = () => {
     promoDiscount,
     discountedTotalPrice,
     clearCart,
+    closeCart,
     setAppliedPromo,
     clearAppliedPromo,
   } = useCart();
@@ -284,9 +285,10 @@ const CheckoutPage = () => {
         });
       }
       setStep('confirmation');
+      closeCart();
       clearCart();
     }
-  }, [clearCart]);
+  }, [clearCart, closeCart]);
 
   useEffect(() => {
   if (step === 'confirmation') {
@@ -550,6 +552,7 @@ const CheckoutPage = () => {
 
       if (paymentMethod === 'cod') {
         setStep('confirmation');
+        closeCart();
         clearCart();
         return;
       }
