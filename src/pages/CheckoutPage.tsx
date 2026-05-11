@@ -269,6 +269,9 @@ const CheckoutPage = () => {
     { id: string; previewUrl: string; dataUrl: string; name: string }[]
   >([]);
 
+  const checkoutParams = new URLSearchParams(window.location.search);
+  const isSuccessCheckout = checkoutParams.get('success') === '1' || Boolean(checkoutParams.get('token'));
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const success = params.get('success');
@@ -621,7 +624,7 @@ const CheckoutPage = () => {
     }
   };
 
-  if (state.items.length === 0 && step !== 'confirmation') {
+  if (state.items.length === 0 && step !== 'confirmation' && !isSuccessCheckout) {
     navigate('/cart');
     return null;
   }
