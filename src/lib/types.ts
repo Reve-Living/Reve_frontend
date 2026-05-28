@@ -220,6 +220,7 @@ export interface ProductMattress {
   price_top?: number | string | null;
   price_bottom?: number | string | null;
   price_both?: number | string | null;
+  is_hidden?: boolean;
   source_product?: number | null;
   prices?: MattressOptionPrice[];
   is_active?: boolean;
