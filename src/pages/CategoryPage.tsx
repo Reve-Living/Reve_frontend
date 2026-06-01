@@ -96,6 +96,11 @@ const normalizeSizeName = (raw?: string): string => {
   return value.replace(/ft(\d)/gi, 'ft $1').replace(/\s+/g, ' ').trim();
 };
 
+const parsePageParam = (value: string | null): number => {
+  const parsed = Number.parseInt(String(value || ''), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+};
+
 const CategoryPage = () => {
   const getDisplayOrder = (value?: number) => {
     const num = Number(value);
@@ -103,10 +108,11 @@ const CategoryPage = () => {
   };
 
   const { slug } = useParams<{ slug: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const subSlug = searchParams.get('sub') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
   const linkedBedProduct = searchParams.get('from') || '';
+  const pageFromQuery = parsePageParam(searchParams.get('page'));
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -115,7 +121,7 @@ const CategoryPage = () => {
   const [loadError, setLoadError] = useState(false);
 
   const [sortBy, setSortBy] = useState('featured');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(pageFromQuery);
   const [priceRange, setPriceRange] = useState([0, 1500]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -389,18 +395,31 @@ const CategoryPage = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
 
+  const updatePageInSearch = (nextPage: number, replace = false) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextPage <= 1) nextParams.delete('page');
+    else nextParams.set('page', String(nextPage));
+    setSearchParams(nextParams, { replace });
+  };
+
+  const goToPage = (nextPage: number, replace = false) => {
+    const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
+    setCurrentPage(clampedPage);
+    updatePageInSearch(clampedPage, replace);
+  };
+
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
     return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
   }, [currentPage, filteredProducts]);
 
   useEffect(() => {
-    setCurrentPage(1);
-  }, [slug, subSlug, linkedBedSize, sortBy, priceRange, selectedSizes, selectedFilters]);
+    setCurrentPage((prev) => (prev === pageFromQuery ? prev : pageFromQuery));
+  }, [pageFromQuery]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+      goToPage(totalPages, true);
     }
   }, [currentPage, totalPages]);
 
@@ -408,8 +427,19 @@ const CategoryPage = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
 
+  const handleSortChange = (value: string) => {
+    setSortBy(value);
+    goToPage(1, true);
+  };
+
+  const handlePriceRangeChange = (range: number[]) => {
+    setPriceRange(range);
+    goToPage(1, true);
+  };
+
   const toggleSize = (size: string) => {
     setSelectedSizes((prev) => (prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]));
+    goToPage(1, true);
   };
 
   const toggleFilterOption = (filterSlug: string, optionSlug: string) => {
@@ -420,6 +450,7 @@ const CategoryPage = () => {
         : [...current, optionSlug];
       return { ...prev, [filterSlug]: next };
     });
+    goToPage(1, true);
   };
 
   const isFilterSelected = (filterSlug: string, optionSlug: string) =>
@@ -429,6 +460,7 @@ const CategoryPage = () => {
     setPriceRange([priceBounds.min, priceBounds.max]);
     setSelectedSizes([]);
     setSelectedFilters({});
+    goToPage(1, true);
   };
 
   const hasData = Boolean(category) || allProducts.length > 0;
@@ -490,7 +522,7 @@ const CategoryPage = () => {
             <div className="rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.08)] border border-border/60 p-6 space-y-8">
               <FilterContent
                 priceRange={priceRange}
-                setPriceRange={setPriceRange}
+                setPriceRange={handlePriceRangeChange}
                 priceBounds={priceBounds}
                 allSizes={allSizes}
                 selectedSizes={selectedSizes}
@@ -561,7 +593,7 @@ const CategoryPage = () => {
                   Filters
                 </Button>
 
-                <Select value={sortBy} onValueChange={setSortBy}>
+                <Select value={sortBy} onValueChange={handleSortChange}>
                   <SelectTrigger className="w-48 border-accent">
                     <SelectValue placeholder="Sort by" />
                   </SelectTrigger>
@@ -599,7 +631,7 @@ const CategoryPage = () => {
                   </div>
                   <FilterContent
                     priceRange={priceRange}
-                    setPriceRange={setPriceRange}
+                    setPriceRange={handlePriceRangeChange}
                     priceBounds={priceBounds}
                     allSizes={allSizes}
                     selectedSizes={selectedSizes}
@@ -650,7 +682,7 @@ const CategoryPage = () => {
                             type="button"
                             aria-label={`Go to page ${page}`}
                             aria-current={isActive ? 'page' : undefined}
-                            onClick={() => setCurrentPage(page)}
+                            onClick={() => goToPage(page)}
                             className={`flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium transition-all duration-200 ${
                               isActive
                                 ? 'scale-105 border-primary bg-primary text-primary-foreground shadow-sm'
