@@ -420,10 +420,11 @@ const CategoryPage = () => {
   }, [pageFromQuery]);
 
   useEffect(() => {
+    if (isLoading) return;
     if (currentPage > totalPages) {
       goToPage(totalPages, true);
     }
-  }, [currentPage, totalPages]);
+  }, [currentPage, totalPages, isLoading]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
