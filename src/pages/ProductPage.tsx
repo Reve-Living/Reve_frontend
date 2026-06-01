@@ -659,6 +659,10 @@ const ProductPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const locationState =
+    ((location.state as { previewProduct?: Product; returnTo?: string } | null) || null);
+  const returnTo = typeof locationState?.returnTo === 'string' ? locationState.returnTo : '';
+  const returnToHasSubcategory = returnTo.includes('?sub=');
   const selectForBedSlug = searchParams.get('select-for-bed') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
   
@@ -671,6 +675,7 @@ const ProductPage = () => {
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [seriesCollection, setSeriesCollection] = useState<Collection | null>(null);
   const [seriesProducts, setSeriesProducts] = useState<Product[]>([]);
+  const categoryHref = returnTo && !returnToHasSubcategory ? returnTo : category ? `/category/${category.slug}` : '';
 
 
 
@@ -2248,11 +2253,20 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
             <>
 
-              <Link to={`/category/${category.slug}`} className="hover:text-primary">
+              <Link to={categoryHref} className="hover:text-primary">
 
                 {category.name}
 
               </Link>
+
+              {returnToHasSubcategory && product.subcategory_name && (
+                <>
+                  <ChevronRight className="h-4 w-4" />
+                  <Link to={returnTo} className="hover:text-primary">
+                    {product.subcategory_name}
+                  </Link>
+                </>
+              )}
 
               <ChevronRight className="h-4 w-4" />
 
@@ -3214,7 +3228,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {seriesProducts.map((p, index) => (
-                <ProductCard key={p.id} product={p} index={index} />
+                <ProductCard key={p.id} product={p} index={index} returnTo={returnTo || undefined} />
               ))}
             </div>
           </section>
@@ -3226,7 +3240,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
             <h2 className="mb-8 font-serif text-2xl font-bold">You May Also Like</h2>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {relatedProducts.map((p, index) => (
-                <ProductCard key={p.id} product={p} index={index} />
+                <ProductCard key={p.id} product={p} index={index} returnTo={returnTo || undefined} />
               ))}
             </div>
           </section>

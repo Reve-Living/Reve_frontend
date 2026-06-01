@@ -1,5 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from 'react';
-import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { useParams, Link, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -108,11 +108,13 @@ const CategoryPage = () => {
   };
 
   const { slug } = useParams<{ slug: string }>();
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const subSlug = searchParams.get('sub') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
   const linkedBedProduct = searchParams.get('from') || '';
   const pageFromQuery = parsePageParam(searchParams.get('page'));
+  const returnTo = `${location.pathname}${location.search}`;
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -667,6 +669,7 @@ const CategoryPage = () => {
                       index={(currentPage - 1) * PRODUCTS_PER_PAGE + index}
                       fromBedProduct={linkedBedProduct}
                       selectedBedSize={linkedBedSize}
+                      returnTo={returnTo}
                     />
                   ))}
                   </div>

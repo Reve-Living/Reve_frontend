@@ -19,9 +19,10 @@ interface ProductCardProps {
   index?: number;
   fromBedProduct?: string; // slug of the bed product this mattress is being selected for
   selectedBedSize?: string; // the bed size that was selected on the bed product
+  returnTo?: string;
 }
 
-const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: ProductCardProps) => {
+const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, returnTo }: ProductCardProps) => {
   // Calculate savings if there's an original price
   const savings = product.original_price ? product.original_price - product.price : 0;
   const sizePrices = Array.isArray(product.sizes)
@@ -75,7 +76,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize }: Pr
     <div className="h-full">
       <Link
         to={productLink}
-        state={{ previewProduct: product }}
+        state={{ previewProduct: product, returnTo }}
         onMouseEnter={prefetchProductDetail}
         onFocus={prefetchProductDetail}
         onTouchStart={prefetchProductDetail}

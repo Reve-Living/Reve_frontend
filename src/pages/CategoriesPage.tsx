@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -42,9 +42,11 @@ const CategoriesPage = () => {
     return Number.isFinite(num) ? num : 0;
   };
 
+  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isBestsellerOnly = ['1', 'true', 'yes'].includes((searchParams.get('bestseller') || '').toLowerCase());
   const pageFromQuery = parsePageParam(searchParams.get('page'));
+  const returnTo = `${location.pathname}${location.search}`;
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -414,6 +416,7 @@ const CategoriesPage = () => {
                       key={product.id}
                       product={product}
                       index={(currentPage - 1) * PRODUCTS_PER_PAGE + index}
+                      returnTo={returnTo}
                     />
                   ))}
                 </div>
