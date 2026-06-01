@@ -95,6 +95,10 @@ type VariantOption = {
 
   price_delta?: number;
 
+  is_available?: boolean;
+
+  placeholder?: string;
+
 };
 
 
@@ -1123,6 +1127,16 @@ type MattressDetailView = {
 
   const fabricColors = selectedFabricObj?.colors || [];
 
+  const hasAvailableStandaloneColor = useMemo(
+    () => (product?.colors || []).some((color) => color.is_available !== false),
+    [product?.colors]
+  );
+
+  const hasAvailableFabricColor = useMemo(
+    () => (product?.fabrics || []).some((fabric) => (fabric.colors || []).some((color) => color.is_available !== false)),
+    [product?.fabrics]
+  );
+
   const availableColors =
     product?.fabrics?.length && activeFabricForColors
       ? fabricColors
@@ -1130,10 +1144,16 @@ type MattressDetailView = {
       ? []
       : product?.colors || [];
 
+  const productHasPurchasableVariant = product?.fabrics?.length
+    ? hasAvailableFabricColor
+    : product?.colors?.length
+    ? hasAvailableStandaloneColor
+    : true;
+
+  const isProductPurchasable = Boolean(product?.in_stock) && productHasPurchasableVariant;
+
   const displayColors = useMemo(() => {
-    const list = availableColors || [];
-    const withImages = list.filter((c) => c.image_url);
-    return withImages.length > 0 ? withImages : list;
+    return availableColors || [];
   }, [availableColors]);
 
   const fabricColorOptions = useMemo(() => {
@@ -1150,8 +1170,17 @@ type MattressDetailView = {
   useEffect(() => {
     // Keep selections stable while browsing; if the current color no longer exists, pick a sensible fallback.
     const names = new Set(displayColors.map((c) => c.name).concat(availableColors.map((c) => c.name)));
+    const firstAvailableColor =
+      availableColors.find((color) => color.is_available !== false)?.name ||
+      displayColors.find((color) => color.is_available !== false)?.name ||
+      '';
+    const selectedColorOption = availableColors.find((color) => color.name === selectedColor);
+    if (selectedColorOption?.is_available === false) {
+      setSelectedColor(firstAvailableColor);
+      return;
+    }
     if (!previewFabric && selectedColor && !names.has(selectedColor)) {
-      setSelectedColor(displayColors[0]?.name || availableColors[0]?.name || '');
+      setSelectedColor(firstAvailableColor);
     }
   }, [availableColors, displayColors, previewFabric, selectedColor]);
 
@@ -1317,6 +1346,7 @@ type MattressDetailView = {
           label: fabric.name,
           description: '',
           price_delta: 0,
+          is_available: (fabric.colors || []).some((color) => color.is_available !== false),
         })),
       });
     }
@@ -1333,7 +1363,7 @@ type MattressDetailView = {
 
         options: displayColors.map((color, idx) => ({
 
-          key: `color-${color.id ?? color.slug ?? color.name ?? idx}`,
+          key: `color-${color.id ?? color.name ?? idx}`,
 
           label: color.name,
 
@@ -1341,6 +1371,7 @@ type MattressDetailView = {
           icon_url: resolveMediaUrl(color.image_url),
           // Fallback texture placeholder to avoid black flash while image streams in.
           placeholder: color.hex_code || '#f3f4f6',
+          is_available: color.is_available !== false,
 
           price_delta: 0,
 
@@ -2086,6 +2117,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
   const handleAddToCart = () => {
+    if (!isProductPurchasable) {
+      toast.error('This option is currently out of stock');
+      return;
+    }
+
     // Push GA4 event to dataLayer
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
@@ -2474,7 +2510,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               </div>
 
               <div className="mt-3 flex items-center gap-2 text-sm">
-                {product.in_stock ? (
+                {isProductPurchasable ? (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <span className="font-medium text-emerald-700">In stock</span>
@@ -2545,7 +2581,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <div className={gridClass} style={headboardGridStyle}>
                           {group.options.map((option) => {
                             const isSelected = selected?.key === option.key;
-                            const disabled = false;
+                            const disabled = option.is_available === false;
                           const shouldShowIcon =
                             !(group.kind === 'size' && !sizeIconsEnabled) &&
                             group.kind !== 'fabric';
@@ -2554,7 +2590,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                               key={option.key}
                               type="button"
                               disabled={disabled}
+                              title={
+                                disabled
+                                  ? `${formatOptionLabel(option.label)} - Out of stock`
+                                  : formatOptionLabel(option.label)
+                              }
                               onClick={() => {
+                                if (disabled) return;
                                 if (group.kind === 'color') {
                                   if (product?.fabrics?.length && activeFabricForColors) {
                                     setSelectedFabric(activeFabricForColors);
@@ -2638,13 +2680,28 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                         }}
                                       />
                                     )}
+                                    {disabled && (
+                                      <>
+                                        <span className="absolute inset-0 rounded-md bg-white/70" />
+                                        <span className="absolute inset-x-1 bottom-1 rounded bg-white px-1 py-0.5 text-center text-[8px] font-semibold uppercase tracking-wide text-rose-700">
+                                          Out
+                                        </span>
+                                      </>
+                                    )}
                                     <span className="sr-only">{formatOptionLabel(option.label)}</span>
                                   </>
                                 ) : (
                                   isFabricGroup ? (
-                                    <span className="text-sm font-semibold text-espresso">
-                                      {formatOptionLabel(option.label)}
-                                    </span>
+                                    <>
+                                      <span className="text-sm font-semibold text-espresso">
+                                        {formatOptionLabel(option.label)}
+                                      </span>
+                                      {disabled && (
+                                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
+                                          Out of stock
+                                        </span>
+                                      )}
+                                    </>
                                   ) : (
                                     <div
                                       className={`flex ${
@@ -2700,6 +2757,12 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             );
                           })}
                         </div>
+                      {(group.kind === 'color' || group.kind === 'fabric') &&
+                        group.options.some((option) => option.is_available === false) && (
+                          <p className="text-xs text-muted-foreground">
+                            Unavailable options stay visible here and are marked out of stock.
+                          </p>
+                        )}
                       {dimensionColumns.length > 0 && group.kind === 'size' && (
                         <div className="pt-3">
                           <button
@@ -2842,6 +2905,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 size="lg"
 
                 onClick={handleAddToCart}
+                disabled={!isProductPurchasable}
 
                 className="flex-1 gradient-bronze text-lg font-semibold"
 
