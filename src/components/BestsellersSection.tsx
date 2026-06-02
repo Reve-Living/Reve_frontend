@@ -7,6 +7,9 @@ import { apiGet } from '@/lib/api';
 import { Product } from '@/lib/types';
 
 type SectionMode = 'new' | 'bestseller';
+type BestsellersSectionProps = {
+  mode?: SectionMode;
+};
 
 const sectionCopy: Record<
   SectionMode,
@@ -34,38 +37,32 @@ const sectionCopy: Record<
   },
 };
 
-const BestsellersSection = () => {
+const sectionPath: Record<SectionMode, string> = {
+  new: '/products/?is_new=1',
+  bestseller: '/products/?bestseller=1',
+};
+
+const BestsellersSection = ({ mode = 'bestseller' }: BestsellersSectionProps) => {
   const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
-  const [mode, setMode] = useState<SectionMode>('new');
 
   useEffect(() => {
     const load = async () => {
-      const sources: Array<{ mode: SectionMode; path: string }> = [
-        { mode: 'new', path: '/products/?is_new=1' },
-        { mode: 'bestseller', path: '/products/?bestseller=1' },
-      ];
-
-      for (const source of sources) {
-        try {
-          const data = await apiGet<Product[]>(source.path, { noStore: true });
-          if (Array.isArray(data) && data.length > 0) {
-            setProducts(data.slice(0, 4));
-            setMode(source.mode);
-            return;
-          }
-        } catch {
-          // Keep trying the next source.
-        }
+      try {
+        const data = await apiGet<Product[]>(sectionPath[mode], { noStore: true });
+        setProducts(Array.isArray(data) ? data.slice(0, 4) : []);
+      } catch {
+        setProducts([]);
       }
-
-      setProducts([]);
-      setMode('new');
     };
     load();
-  }, []);
+  }, [mode]);
 
   const copy = sectionCopy[mode];
+
+  if (products.length === 0) {
+    return null;
+  }
 
   return (
     <section className="relative bg-card py-14 md:py-20 overflow-hidden">

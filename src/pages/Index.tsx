@@ -14,7 +14,8 @@ const Index = () => {
       <main>
         <HeroSlider />
         <CategoryGrid />
-        <BestsellersSection />
+        <BestsellersSection mode="new" />
+        <BestsellersSection mode="bestseller" />
         <TrustSection />
 
                         <LifestyleSection />
