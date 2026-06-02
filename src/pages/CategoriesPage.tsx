@@ -45,6 +45,9 @@ const CategoriesPage = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const isBestsellerOnly = ['1', 'true', 'yes'].includes((searchParams.get('bestseller') || '').toLowerCase());
+  const isNewArrivalsOnly = ['1', 'true', 'yes'].includes(
+    (searchParams.get('new') || searchParams.get('is_new') || '').toLowerCase()
+  );
   const pageFromQuery = parsePageParam(searchParams.get('page'));
   const returnTo = `${location.pathname}${location.search}`;
   const [allProducts, setAllProducts] = useState<Product[]>([]);
@@ -61,7 +64,14 @@ const CategoriesPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const productsRes = await apiGet<Product[]>(isBestsellerOnly ? '/products/?bestseller=1' : '/products/');
+        const productsPath = isNewArrivalsOnly
+          ? '/products/?is_new=1'
+          : isBestsellerOnly
+          ? '/products/?bestseller=1'
+          : '/products/';
+        const productsRes = await apiGet<Product[]>(productsPath, {
+          noStore: isNewArrivalsOnly || isBestsellerOnly,
+        });
         const orderedProducts = Array.isArray(productsRes)
           ? [...productsRes].sort((a, b) => {
               const aOrder = getDisplayOrder(a.sort_order);
@@ -78,7 +88,7 @@ const CategoriesPage = () => {
       }
     };
     load();
-  }, [isBestsellerOnly]);
+  }, [isBestsellerOnly, isNewArrivalsOnly]);
 
   const priceBounds = useMemo(() => {
     const prices = allProducts
@@ -285,24 +295,26 @@ const CategoriesPage = () => {
             transition={{ duration: 0.6 }}
             className="text-center"
           >
-            <motion.span 
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary"
-            >
-              {isBestsellerOnly ? 'Customer Favorites' : 'Browse All'}
-            </motion.span>
-            <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl lg:text-6xl">
-              {isBestsellerOnly ? 'All Bestsellers' : 'All Products'}
-            </h1>
-            <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
-              {isBestsellerOnly
-                ? 'Explore every bestseller product loved most by our customers.'
-                : 'Discover our complete range of handcrafted furniture, designed for comfort and built to last'}
-            </p>
-          </motion.div>
-        </div>
+              <motion.span 
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2 }}
+                className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-medium uppercase tracking-widest text-primary"
+              >
+                {isNewArrivalsOnly ? 'Just Landed' : isBestsellerOnly ? 'Customer Favorites' : 'Browse All'}
+              </motion.span>
+              <h1 className="font-serif text-4xl font-bold text-foreground md:text-5xl lg:text-6xl">
+                {isNewArrivalsOnly ? 'New Arrivals' : isBestsellerOnly ? 'All Bestsellers' : 'All Products'}
+              </h1>
+              <p className="mx-auto mt-4 max-w-2xl text-muted-foreground">
+                {isNewArrivalsOnly
+                  ? 'Explore the latest pieces we have just added to the collection.'
+                  : isBestsellerOnly
+                  ? 'Explore every bestseller product loved most by our customers.'
+                  : 'Discover our complete range of handcrafted furniture, designed for comfort and built to last'}
+              </p>
+            </motion.div>
+          </div>
       </section>
 
       <div className="container mx-auto px-4 py-12">

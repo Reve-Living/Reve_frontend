@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -6,21 +6,66 @@ import ProductCard from './ProductCard';
 import { apiGet } from '@/lib/api';
 import { Product } from '@/lib/types';
 
+type SectionMode = 'new' | 'bestseller';
+
+const sectionCopy: Record<
+  SectionMode,
+  {
+    badge: string;
+    title: string;
+    description: string;
+    cta: string;
+    href: string;
+  }
+> = {
+  new: {
+    badge: 'Just Landed',
+    title: 'New Arrivals',
+    description: 'Freshly added pieces ready to bring something new into your space',
+    cta: 'View All New Arrivals',
+    href: '/categories?new=1',
+  },
+  bestseller: {
+    badge: 'Customer Favorites',
+    title: 'Bestselling Beds',
+    description: 'Our most loved pieces, chosen by thousands of happy customers',
+    cta: 'View All Bestsellers',
+    href: '/categories?bestseller=1',
+  },
+};
+
 const BestsellersSection = () => {
   const navigate = useNavigate();
-  const [bestsellers, setBestsellers] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [mode, setMode] = useState<SectionMode>('new');
 
   useEffect(() => {
     const load = async () => {
-      try {
-        const data = await apiGet<Product[]>('/products/?bestseller=1');
-        setBestsellers(data.slice(0, 4));
-      } catch {
-        setBestsellers([]);
+      const sources: Array<{ mode: SectionMode; path: string }> = [
+        { mode: 'new', path: '/products/?is_new=1' },
+        { mode: 'bestseller', path: '/products/?bestseller=1' },
+      ];
+
+      for (const source of sources) {
+        try {
+          const data = await apiGet<Product[]>(source.path, { noStore: true });
+          if (Array.isArray(data) && data.length > 0) {
+            setProducts(data.slice(0, 4));
+            setMode(source.mode);
+            return;
+          }
+        } catch {
+          // Keep trying the next source.
+        }
       }
+
+      setProducts([]);
+      setMode('new');
     };
     load();
   }, []);
+
+  const copy = sectionCopy[mode];
 
   return (
     <section className="relative bg-card py-14 md:py-20 overflow-hidden">
@@ -41,14 +86,14 @@ const BestsellersSection = () => {
             >
               <Sparkles className="h-4 w-4 text-primary" />
               <span className="text-xs font-medium uppercase tracking-widest text-primary">
-                Customer Favorites
+                {copy.badge}
               </span>
             </div>
             <h2 className="font-serif text-4xl font-bold text-foreground md:text-5xl">
-              Bestselling Beds
+              {copy.title}
             </h2>
             <p className="mt-3 max-w-md text-muted-foreground">
-              Our most loved pieces, chosen by thousands of happy customers
+              {copy.description}
             </p>
           </div>
           
@@ -56,9 +101,9 @@ const BestsellersSection = () => {
             <Button
               size="lg"
               className="group gradient-bronze text-base font-semibold"
-              onClick={() => navigate('/categories?bestseller=1')}
+              onClick={() => navigate(copy.href)}
             >
-              View All Bestsellers
+              {copy.cta}
               <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
           </div>
@@ -66,7 +111,7 @@ const BestsellersSection = () => {
 
         {/* Products Grid with Stagger Animation */}
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {bestsellers.map((product, index) => (
+          {products.map((product, index) => (
             <div key={product.id}>
               <ProductCard product={product} index={index} />
             </div>
@@ -81,9 +126,9 @@ const BestsellersSection = () => {
             variant="outline"
             size="lg"
             className="group border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            onClick={() => navigate('/categories?bestseller=1')}
+            onClick={() => navigate(copy.href)}
           >
-            View All Bestsellers
+            {copy.cta}
             <ArrowRight className="ml-2 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1" />
           </Button>
         </div>
