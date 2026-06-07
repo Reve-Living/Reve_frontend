@@ -20,8 +20,14 @@ import {
   Shield,
   CreditCard,
   Ruler,
+  Armchair,
   BedDouble,
+  Bluetooth,
   CheckCircle2,
+  CupSoda,
+  Sparkles,
+  Usb,
+  Volume2,
   X,
   Wallet,
   BadgeDollarSign,
@@ -608,7 +614,57 @@ const normalizeFeatures = (features: unknown): string[] => {
     .filter(Boolean);
 };
 
+const containsSofaKeyword = (value?: string | null): boolean => /\bsofas?\b/i.test(String(value || '').trim());
 
+const normalizeSofaFeatureLabel = (value?: string | null): string =>
+  String(value || '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizeSofaFeatureKeyword = (value?: string | null): string =>
+  normalizeSofaFeatureLabel(value)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s/+&]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const normalizeSofaFeatureHighlights = (features: unknown): string[] => {
+  if (!features) return [];
+
+  const unique = new Map<string, string>();
+  const asArray = Array.isArray(features) ? features : [features];
+
+  asArray
+    .flatMap((item) => {
+      if (typeof item !== 'string') return [];
+      return item.split(/[\r\n\u2022]+/);
+    })
+    .map((item) => normalizeSofaFeatureLabel(item))
+    .filter(Boolean)
+    .forEach((item) => {
+      const key = normalizeSofaFeatureKeyword(item);
+      if (key && !unique.has(key)) {
+        unique.set(key, item);
+      }
+    });
+
+  return Array.from(unique.values());
+};
+
+const resolveSofaFeatureIcon = (value: string) => {
+  const normalized = normalizeSofaFeatureKeyword(value);
+
+  if (normalized.includes('usb') || normalized.includes('charging')) return Usb;
+  if (normalized.includes('cup') || normalized.includes('drink')) return CupSoda;
+  if (normalized.includes('recliner') || normalized.includes('recline')) return Armchair;
+  if (normalized.includes('bluetooth')) return Bluetooth;
+  if (normalized.includes('speaker') || normalized.includes('audio') || normalized.includes('sound')) {
+    return Volume2;
+  }
+
+  return Sparkles;
+};
 
 const resolveMediaUrl = (url?: string) => {
   if (!url) return url;
@@ -1528,6 +1584,19 @@ type MattressDetailView = {
     (product?.short_description || '').trim() || fullDescription.split('. ')[0] || '';
 
   const featureList = useMemo(() => normalizeFeatures(product?.features), [product?.features]);
+  const sofaFeatureHighlights = useMemo(
+    () => normalizeSofaFeatureHighlights(product?.sofa_feature_highlights),
+    [product?.sofa_feature_highlights]
+  );
+  const isSofaProduct = useMemo(
+    () =>
+      containsSofaKeyword(product?.category_name) ||
+      containsSofaKeyword(product?.category_slug) ||
+      containsSofaKeyword(product?.subcategory_name) ||
+      containsSofaKeyword(product?.subcategory_slug) ||
+      containsSofaKeyword(product?.name),
+    [product?.category_name, product?.category_slug, product?.subcategory_name, product?.subcategory_slug, product?.name]
+  );
 
   const dimensionsRows = featureList.filter((feature) =>
     /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
@@ -2792,6 +2861,32 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {isSofaProduct && sofaFeatureHighlights.length > 0 && (
+              <div className="rounded-[28px] border border-[#eaded3] bg-gradient-to-br from-[#fffaf7] via-[#fff6ef] to-[#f7ede5] p-4 sm:p-5">
+                <p className="mb-4 text-xs font-semibold uppercase tracking-[0.24em] text-[#8c6b59]">
+                  Sofa Highlights
+                </p>
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+                  {sofaFeatureHighlights.map((highlight, index) => {
+                    const FeatureIcon = resolveSofaFeatureIcon(highlight);
+                    return (
+                      <div
+                        key={`${highlight}-${index}`}
+                        className="flex min-h-[132px] flex-col items-center justify-center gap-3 rounded-2xl border border-[#e6d8cb] bg-white/85 px-4 py-5 text-center shadow-[0_10px_30px_rgba(78,52,39,0.08)]"
+                      >
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f7eee7] text-[#7a4d37]">
+                          <FeatureIcon className="h-6 w-6" />
+                        </div>
+                        <p className="text-xs font-semibold uppercase leading-tight tracking-[0.18em] text-espresso">
+                          {normalizeSofaFeatureLabel(highlight)}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

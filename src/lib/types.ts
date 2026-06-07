@@ -297,6 +297,7 @@ export interface Product {
   description: string;
   short_description?: string;
   features: string[];
+  sofa_feature_highlights?: string[];
   dimensions?: ProductDimensionRow[];
   faqs?: ProductFaq[];
   delivery_info?: string;
