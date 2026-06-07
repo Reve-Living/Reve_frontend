@@ -25,6 +25,7 @@ import {
   Bluetooth,
   CheckCircle2,
   CupSoda,
+  Lightbulb,
   Sparkles,
   Usb,
   Volume2,
@@ -629,27 +630,68 @@ const normalizeSofaFeatureKeyword = (value?: string | null): string =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const normalizeSofaFeatureHighlights = (features: unknown): string[] => {
-  if (!features) return [];
+const SOFA_HIGHLIGHT_RULES = [
+  {
+    key: 'electric_recliner',
+    label: 'Electric Recliner',
+    patterns: [/electric\s+reclin/i, /power\s+reclin/i],
+  },
+  {
+    key: 'manual_recliner',
+    label: 'Manual Recliner',
+    patterns: [/manual\s+reclin/i],
+  },
+  {
+    key: 'usb_charging',
+    label: 'USB Charging',
+    patterns: [/\busb\b/i, /charging\s+ports?/i, /usb\s+charging/i],
+  },
+  {
+    key: 'cup_holders',
+    label: 'Drinks Holders',
+    patterns: [/\bcup\s+holders?\b/i, /\bdrinks?\s+holders?\b/i],
+  },
+  {
+    key: 'bluetooth',
+    label: 'Bluetooth Enabled',
+    patterns: [/\bbluetooth\b/i],
+  },
+  {
+    key: 'speakers',
+    label: 'Built-In Speakers',
+    patterns: [/\bspeakers?\b/i, /\bsound\s+system\b/i, /\baudio\b/i],
+  },
+  {
+    key: 'led_lighting',
+    label: 'LED Lighting',
+    patterns: [/\bled\b/i, /\bled\s+lighting\b/i, /\bintegrated\s+lighting\b/i],
+  },
+  {
+    key: 'bonded_leather',
+    label: 'Bonded Leather',
+    patterns: [/\bbonded\s+leather\b/i],
+  },
+] as const;
 
-  const unique = new Map<string, string>();
-  const asArray = Array.isArray(features) ? features : [features];
+const normalizeSofaFeatureHighlights = (...sources: unknown[]): string[] => {
+  const highlights: string[] = [];
+  const seen = new Set<string>();
 
-  asArray
-    .flatMap((item) => {
-      if (typeof item !== 'string') return [];
-      return item.split(/[\r\n\u2022]+/);
-    })
-    .map((item) => normalizeSofaFeatureLabel(item))
-    .filter(Boolean)
-    .forEach((item) => {
-      const key = normalizeSofaFeatureKeyword(item);
-      if (key && !unique.has(key)) {
-        unique.set(key, item);
-      }
+  sources
+    .flatMap((source) => normalizeFeatures(source))
+    .forEach((feature) => {
+      const normalized = normalizeSofaFeatureKeyword(feature);
+      const matchedRule = SOFA_HIGHLIGHT_RULES.find((rule) =>
+        rule.patterns.some((pattern) => pattern.test(normalized))
+      );
+
+      if (!matchedRule || seen.has(matchedRule.key)) return;
+
+      seen.add(matchedRule.key);
+      highlights.push(matchedRule.label);
     });
 
-  return Array.from(unique.values());
+  return highlights;
 };
 
 const resolveSofaFeatureIcon = (value: string) => {
@@ -662,6 +704,7 @@ const resolveSofaFeatureIcon = (value: string) => {
   if (normalized.includes('speaker') || normalized.includes('audio') || normalized.includes('sound')) {
     return Volume2;
   }
+  if (normalized.includes('led') || normalized.includes('lighting')) return Lightbulb;
 
   return Sparkles;
 };
@@ -1585,8 +1628,8 @@ type MattressDetailView = {
 
   const featureList = useMemo(() => normalizeFeatures(product?.features), [product?.features]);
   const sofaFeatureHighlights = useMemo(
-    () => normalizeSofaFeatureHighlights(product?.sofa_feature_highlights),
-    [product?.sofa_feature_highlights]
+    () => normalizeSofaFeatureHighlights(product?.features, product?.sofa_feature_highlights),
+    [product?.features, product?.sofa_feature_highlights]
   );
   const isSofaProduct = useMemo(
     () =>
