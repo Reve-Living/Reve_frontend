@@ -361,18 +361,30 @@ export interface Order {
   last_name: string;
   email: string;
   phone: string;
+  alternative_phone?: string;
   address: string;
   city: string;
   postal_code: string;
+  floor_number?: string;
   total_amount: number;
   delivery_charges: number;
   status: string;
   payment_method: string;
   payment_id?: string;
+  payment_metadata?: Record<string, string | number | boolean | null>;
   promo_code?: string;
   promo_name?: string;
   promo_discount_amount?: number;
+  special_notes?: string;
+  reference_images?: string[];
   created_at: string;
+  cancelled_at?: string | null;
+  refund_status?: string;
+  refund_provider?: string;
+  refund_id?: string;
+  refund_error?: string;
+  refund_amount?: number;
+  refunded_at?: string | null;
   items: OrderItem[];
 }
 

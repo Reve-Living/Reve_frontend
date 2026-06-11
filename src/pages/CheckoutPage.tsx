@@ -13,6 +13,7 @@ import Footer from '@/components/Footer';
 import { useCart } from '@/context/CartContext';
 import { apiPost } from '@/lib/api';
 import type {
+  Order,
   ProductStyle,
   PromotionAvailabilityResponse,
   PromotionValidationResponse,
@@ -228,6 +229,51 @@ const getStyleSummary = (item: {
   return sortOrderParts(parts).join(' | ');
 };
 
+const getOrderStatusLabel = (status?: string) => {
+  switch ((status || '').toLowerCase()) {
+    case 'paid':
+      return 'Paid';
+    case 'shipped':
+      return 'Shipped';
+    case 'delivered':
+      return 'Delivered';
+    case 'cancelled':
+      return 'Cancelled';
+    default:
+      return 'Pending';
+  }
+};
+
+const getOrderStatusClasses = (status?: string) => {
+  switch ((status || '').toLowerCase()) {
+    case 'paid':
+      return 'bg-emerald-100 text-emerald-800';
+    case 'shipped':
+      return 'bg-amber-100 text-amber-800';
+    case 'delivered':
+      return 'bg-slate-200 text-slate-800';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800';
+    default:
+      return 'bg-blue-100 text-blue-800';
+  }
+};
+
+const formatOrderDateTime = (value?: string | null) => {
+  if (!value) return '';
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  return parsed.toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const {
@@ -268,30 +314,95 @@ const CheckoutPage = () => {
   const [referenceImages, setReferenceImages] = useState<
     { id: string; previewUrl: string; dataUrl: string; name: string }[]
   >([]);
+  const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
+  const [isLoadingConfirmedOrder, setIsLoadingConfirmedOrder] = useState(false);
+  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
 
   const checkoutParams = new URLSearchParams(window.location.search);
   const isSuccessCheckout = checkoutParams.get('success') === '1' || Boolean(checkoutParams.get('token'));
+  const confirmationEmail =
+    confirmedOrder?.email || formData.email || localStorage.getItem('last_order_email') || 'your email address';
+  const canCancelConfirmedOrder = Boolean(
+    confirmedOrder && !['cancelled', 'shipped', 'delivered'].includes((confirmedOrder.status || '').toLowerCase())
+  );
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const success = params.get('success');
-    const paypalToken = params.get('token');
-    if (paypalToken) {
-      apiPost('/payments/capture_paypal_order/', { orderID: paypalToken });
-    }
-    if (success === '1' || paypalToken) {
+    const finalizePayment = async () => {
+      const params = new URLSearchParams(window.location.search);
+      const success = params.get('success');
+      const paypalToken = params.get('token');
+      const stripeSessionId = params.get('session_id');
+      const lastOrderEmail = localStorage.getItem('last_order_email') || '';
       const lastOrderId = localStorage.getItem('last_order_id');
-      if (lastOrderId) {
-        apiPost(`/orders/${lastOrderId}/mark_paid/`, {
-          payment_method: 'paypal',
-          payment_id: paypalToken || 'paypal',
-        });
+
+      if (!(success === '1' || paypalToken)) return;
+
+      try {
+        if (paypalToken) {
+          const captureResponse = await apiPost<any>('/payments/capture_paypal_order/', { orderID: paypalToken });
+          const captureId = captureResponse?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
+
+          if (lastOrderId) {
+            await apiPost(`/orders/${lastOrderId}/mark_paid/`, {
+              email: lastOrderEmail,
+              payment_method: 'paypal',
+              payment_id: captureId || paypalToken,
+              payment_metadata: {
+                paypal_order_id: paypalToken,
+                ...(captureId ? { paypal_capture_id: captureId } : {}),
+              },
+            });
+          }
+        } else if (lastOrderId) {
+          await apiPost(`/orders/${lastOrderId}/mark_paid/`, {
+            email: lastOrderEmail,
+            payment_method: 'card',
+            ...(stripeSessionId ? { payment_id: stripeSessionId } : {}),
+            ...(stripeSessionId
+              ? {
+                  payment_metadata: {
+                    stripe_checkout_session_id: stripeSessionId,
+                  },
+                }
+              : {}),
+          });
+        }
+      } catch {
+        // Keep the customer on the confirmation step even if syncing provider references back fails.
       }
+
       setStep('confirmation');
       closeCart();
       clearCart();
-    }
+    };
+
+    void finalizePayment();
   }, [clearCart, closeCart]);
+
+  useEffect(() => {
+    const loadConfirmedOrder = async () => {
+      if (step !== 'confirmation') return;
+
+      const lastOrderId = localStorage.getItem('last_order_id');
+      const lastOrderEmail = localStorage.getItem('last_order_email') || formData.email;
+      if (!lastOrderId || !lastOrderEmail) return;
+
+      setIsLoadingConfirmedOrder(true);
+      try {
+        const order = await apiPost<Order>('/orders/lookup/', {
+          order_id: Number(lastOrderId),
+          email: lastOrderEmail,
+        });
+        setConfirmedOrder(order);
+      } catch {
+        setConfirmedOrder(null);
+      } finally {
+        setIsLoadingConfirmedOrder(false);
+      }
+    };
+
+    void loadConfirmedOrder();
+  }, [formData.email, step]);
 
   useEffect(() => {
   if (step === 'confirmation') {
@@ -484,6 +595,38 @@ const CheckoutPage = () => {
     });
   };
 
+  const handleCancelConfirmedOrder = async () => {
+    if (!confirmedOrder || !canCancelConfirmedOrder) return;
+    if (!window.confirm(`Cancel order #${confirmedOrder.id}? We'll send a cancellation email right away.`)) {
+      return;
+    }
+
+    const lookupEmail = confirmedOrder.email || localStorage.getItem('last_order_email') || formData.email;
+    if (!lookupEmail) {
+      toast.error('We could not verify the order email for cancellation.');
+      return;
+    }
+
+    setIsCancellingOrder(true);
+    try {
+      const updatedOrder = await apiPost<Order>(`/orders/${confirmedOrder.id}/mark_cancelled/`, {
+        email: lookupEmail,
+      });
+      setConfirmedOrder(updatedOrder);
+      if (updatedOrder.refund_status === 'succeeded') {
+        toast.success('Order cancelled and refund started. A cancellation email has been sent.');
+      } else if (updatedOrder.refund_status === 'failed') {
+        toast.error('Order cancelled, but the refund needs manual follow-up from support.');
+      } else {
+        toast.success('Order cancelled. A confirmation email has been sent.');
+      }
+    } catch {
+      toast.error('Unable to cancel this order online. Please contact support.');
+    } finally {
+      setIsCancellingOrder(false);
+    }
+  };
+
   const handleContinue = () => {
     if (step === 'information') {
       if (
@@ -545,8 +688,10 @@ const CheckoutPage = () => {
         reference_images: referenceImages.map((img) => img.dataUrl),
       };
 
-      const orderRes = await apiPost<{ id: number }>('/orders/', orderPayload);
+      const orderRes = await apiPost<Order>('/orders/', orderPayload);
+      setConfirmedOrder(orderRes);
       localStorage.setItem('last_order_id', String(orderRes.id));
+      localStorage.setItem('last_order_email', orderRes.email || formData.email);
       
       // 👈 CAPTURE ITEMS AND TOTALS BEFORE CLEARING CART
       localStorage.setItem('last_order_items', JSON.stringify(state.items));
@@ -674,8 +819,76 @@ const CheckoutPage = () => {
             <h1 className="mb-4 font-serif text-3xl font-bold">Thank You for Your Order!</h1>
             <p className="mb-2 text-muted-foreground">Order placed successfully</p>
             <p className="mb-8 text-muted-foreground">
-              We've sent a confirmation email to {formData.email}
+              We've sent a confirmation email to {confirmationEmail}
             </p>
+            {confirmedOrder && (
+              <div className="mb-8 rounded-lg border border-border bg-card p-6 text-left">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.32em] text-muted-foreground">Order details</p>
+                    <h3 className="mt-2 text-lg font-semibold">Order #{confirmedOrder.id}</h3>
+                    {formatOrderDateTime(confirmedOrder.created_at) && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Placed on {formatOrderDateTime(confirmedOrder.created_at)}
+                      </p>
+                    )}
+                    {confirmedOrder.cancelled_at && formatOrderDateTime(confirmedOrder.cancelled_at) && (
+                      <p className="mt-1 text-sm text-destructive">
+                        Cancelled on {formatOrderDateTime(confirmedOrder.cancelled_at)}
+                      </p>
+                    )}
+                    {confirmedOrder.refund_status && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Refund status: {confirmedOrder.refund_status}
+                        {confirmedOrder.refund_provider ? ` via ${confirmedOrder.refund_provider}` : ''}
+                      </p>
+                    )}
+                    {confirmedOrder.refunded_at && (
+                      <p className="mt-1 text-sm text-emerald-700">
+                        Refund processed on {formatOrderDateTime(confirmedOrder.refunded_at)}
+                      </p>
+                    )}
+                    {confirmedOrder.refund_error && (
+                      <p className="mt-1 text-sm text-destructive">
+                        Refund note: {confirmedOrder.refund_error}
+                      </p>
+                    )}
+                  </div>
+                  <span
+                    className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getOrderStatusClasses(confirmedOrder.status)}`}
+                  >
+                    {getOrderStatusLabel(confirmedOrder.status)}
+                  </span>
+                </div>
+
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
+                  <p className="max-w-xl text-sm text-muted-foreground">
+                    Need to stop this order? Cancel it here and we&apos;ll email the cancellation confirmation with the
+                    date straight away.
+                  </p>
+                  {canCancelConfirmedOrder ? (
+                    <Button
+                      variant="destructive"
+                      onClick={() => void handleCancelConfirmedOrder()}
+                      disabled={isCancellingOrder}
+                    >
+                      {isCancellingOrder ? 'Cancelling...' : 'Cancel Order'}
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      {confirmedOrder.status === 'cancelled'
+                        ? 'This order is already cancelled.'
+                        : 'This order can no longer be cancelled online.'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            {!confirmedOrder && isLoadingConfirmedOrder && (
+              <div className="mb-8 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+                Loading order details...
+              </div>
+            )}
             <div className="mb-8 rounded-lg bg-card p-6 text-left">
               <h3 className="mb-4 font-semibold">What happens next?</h3>
               <ul className="space-y-2 text-muted-foreground">
