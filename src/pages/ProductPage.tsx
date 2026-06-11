@@ -156,6 +156,9 @@ const gbpFormatter = new Intl.NumberFormat('en-GB', {
 
 
 
+
+
+
 const DIMENSION_SIZE_COLUMNS = [
   '2ft6 Small Single',
   '3ft Single',
