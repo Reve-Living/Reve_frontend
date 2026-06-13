@@ -147,9 +147,15 @@ const cartReducer = (state: CartState, action: CartAction): CartState => {
       return { ...state, items: [], appliedPromo: null };
 
     case 'SET_PROMO':
+      if (state.appliedPromo === action.payload) {
+        return state;
+      }
       return { ...state, appliedPromo: action.payload };
 
     case 'CLEAR_PROMO':
+      if (!state.appliedPromo) {
+        return state;
+      }
       return { ...state, appliedPromo: null };
 
     case 'TOGGLE_CART':

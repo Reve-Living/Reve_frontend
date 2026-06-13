@@ -509,6 +509,12 @@ const CheckoutPage = () => {
   }, [state.appliedPromo?.code]);
 
   useEffect(() => {
+    if (state.items.length === 0 && step !== 'confirmation' && !isSuccessCheckout) {
+      navigate('/cart', { replace: true });
+    }
+  }, [isSuccessCheckout, navigate, state.items.length, step]);
+
+  useEffect(() => {
     const checkAvailability = async () => {
       if (state.items.length === 0) {
         setPromoAvailable(false);
@@ -741,11 +747,6 @@ const CheckoutPage = () => {
     }
   };
 
-  if (state.items.length === 0 && step !== 'confirmation' && !isSuccessCheckout) {
-    navigate('/cart');
-    return null;
-  }
-
   const deliveryInstructions = useMemo(
     () => [
       'Standard delivery is to ground floor only.',
@@ -753,6 +754,10 @@ const CheckoutPage = () => {
     ],
     []
   );
+
+  if (state.items.length === 0 && step !== 'confirmation' && !isSuccessCheckout) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -867,7 +872,7 @@ const CheckoutPage = () => {
               </ul>
             </div>
             <Button asChild size="lg" className="gradient-bronze">
-              <Link to="/">Continue Shopping</Link>
+              <Link to="/collections">Continue Shopping</Link>
             </Button>
           </motion.div>
         ) : (
