@@ -3226,20 +3226,20 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Secure payment methods
               </p>
-              <div className="mt-3 flex flex-wrap gap-3">
-                <div className="flex h-11 min-w-[78px] items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
+              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
                   <span className="text-sm font-bold tracking-[0.12em] text-blue-800">VISA</span>
                 </div>
-                <div className="flex h-11 min-w-[78px] items-center justify-center rounded-xl border border-[#ece7df] bg-white px-4 shadow-sm">
+                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#ece7df] bg-white px-4 shadow-sm">
                   <div className="flex">
                     <div className="h-6 w-6 rounded-full bg-red-500 -mr-2.5"></div>
                     <div className="h-6 w-6 rounded-full bg-yellow-500"></div>
                   </div>
                 </div>
-                <div className="flex h-11 min-w-[88px] items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
+                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
                   <span className="text-sm font-bold text-blue-700">PayPal</span>
                 </div>
-                <div className="flex h-11 min-w-[82px] items-center justify-center rounded-xl bg-blue-600 px-4 shadow-sm">
+                <div className="flex h-11 w-full items-center justify-center rounded-xl bg-blue-600 px-4 shadow-sm">
                   <span className="text-sm font-bold tracking-[0.08em] text-white">AMEX</span>
                 </div>
               </div>

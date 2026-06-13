@@ -9,8 +9,8 @@ import {
   User,
   ShieldCheck,
   Truck,
+  Hammer,
   RotateCcw,
-  PhoneCall,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,8 +30,8 @@ const STATIC_END_LINKS = [
 const TRUST_BADGES = [
   { label: 'Secure Checkout', Icon: ShieldCheck },
   { label: 'Fast UK Delivery', Icon: Truck },
-  { label: 'Hassle-Free Refunds', Icon: RotateCcw },
-  { label: 'Friendly Support', Icon: PhoneCall },
+  { label: 'Handmade in the UK', Icon: Hammer },
+  { label: '30-Day Returns', Icon: RotateCcw },
 ] as const;
 
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
@@ -810,15 +810,15 @@ const Header = () => {
           </div>
         )}
 
-        <div className="bg-gradient-to-r from-[#fbf6f0] via-[#fffdfb] to-[#f7efe6]">
+        <div className="bg-background">
           <div className="container mx-auto px-4">
-            <div className="flex gap-3 overflow-x-auto py-3 sm:justify-center sm:gap-5 lg:gap-8">
+            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-3 sm:gap-x-7">
               {TRUST_BADGES.map(({ label, Icon }) => (
                 <div
                   key={label}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-full border border-[#eadfd2] bg-white/80 px-4 py-2 text-sm font-semibold text-espresso shadow-[0_8px_24px_-24px_rgba(74,58,46,0.35)]"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
                 >
-                  <Icon className="h-4 w-4 text-[#8b5e34]" />
+                  <Icon className="h-4 w-4 text-foreground" />
                   <span>{label}</span>
                 </div>
               ))}
