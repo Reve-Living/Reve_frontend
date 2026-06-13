@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/accordion';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/contact';
 import { toast } from 'sonner';
 
 const faqs = [
@@ -229,26 +230,26 @@ const ContactPage = () => {
               <h3 className="mb-6 font-serif text-xl font-semibold">Contact Details</h3>
               <div className="space-y-4">
                 <a
-                  href="tel:+442080641987"
+                  href={`tel:${SUPPORT_PHONE}`}
                   className="flex items-center gap-4 text-muted-foreground transition-colors hover:text-primary"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     <Phone className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">+44 20 8064 1987</p>
+                    <p className="font-medium text-foreground">{SUPPORT_PHONE_DISPLAY}</p>
                     <p className="text-sm">Mon - Fri: 9am - 6pm</p>
                   </div>
                 </a>
                 <a
-                  href="mailto:info@reveliving.co.uk"
+                  href={`mailto:${SUPPORT_EMAIL}`}
                   className="flex items-center gap-4 text-muted-foreground transition-colors hover:text-primary"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
                     <Mail className="h-5 w-5 text-primary" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">info@reveliving.co.uk</p>
+                    <p className="font-medium text-foreground">{SUPPORT_EMAIL}</p>
                     <p className="text-sm">We reply within 24 hours</p>
                   </div>
                 </a>

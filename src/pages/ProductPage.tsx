@@ -33,6 +33,7 @@ import {
   Wallet,
   BadgeDollarSign,
   Maximize2,
+  PhoneCall,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatWholePrice } from '@/lib/pricing';
@@ -59,6 +60,7 @@ import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
 
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_WHATSAPP_DISPLAY } from '@/lib/contact';
 import { Category, Collection, Product, ProductDimensionRow, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 
@@ -742,9 +744,26 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
 };
 
 const reassuranceItems = [
-  { icon: Truck, label: 'Free UK Delivery' },
-  { icon: Shield, label: '10-Year Guarantee' },
-  { icon: CheckCircle2, label: 'Secure Checkout' },
+  {
+    icon: Shield,
+    title: 'Secure Checkout',
+    description: 'Protected card, PayPal, and cash-on-delivery options for a safer checkout experience.',
+  },
+  {
+    icon: BadgeDollarSign,
+    title: 'Hassle-Free Refunds',
+    description: 'Clear refund support and straightforward help if your order qualifies for cancellation or return.',
+  },
+  {
+    icon: Truck,
+    title: 'Delivery You Can Track',
+    description: 'Transparent delivery guidance, dispatch updates, and support before your order reaches your door.',
+  },
+  {
+    icon: PhoneCall,
+    title: 'Talk To A Real Person',
+    description: `Call ${SUPPORT_PHONE_DISPLAY} or WhatsApp ${SUPPORT_WHATSAPP_DISPLAY} for quick product advice.`,
+  },
 ];
 
 const paymentIcons = [
@@ -2821,6 +2840,42 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 )}
               </div>
 
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                {reassuranceItems.map((item) => (
+                  <div
+                    key={item.title}
+                    className="rounded-2xl border border-[#eaded3] bg-gradient-to-br from-[#fffaf6] via-[#fff8f2] to-[#f7eee6] p-3 shadow-[0_10px_28px_-24px_rgba(74,58,46,0.45)]"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white text-[#7a4d37] ring-1 ring-[#eaded3]">
+                        <item.icon className="h-4 w-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-espresso">{item.title}</p>
+                        <p className="mt-1 text-xs leading-5 text-muted-foreground">{item.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-5 border-t border-border/70 pt-4">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Trusted payment options
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {paymentIcons.map((pm) => (
+                    <span
+                      key={pm.label}
+                      className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-[#faf7f2] px-3 py-1.5 text-xs font-semibold text-espresso"
+                    >
+                      <pm.icon className="h-4 w-4 text-bronze" />
+                      {pm.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
             </div>
 
             {variantGroups.length > 0 && (
@@ -3240,22 +3295,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               </Button>
 
             </div>
-
-            {/* Payment chips under CTA (trust badges removed here to reduce clutter) */}
-            <div className="mt-8 w-full -mx-4 sm:-mx-6 lg:-mx-10 px-4 sm:px-6 lg:px-10 flex flex-wrap items-center justify-center gap-4">
-              {paymentIcons.map((pm) => (
-                <span
-                  key={pm.label}
-                  className="inline-flex items-center gap-2 px-2.5 py-1 text-xs font-semibold text-muted-foreground bg-transparent"
-                >
-                  <pm.icon className="h-4 w-4 text-bronze" />
-                  {pm.label}
-                </span>
-              ))}
-            </div>
-
-
-
           </div>
 
         </div>
@@ -3405,15 +3444,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
             {!activeInfoTab && <p className="text-sm text-muted-foreground">Select a tab to view details.</p>}
           </div>
-        </div>
-
-        <div className="mt-6 rounded-xl bg-[#F5F1EA] px-6 py-4 flex flex-wrap items-center justify-center gap-8 text-sm font-semibold text-espresso">
-          {reassuranceItems.map((item) => (
-            <span key={item.label} className="flex items-center gap-2">
-              <item.icon className="h-5 w-5 text-bronze" />
-              {item.label}
-            </span>
-          ))}
         </div>
 
         <section className="mt-12 scroll-mt-28 border-t pt-10" id={REVIEW_SECTION_ID}>

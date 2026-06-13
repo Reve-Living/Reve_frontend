@@ -1,12 +1,10 @@
 import whatsappIcon from "@/assets/whatsapp-icon.png";
-
-const WHATSAPP_NUMBER = "447386340475";
-const WHATSAPP_LINK = `https://wa.me/${WHATSAPP_NUMBER}`;
+import { SUPPORT_WHATSAPP_LINK } from "@/lib/contact";
 
 const WhatsAppButton = () => {
   return (
     <a
-      href={WHATSAPP_LINK}
+      href={SUPPORT_WHATSAPP_LINK}
       target="_blank"
       rel="noreferrer"
       aria-label="Chat with us on WhatsApp"

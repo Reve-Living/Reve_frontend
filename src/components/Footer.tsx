@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Facebook, Instagram } from 'lucide-react';
 import logoLettersOnly from '@/assets/Logo letters only.svg';
 import logoTextOnly from '@/assets/Logo wordmark.svg';
+import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/contact';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -73,18 +74,18 @@ const Footer = () => {
             {/* Contact Info */}
             <div className="mb-5 space-y-2">
               <a
-                href="tel:+442080641987"
+                href={`tel:${SUPPORT_PHONE}`}
                 className="flex items-center gap-3 text-sm text-cream/80 transition-colors hover:text-primary"
               >
                 <Phone className="h-4 w-4" />
-                <span>+44 20 8064 1987</span>
+                <span>{SUPPORT_PHONE_DISPLAY}</span>
               </a>
               <a
-                href="mailto:info@reveliving.co.uk"
+                href={`mailto:${SUPPORT_EMAIL}`}
                 className="flex items-center gap-3 text-sm text-cream/80 transition-colors hover:text-primary"
               >
                 <Mail className="h-4 w-4" />
-                <span>info@reveliving.co.uk</span>
+                <span>{SUPPORT_EMAIL}</span>
               </a>
               <div className="flex items-start gap-3 text-sm text-cream/80">
                 <MapPin className="mt-0.5 h-4 w-4 flex-shrink-0" />
