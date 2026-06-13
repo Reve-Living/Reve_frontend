@@ -811,12 +811,12 @@ const Header = () => {
         )}
 
         <div className="bg-background">
-          <div className="container mx-auto px-4">
-            <div className="flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-2 py-3 sm:gap-x-7 lg:flex-nowrap lg:justify-between lg:gap-x-8">
+          <div className="mx-auto max-w-[1680px] px-6 sm:px-8 lg:px-12">
+            <div className="grid w-full grid-cols-2 items-center gap-x-6 gap-y-2 py-3 sm:gap-x-8 lg:grid-cols-4">
               {TRUST_BADGES.map(({ label, Icon }) => (
                 <div
                   key={label}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-foreground"
+                  className="inline-flex items-center justify-center gap-2 text-sm font-medium text-foreground"
                 >
                   <Icon className="h-4 w-4 text-foreground" />
                   <span>{label}</span>
