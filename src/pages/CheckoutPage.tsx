@@ -316,14 +316,16 @@ const CheckoutPage = () => {
   >([]);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
   const [isLoadingConfirmedOrder, setIsLoadingConfirmedOrder] = useState(false);
-  const [isCancellingOrder, setIsCancellingOrder] = useState(false);
 
   const checkoutParams = new URLSearchParams(window.location.search);
   const isSuccessCheckout = checkoutParams.get('success') === '1' || Boolean(checkoutParams.get('token'));
   const confirmationEmail =
     confirmedOrder?.email || formData.email || localStorage.getItem('last_order_email') || 'your email address';
-  const canCancelConfirmedOrder = Boolean(
-    confirmedOrder && !['cancelled', 'shipped', 'delivered'].includes((confirmedOrder.status || '').toLowerCase())
+  const confirmedOrderStatus = (confirmedOrder?.status || '').toLowerCase();
+  const confirmationEmailSent = Boolean(
+    confirmedOrder?.confirmation_email_sent_at ||
+      ['paid', 'shipped', 'delivered'].includes(confirmedOrderStatus) ||
+      ['cod', 'cash_on_delivery'].includes((confirmedOrder?.payment_method || '').toLowerCase())
   );
 
   useEffect(() => {
@@ -343,7 +345,7 @@ const CheckoutPage = () => {
           const captureId = captureResponse?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
           if (lastOrderId) {
-            await apiPost(`/orders/${lastOrderId}/mark_paid/`, {
+            const updatedOrder = await apiPost<Order>(`/orders/${lastOrderId}/mark_paid/`, {
               email: lastOrderEmail,
               payment_method: 'paypal',
               payment_id: captureId || paypalToken,
@@ -352,9 +354,10 @@ const CheckoutPage = () => {
                 ...(captureId ? { paypal_capture_id: captureId } : {}),
               },
             });
+            setConfirmedOrder(updatedOrder);
           }
         } else if (lastOrderId) {
-          await apiPost(`/orders/${lastOrderId}/mark_paid/`, {
+          const updatedOrder = await apiPost<Order>(`/orders/${lastOrderId}/mark_paid/`, {
             email: lastOrderEmail,
             payment_method: 'card',
             ...(stripeSessionId ? { payment_id: stripeSessionId } : {}),
@@ -366,9 +369,10 @@ const CheckoutPage = () => {
                 }
               : {}),
           });
+          setConfirmedOrder(updatedOrder);
         }
       } catch {
-        // Keep the customer on the confirmation step even if syncing provider references back fails.
+        toast.error('We could not verify the payment yet. We will email you once payment is confirmed.');
       }
 
       setStep('confirmation');
@@ -405,7 +409,7 @@ const CheckoutPage = () => {
   }, [formData.email, step]);
 
   useEffect(() => {
-  if (step === 'confirmation') {
+  if (step === 'confirmation' && confirmationEmailSent) {
     const lastOrderId = localStorage.getItem('last_order_id');
     const trackedOrderId = localStorage.getItem('gtm_tracked_order_id');
     
@@ -499,7 +503,7 @@ const CheckoutPage = () => {
     localStorage.removeItem('last_order_total');
     localStorage.removeItem('last_delivery_fee');
   }
-}, [step]);
+}, [confirmationEmailSent, step]);
   useEffect(() => {
     setPromoCode(state.appliedPromo?.code || '');
   }, [state.appliedPromo?.code]);
@@ -593,38 +597,6 @@ const CheckoutPage = () => {
       if (target?.previewUrl) URL.revokeObjectURL(target.previewUrl);
       return prev.filter((img) => img.id !== id);
     });
-  };
-
-  const handleCancelConfirmedOrder = async () => {
-    if (!confirmedOrder || !canCancelConfirmedOrder) return;
-    if (!window.confirm(`Cancel order #${confirmedOrder.id}? We'll send a cancellation email right away.`)) {
-      return;
-    }
-
-    const lookupEmail = confirmedOrder.email || localStorage.getItem('last_order_email') || formData.email;
-    if (!lookupEmail) {
-      toast.error('We could not verify the order email for cancellation.');
-      return;
-    }
-
-    setIsCancellingOrder(true);
-    try {
-      const updatedOrder = await apiPost<Order>(`/orders/${confirmedOrder.id}/mark_cancelled/`, {
-        email: lookupEmail,
-      });
-      setConfirmedOrder(updatedOrder);
-      if (updatedOrder.refund_status === 'succeeded') {
-        toast.success('Order cancelled and refund started. A cancellation email has been sent.');
-      } else if (updatedOrder.refund_status === 'failed') {
-        toast.error('Order cancelled, but the refund needs manual follow-up from support.');
-      } else {
-        toast.success('Order cancelled. A confirmation email has been sent.');
-      }
-    } catch {
-      toast.error('Unable to cancel this order online. Please contact support.');
-    } finally {
-      setIsCancellingOrder(false);
-    }
   };
 
   const handleContinue = () => {
@@ -817,9 +789,13 @@ const CheckoutPage = () => {
               </div>
             </div>
             <h1 className="mb-4 font-serif text-3xl font-bold">Thank You for Your Order!</h1>
-            <p className="mb-2 text-muted-foreground">Order placed successfully</p>
+            <p className="mb-2 text-muted-foreground">
+              {confirmationEmailSent ? 'Order placed successfully' : 'Order received, payment verification pending'}
+            </p>
             <p className="mb-8 text-muted-foreground">
-              We've sent a confirmation email to {confirmationEmail}
+              {confirmationEmailSent
+                ? `We've sent a confirmation email to ${confirmationEmail}`
+                : `We'll send a confirmation email to ${confirmationEmail} once payment is verified.`}
             </p>
             {confirmedOrder && (
               <div className="mb-8 rounded-lg border border-border bg-card p-6 text-left">
@@ -860,28 +836,6 @@ const CheckoutPage = () => {
                     {getOrderStatusLabel(confirmedOrder.status)}
                   </span>
                 </div>
-
-                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">
-                  <p className="max-w-xl text-sm text-muted-foreground">
-                    Need to stop this order? Cancel it here and we&apos;ll email the cancellation confirmation with the
-                    date straight away.
-                  </p>
-                  {canCancelConfirmedOrder ? (
-                    <Button
-                      variant="destructive"
-                      onClick={() => void handleCancelConfirmedOrder()}
-                      disabled={isCancellingOrder}
-                    >
-                      {isCancellingOrder ? 'Cancelling...' : 'Cancel Order'}
-                    </Button>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">
-                      {confirmedOrder.status === 'cancelled'
-                        ? 'This order is already cancelled.'
-                        : 'This order can no longer be cancelled online.'}
-                    </p>
-                  )}
-                </div>
               </div>
             )}
             {!confirmedOrder && isLoadingConfirmedOrder && (
@@ -892,9 +846,24 @@ const CheckoutPage = () => {
             <div className="mb-8 rounded-lg bg-card p-6 text-left">
               <h3 className="mb-4 font-semibold">What happens next?</h3>
               <ul className="space-y-2 text-muted-foreground">
-                <li>• You'll receive an order confirmation email shortly</li>
-                <li>• Our team will prepare your order for delivery</li>
-                <li>• Estimated delivery: 1–7 working days</li>
+                <li>
+                  •{' '}
+                  {confirmationEmailSent
+                    ? "You'll receive an order confirmation email shortly"
+                    : "You'll receive an order confirmation email after payment is verified"}
+                </li>
+                <li>
+                  •{' '}
+                  {confirmationEmailSent
+                    ? 'Our team will prepare your order for delivery'
+                    : 'Our team will prepare your order after payment confirmation'}
+                </li>
+                <li>
+                  •{' '}
+                  {confirmationEmailSent
+                    ? 'Estimated delivery: 1–7 working days'
+                    : 'The order will remain pending until payment is confirmed'}
+                </li>
               </ul>
             </div>
             <Button asChild size="lg" className="gradient-bronze">

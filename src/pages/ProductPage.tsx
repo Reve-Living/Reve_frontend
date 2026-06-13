@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import type { CSSProperties } from 'react';
 
-import { useParams, Link, useSearchParams, useLocation } from 'react-router-dom';
+import { useParams, Link, useSearchParams, useLocation, useNavigate } from 'react-router-dom';
 
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -754,6 +754,9 @@ const paymentIcons = [
   { label: 'PayPal', icon: Wallet },
 ];
 
+const REVIEW_SECTION_ID = 'reviews';
+const REVIEW_FORM_ID = 'write-review';
+
 
 
 const ProductPage = () => {
@@ -761,6 +764,7 @@ const ProductPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const locationState =
     ((location.state as { previewProduct?: Product; returnTo?: string } | null) || null);
   const returnTo = typeof locationState?.returnTo === 'string' ? locationState.returnTo : '';
@@ -849,6 +853,46 @@ type MattressDetailView = {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const hasAutoSelectedIncludedMattress = useRef(false);
   const preloadedAssets = useRef(new Set<string>());
+
+  const scrollToReviewAnchor = useCallback((targetId: string, behavior: ScrollBehavior = 'smooth') => {
+    window.setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior, block: 'start' });
+    }, 50);
+  }, []);
+
+  const jumpToReviewAnchor = useCallback(
+    (targetId: string) => {
+      if (targetId === REVIEW_FORM_ID) {
+        setShowReviewForm(true);
+      }
+
+      navigate({ pathname: location.pathname, search: location.search, hash: `#${targetId}` });
+      scrollToReviewAnchor(targetId);
+    },
+    [location.pathname, location.search, navigate, scrollToReviewAnchor]
+  );
+
+  const handleReviewAnchorClick = useCallback(
+    (event: React.MouseEvent<HTMLAnchorElement>, targetId: string) => {
+      event.preventDefault();
+      jumpToReviewAnchor(targetId);
+    },
+    [jumpToReviewAnchor]
+  );
+
+  useEffect(() => {
+    if (!product?.id) return;
+
+    const targetId = decodeURIComponent((location.hash || '').replace(/^#/, ''));
+    if (![REVIEW_SECTION_ID, REVIEW_FORM_ID].includes(targetId)) return;
+
+    if (targetId === REVIEW_FORM_ID && !showReviewForm) {
+      setShowReviewForm(true);
+      return;
+    }
+
+    scrollToReviewAnchor(targetId, 'auto');
+  }, [location.hash, product?.id, scrollToReviewAnchor, showReviewForm]);
 
   // Reset mattress selection/autoselect state when navigating to a different product
   useEffect(() => {
@@ -2333,6 +2377,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       });
       toast.success('Thank you! Your review will appear once approved.');
       setReviewForm({ name: '', rating: 5, comment: '' });
+      navigate({ pathname: location.pathname, search: location.search, hash: `#${REVIEW_SECTION_ID}` }, { replace: true });
       setShowReviewForm(false);
       fetchReviews(product.id);
     } catch (error) {
@@ -2580,7 +2625,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
 
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
 
               <div className="flex gap-0.5">
 
@@ -2606,11 +2651,26 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
               </div>
 
-              <span className="text-sm text-muted-foreground">
+              <a
+                href={`#${REVIEW_SECTION_ID}`}
+                onClick={(event) => handleReviewAnchorClick(event, REVIEW_SECTION_ID)}
+                className="text-sm text-muted-foreground transition hover:text-primary hover:underline"
+              >
+                {Number(product.rating || 0).toFixed(1)}/5 ({product.review_count}{' '}
+                {Number(product.review_count) === 1 ? 'Review' : 'Reviews'})
+              </a>
 
-                {product.rating} ({product.review_count} reviews)
-
+              <span className="text-sm text-muted-foreground" aria-hidden="true">
+                |
               </span>
+
+              <a
+                href={`#${REVIEW_FORM_ID}`}
+                onClick={(event) => handleReviewAnchorClick(event, REVIEW_FORM_ID)}
+                className="text-sm font-semibold text-primary transition hover:underline"
+              >
+                Write a Review
+              </a>
 
             </div>
 
@@ -3247,19 +3307,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           ))}
         </div>
 
-        <section className="mt-12 border-t pt-10" id="reviews">
+        <section className="mt-12 scroll-mt-28 border-t pt-10" id={REVIEW_SECTION_ID}>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 className="font-serif text-2xl font-bold text-foreground">Reviews</h2>
               <p className="text-sm text-muted-foreground">Only approved reviews are shown here.</p>
             </div>
-            <Button variant={showReviewForm ? 'secondary' : 'outline'} onClick={() => setShowReviewForm((prev) => !prev)}>
-              {showReviewForm ? 'Close Form' : 'Write a Review'}
-            </Button>
           </div>
 
           {showReviewForm && (
-            <div className="mt-6 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div id={REVIEW_FORM_ID} className="mt-6 scroll-mt-28 rounded-xl border border-border bg-card p-5 shadow-sm">
               <p className="text-sm text-muted-foreground">New reviews are published once approved by our team.</p>
               <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={handleSubmitReview}>
                 <div className="space-y-2">

@@ -225,6 +225,58 @@ const Header = () => {
     }
   };
 
+  const renderSearchResults = (layout: 'floating' | 'mobile' = 'floating') => {
+    if (!shouldShowSearchResults) return null;
+
+    return (
+      <div
+        className={
+          layout === 'floating'
+            ? 'absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-xl border border-border bg-card shadow-2xl'
+            : 'mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-2xl'
+        }
+      >
+        {limitedSearchResults.length > 0 ? (
+          <div className="max-h-96 overflow-y-auto p-2">
+            {limitedSearchResults.map((product) => (
+              <button
+                key={product.id}
+                type="button"
+                onClick={() => handleSearchSelect(product.slug)}
+                className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
+              >
+                {product.images?.[0]?.url ? (
+                  <img
+                    src={product.images[0].url}
+                    alt={product.name}
+                    className="h-14 w-14 flex-shrink-0 rounded-md object-cover"
+                  />
+                ) : (
+                  <div className="h-14 w-14 flex-shrink-0 rounded-md bg-muted" />
+                )}
+                <div className="min-w-0">
+                  <p className="truncate font-medium text-foreground">{product.name}</p>
+                  {(product.category_name || product.subcategory_name) && (
+                    <p className="truncate text-sm text-muted-foreground">
+                      {[product.category_name, product.subcategory_name].filter(Boolean).join(' / ')}
+                    </p>
+                  )}
+                  <p className="text-sm font-semibold text-primary">
+                    {formatWholePrice(Number(product.price))}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="px-4 py-3 text-sm text-muted-foreground">
+            {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="sticky top-0 z-50">
@@ -451,6 +503,29 @@ const Header = () => {
               </Button>
             </div>
           </div>
+
+          {isSearchOpen && !isMobileMenuOpen && (
+            <div ref={searchRef} className="pb-4 md:hidden">
+              <form onSubmit={handleSearchSubmit} className="relative">
+                <Input
+                  placeholder="Search products..."
+                  className="h-11 border-accent bg-card pr-12"
+                  autoFocus
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search products"
+                />
+                <button
+                  type="submit"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                  aria-label="Search"
+                >
+                  <Search className="h-5 w-5" />
+                </button>
+              </form>
+              {renderSearchResults('mobile')}
+            </div>
+          )}
 
           <div className="hidden lg:flex lg:flex-col lg:py-4">
             <div className="flex items-start justify-between gap-8">
@@ -691,8 +766,28 @@ const Header = () => {
               </div>
 
               {/* Mobile Search */}
-              <div className="mt-6">
-                <Input placeholder="Search products..." className="border-accent" />
+              <div ref={searchRef} className="mt-6 md:hidden">
+                <form onSubmit={handleSearchSubmit} className="relative">
+                  <Input
+                    placeholder="Search products..."
+                    className="h-11 border-accent bg-background pr-12"
+                    value={searchQuery}
+                    onFocus={() => setIsSearchOpen(true)}
+                    onChange={(e) => {
+                      setIsSearchOpen(true);
+                      setSearchQuery(e.target.value);
+                    }}
+                    aria-label="Search products"
+                  />
+                  <button
+                    type="submit"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                    aria-label="Search"
+                  >
+                    <Search className="h-5 w-5" />
+                  </button>
+                </form>
+                {renderSearchResults('mobile')}
               </div>
             </div>
           </div>
