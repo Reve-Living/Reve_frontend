@@ -162,25 +162,25 @@ const Footer = () => {
             </ul>
 
             {/* Payment Icons - Under Legal */}
-            <div className="mt-6 flex items-center gap-2">
+            <div className="mt-6 flex items-center gap-3">
               {/* Visa */}
-              <div className="flex h-7 w-11 items-center justify-center rounded bg-white">
-                <span className="text-[11px] font-bold text-blue-800">VISA</span>
+              <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white shadow-sm">
+                <span className="text-xs font-bold tracking-[0.08em] text-blue-800">VISA</span>
               </div>
               {/* Mastercard */}
-              <div className="flex h-7 w-11 items-center justify-center rounded bg-white">
+              <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white shadow-sm">
                 <div className="flex">
-                  <div className="h-4 w-4 rounded-full bg-red-500 -mr-1.5"></div>
-                  <div className="h-4 w-4 rounded-full bg-yellow-500"></div>
+                  <div className="h-5 w-5 rounded-full bg-red-500 -mr-2"></div>
+                  <div className="h-5 w-5 rounded-full bg-yellow-500"></div>
                 </div>
               </div>
               {/* PayPal */}
-              <div className="flex h-7 w-11 items-center justify-center rounded bg-white">
-                <span className="text-[9px] font-bold text-blue-700">PayPal</span>
+              <div className="flex h-9 w-14 items-center justify-center rounded-md bg-white shadow-sm">
+                <span className="text-[11px] font-bold text-blue-700">PayPal</span>
               </div>
               {/* Amex */}
-              <div className="flex h-7 w-11 items-center justify-center rounded bg-blue-600">
-                <span className="text-[9px] font-bold text-white">AMEX</span>
+              <div className="flex h-9 w-14 items-center justify-center rounded-md bg-blue-600 shadow-sm">
+                <span className="text-[11px] font-bold tracking-[0.06em] text-white">AMEX</span>
               </div>
             </div>
           </div>
