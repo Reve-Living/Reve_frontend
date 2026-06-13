@@ -1924,8 +1924,15 @@ type MattressDetailView = {
 
   const totalPrice = unitPrice * quantity;
 
-  const savingsPerUnit = unitOriginalPrice && unitOriginalPrice > unitPrice ? unitOriginalPrice - unitPrice : 0;
-  const discountPercentage = unitOriginalPrice && unitOriginalPrice > unitPrice ? Math.round((savingsPerUnit / unitOriginalPrice) * 100) : 0;
+  const adminDiscountPercentage = Number(product?.discount_percentage ?? 0);
+  const baseDiscountPercentage =
+    baseOriginalPrice && baseOriginalPrice > basePrice
+      ? Math.round((baseSavings / baseOriginalPrice) * 100)
+      : 0;
+  const discountPercentage =
+    adminDiscountPercentage > 0
+      ? Math.round(adminDiscountPercentage)
+      : baseDiscountPercentage;
 
   const bunkMattressRulesEnabled = useMemo(
     () => mattresses.some((m) => m.enable_bunk_positions),
