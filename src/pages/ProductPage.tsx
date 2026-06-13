@@ -1866,8 +1866,7 @@ type MattressDetailView = {
     const base = pick("price", 0);
     const top = pick("price_top", base);
     const bottom = pick("price_bottom", base);
-    const defaultBoth = Number.isFinite(base) ? base * 2 : top + bottom;
-    const both = pick("price_both", defaultBoth);
+    const both = top + bottom;
     if (!m.enable_bunk_positions || !pos) return base;
     if (pos === 'top') return top;
     if (pos === 'bottom') return bottom;
@@ -3709,11 +3708,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   mattress.enable_bunk_positions && isSelected ? selectedPick?.position || 'top' : null;
 
                 const visiblePosition = mattress.enable_bunk_positions ? currentPosition : null;
-                const isIncluded =
-                  Number(mattress.price ?? 0) === 0 &&
-                  Number(mattress.price_top ?? 0) === 0 &&
-                  Number(mattress.price_bottom ?? 0) === 0 &&
-                  Number(mattress.price_both ?? 0) === 0;
+                const isIncluded = isIncludedMattress(mattress, selectedSize);
 
                 const displaySizeLabel = normalizeSizeName(selectedSize) || selectedSize || '';
                 const priceDisplay = mattress.enable_bunk_positions
