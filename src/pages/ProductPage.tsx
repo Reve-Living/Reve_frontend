@@ -58,8 +58,8 @@ import Footer from '@/components/Footer';
 
 import ProductCard from '@/components/ProductCard';
 
-import { apiGet, apiPost } from '@/lib/api';
-import { Category, Collection, Product, ProductDimensionRow, Review, ProductMattress, MattressOptionPrice } from '@/lib/types';
+import { apiGet, apiPost, apiUpload } from '@/lib/api';
+import { Category, Collection, Product, ProductDimensionRow, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 
 import { toast } from 'sonner';
@@ -756,6 +756,15 @@ const paymentIcons = [
 
 const REVIEW_SECTION_ID = 'reviews';
 const REVIEW_FORM_ID = 'write-review';
+const REVIEW_MEDIA_ACCEPT = 'image/*,video/*';
+const MAX_REVIEW_MEDIA = 6;
+
+type SelectedReviewMedia = {
+  id: string;
+  file: File;
+  previewUrl: string;
+  type: 'image' | 'video';
+};
 
 
 
@@ -850,9 +859,11 @@ type MattressDetailView = {
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
+  const [reviewMediaFiles, setReviewMediaFiles] = useState<SelectedReviewMedia[]>([]);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const hasAutoSelectedIncludedMattress = useRef(false);
   const preloadedAssets = useRef(new Set<string>());
+  const reviewMediaFilesRef = useRef<SelectedReviewMedia[]>([]);
 
   const scrollToReviewAnchor = useCallback((targetId: string, behavior: ScrollBehavior = 'smooth') => {
     window.setTimeout(() => {
@@ -901,8 +912,23 @@ type MattressDetailView = {
     setHasUserChangedMattressSelection(false);
     setPreviewFabric('');
     setAssemblyServiceSelected(false);
+    setReviewMediaFiles((prev) => {
+      prev.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      return [];
+    });
     hasAutoSelectedIncludedMattress.current = false;
   }, [product?.id]);
+
+  useEffect(() => {
+    reviewMediaFilesRef.current = reviewMediaFiles;
+  }, [reviewMediaFiles]);
+
+  useEffect(
+    () => () => {
+      reviewMediaFilesRef.current.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+    },
+    []
+  );
 
   const isBunkOrDivanCategory = useMemo(() => {
     const slug = (product?.category_slug || '').toLowerCase();
@@ -2356,6 +2382,45 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
     toast.success(`${product.name} added to cart`);
   };
 
+  const handleReviewMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
+
+    setReviewMediaFiles((prev) => {
+      const remainingSlots = Math.max(MAX_REVIEW_MEDIA - prev.length, 0);
+      if (remainingSlots === 0) {
+        toast.error(`Please upload no more than ${MAX_REVIEW_MEDIA} images or videos`);
+        return prev;
+      }
+
+      const accepted = files
+        .filter((file) => file.type.startsWith('image/') || file.type.startsWith('video/'))
+        .slice(0, remainingSlots)
+        .map((file) => ({
+          id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+          file,
+          previewUrl: URL.createObjectURL(file),
+          type: file.type.startsWith('video/') ? ('video' as const) : ('image' as const),
+        }));
+
+      if (accepted.length < files.length) {
+        toast.error(`Only ${remainingSlots} more media file${remainingSlots === 1 ? '' : 's'} can be added`);
+      }
+
+      return [...prev, ...accepted];
+    });
+
+    event.target.value = '';
+  };
+
+  const removeReviewMedia = (id: string) => {
+    setReviewMediaFiles((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!product?.id) {
@@ -2369,14 +2434,28 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
     const rating = Math.max(1, Math.min(5, Math.round(reviewForm.rating || 0)));
     setIsSubmittingReview(true);
     try {
+      const uploadedMedia = await Promise.all(
+        reviewMediaFiles.map((item) =>
+          apiUpload('/reviews/upload_media/', item.file).then((uploaded) => ({
+            url: uploaded.url,
+            type: (uploaded.type || item.type) as ReviewMedia['type'],
+            name: uploaded.name || item.file.name,
+            mime_type: uploaded.mime_type || item.file.type,
+          }))
+        )
+      );
+
       await apiPost('/reviews/', {
         product: product.id,
         name: reviewForm.name.trim() || 'Anonymous',
         rating,
         comment: reviewForm.comment.trim(),
+        media: uploadedMedia,
       });
       toast.success('Thank you! Your review will appear once approved.');
       setReviewForm({ name: '', rating: 5, comment: '' });
+      reviewMediaFiles.forEach((item) => URL.revokeObjectURL(item.previewUrl));
+      setReviewMediaFiles([]);
       navigate({ pathname: location.pathname, search: location.search, hash: `#${REVIEW_SECTION_ID}` }, { replace: true });
       setShowReviewForm(false);
       fetchReviews(product.id);
@@ -2390,6 +2469,36 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
   const formatReviewDate = (value?: string) => {
     if (!value) return '';
     return new Date(value).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const renderReviewMedia = (media?: ReviewMedia[]) => {
+    if (!media?.length) return null;
+
+    return (
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {media.map((item, index) => {
+          const url = resolveMediaUrl(item.url);
+          if (!url) return null;
+
+          return item.type === 'video' ? (
+            <video
+              key={`${item.url}-${index}`}
+              src={url}
+              controls
+              className="aspect-square w-full rounded-lg border border-border bg-black object-cover"
+            />
+          ) : (
+            <img
+              key={`${item.url}-${index}`}
+              src={url}
+              alt={item.name || 'Customer review media'}
+              className="aspect-square w-full rounded-lg border border-border object-cover"
+              loading="lazy"
+            />
+          );
+        })}
+      </div>
+    );
   };
 
 
@@ -3359,6 +3468,52 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     placeholder="Tell us about the comfort, quality, delivery, or anything else."
                   />
                 </div>
+                <div className="space-y-3 md:col-span-2">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label
+                      htmlFor="review-media"
+                      className="inline-flex cursor-pointer items-center rounded-md border border-border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:border-primary hover:text-primary"
+                    >
+                      Upload images or videos
+                    </label>
+                    <input
+                      id="review-media"
+                      type="file"
+                      className="sr-only"
+                      accept={REVIEW_MEDIA_ACCEPT}
+                      multiple
+                      onChange={handleReviewMediaChange}
+                    />
+                    <span className="text-xs text-muted-foreground">
+                      Up to {MAX_REVIEW_MEDIA} files. Photos or short videos are accepted.
+                    </span>
+                  </div>
+
+                  {reviewMediaFiles.length > 0 && (
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+                      {reviewMediaFiles.map((item) => (
+                        <div key={item.id} className="group relative overflow-hidden rounded-lg border border-border bg-background">
+                          {item.type === 'video' ? (
+                            <video src={item.previewUrl} className="aspect-square w-full object-cover" muted />
+                          ) : (
+                            <img src={item.previewUrl} alt={item.file.name} className="aspect-square w-full object-cover" />
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeReviewMedia(item.id)}
+                            className="absolute right-2 top-2 rounded-full bg-black/70 p-1 text-white transition hover:bg-black"
+                            aria-label={`Remove ${item.file.name}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          <div className="absolute inset-x-0 bottom-0 bg-black/65 px-2 py-1 text-[11px] text-white">
+                            <p className="truncate">{item.file.name}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <div className="md:col-span-2 flex items-center gap-3">
                   <Button type="submit" disabled={isSubmittingReview}>
                     {isSubmittingReview ? 'Sending...' : 'Submit Review'}
@@ -3396,6 +3551,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     </div>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">{review.comment}</p>
+                  {renderReviewMedia(review.media)}
                 </div>
               ))
             )}

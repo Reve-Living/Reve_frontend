@@ -143,7 +143,10 @@ export const apiDelete = async (path: string): Promise<void> => {
   await runMutation<void>("DELETE", path);
 };
 
-export const apiUpload = async (path: string, file: File): Promise<{ url: string }> => {
+export const apiUpload = async (
+  path: string,
+  file: File
+): Promise<{ url: string; type?: string; name?: string; mime_type?: string }> => {
   const formData = new FormData();
   formData.append("file", file);
   const token = getAuthToken();
