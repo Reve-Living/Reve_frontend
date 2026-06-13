@@ -812,7 +812,7 @@ const Header = () => {
 
         <div className="bg-background">
           <div className="container mx-auto px-4">
-            <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 py-3 sm:gap-x-7">
+            <div className="flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-2 py-3 sm:gap-x-7 lg:flex-nowrap lg:justify-between lg:gap-x-8">
               {TRUST_BADGES.map(({ label, Icon }) => (
                 <div
                   key={label}
