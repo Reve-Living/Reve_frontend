@@ -502,8 +502,8 @@ const CategoryPage = () => {
 
       {/* Compact heading */}
       <section className="border-b border-border/50 bg-card/60">
-        <div className="w-full px-4 md:px-8 lg:px-12 py-8 md:py-10">
-          <nav className="mb-3 flex items-center gap-2 text-sm text-muted-foreground">
+        <div className="w-full px-4 py-3 md:px-8 md:py-4 lg:px-12">
+          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
             <Link to="/" className="hover:text-primary">Home</Link>
             <ChevronRight className="h-4 w-4" />
             <Link to={`/category/${category?.slug}`} className="hover:text-primary">
@@ -519,8 +519,8 @@ const CategoryPage = () => {
         </div>
       </section>
 
-      <section className="w-full px-4 md:px-8 lg:px-12 py-12">
-        <div className="grid gap-10 lg:grid-cols-[320px_minmax(0,1fr)]">
+      <section className="w-full px-4 pb-10 pt-6 md:px-8 md:pb-14 md:pt-8 lg:px-12">
+        <div className="grid gap-6 lg:grid-cols-[320px_minmax(0,1fr)] lg:gap-8">
           <aside className="hidden lg:block sticky top-24 h-fit self-start">
             <div className="rounded-2xl bg-white shadow-[0_12px_30px_rgba(0,0,0,0.08)] border border-border/60 p-6 space-y-8">
               <FilterContent
@@ -540,8 +540,8 @@ const CategoryPage = () => {
             </div>
           </aside>
 
-          <div className="space-y-10">
-            <div className="space-y-3 text-left lg:max-w-none">
+          <div className="space-y-6">
+            <div className="space-y-2 text-left lg:max-w-none">
               <motion.h1
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
