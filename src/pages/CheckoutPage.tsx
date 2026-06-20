@@ -22,6 +22,7 @@ import { buildPromotionItemsPayload } from '@/lib/promo';
 import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
+type StripeBackedPaymentMethod = 'card' | 'google_pay' | 'klarna';
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
 const REFERENCE_IMAGE_ACCEPT = 'image/webp,image/*';
@@ -45,6 +46,9 @@ const splitFullName = (fullName: string) => {
     lastName: parts[parts.length - 1],
   };
 };
+
+const isStripeBackedPaymentMethod = (method: string): method is StripeBackedPaymentMethod =>
+  ['card', 'google_pay', 'klarna'].includes(method);
 
 const resolveVariantValue = (styles: ProductStyle[] | undefined, rawValue: string) => {
   const value = (rawValue || '').trim();
@@ -336,6 +340,10 @@ const CheckoutPage = () => {
       const stripeSessionId = params.get('session_id');
       const lastOrderEmail = localStorage.getItem('last_order_email') || '';
       const lastOrderId = localStorage.getItem('last_order_id');
+      const lastStripePaymentMethod = localStorage.getItem('last_stripe_payment_method') || 'card';
+      const resolvedStripePaymentMethod = isStripeBackedPaymentMethod(lastStripePaymentMethod)
+        ? lastStripePaymentMethod
+        : 'card';
 
       if (!(success === '1' || paypalToken)) return;
 
@@ -359,12 +367,13 @@ const CheckoutPage = () => {
         } else if (lastOrderId) {
           const updatedOrder = await apiPost<Order>(`/orders/${lastOrderId}/mark_paid/`, {
             email: lastOrderEmail,
-            payment_method: 'card',
+            payment_method: resolvedStripePaymentMethod,
             ...(stripeSessionId ? { payment_id: stripeSessionId } : {}),
             ...(stripeSessionId
               ? {
                   payment_metadata: {
                     stripe_checkout_session_id: stripeSessionId,
+                    requested_payment_method: resolvedStripePaymentMethod,
                   },
                 }
               : {}),
@@ -683,10 +692,11 @@ const CheckoutPage = () => {
         return;
       }
 
-      if (paymentMethod === 'card') {
+      if (isStripeBackedPaymentMethod(paymentMethod)) {
         try {
           const discountRate = (state.appliedPromo?.discountPercentage || 0) / 100;
           const applicableSet = new Set(state.appliedPromo?.applicableProductIds || []);
+          localStorage.setItem('last_stripe_payment_method', paymentMethod);
           const session = await apiPost<{ url: string; id: string }>('/payments/create_stripe_session/', {
             items: state.items.map((item) => ({
               name: item.product.name,
@@ -700,6 +710,7 @@ const CheckoutPage = () => {
             delivery_charges: String(deliveryFee),
             currency: 'gbp',
             order_id: orderRes.id,
+            payment_method: paymentMethod,
             success_url: `${window.location.origin}/checkout?success=1`,
             cancel_url: `${window.location.origin}/checkout?canceled=1`,
           });
@@ -1069,6 +1080,34 @@ const CheckoutPage = () => {
                             <p className="font-medium">Credit / Debit Card</p>
                             <p className="text-sm text-muted-foreground">
                               Visa, Mastercard, American Express
+                            </p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
+                        paymentMethod === 'google_pay' ? 'border-primary bg-primary/5' : 'border-border'
+                      }`}>
+                        <RadioGroupItem value="google_pay" id="google_pay" />
+                        <Label htmlFor="google_pay" className="flex flex-1 cursor-pointer items-center gap-3">
+                          <Wallet className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium">Google Pay</p>
+                            <p className="text-sm text-muted-foreground">
+                              Pay quickly with Google Pay on supported devices
+                            </p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
+                        paymentMethod === 'klarna' ? 'border-primary bg-primary/5' : 'border-border'
+                      }`}>
+                        <RadioGroupItem value="klarna" id="klarna" />
+                        <Label htmlFor="klarna" className="flex flex-1 cursor-pointer items-center gap-3">
+                          <Wallet className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium">Klarna</p>
+                            <p className="text-sm text-muted-foreground">
+                              Pay later or split payments with Klarna when eligible
                             </p>
                           </div>
                         </Label>
