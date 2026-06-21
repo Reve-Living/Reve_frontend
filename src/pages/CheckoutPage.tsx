@@ -22,7 +22,7 @@ import { buildPromotionItemsPayload } from '@/lib/promo';
 import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
-type StripeBackedPaymentMethod = 'card' | 'google_pay' | 'klarna';
+type StripeBackedPaymentMethod = 'card' | 'google_pay' | 'klarna' | 'afterpay_clearpay';
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
 const REFERENCE_IMAGE_ACCEPT = 'image/webp,image/*';
@@ -48,7 +48,7 @@ const splitFullName = (fullName: string) => {
 };
 
 const isStripeBackedPaymentMethod = (method: string): method is StripeBackedPaymentMethod =>
-  ['card', 'google_pay', 'klarna'].includes(method);
+  ['card', 'google_pay', 'klarna', 'afterpay_clearpay'].includes(method);
 
 const resolveVariantValue = (styles: ProductStyle[] | undefined, rawValue: string) => {
   const value = (rawValue || '').trim();
@@ -1108,6 +1108,20 @@ const CheckoutPage = () => {
                             <p className="font-medium">Klarna</p>
                             <p className="text-sm text-muted-foreground">
                               Pay later or split payments with Klarna when eligible
+                            </p>
+                          </div>
+                        </Label>
+                      </div>
+                      <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
+                        paymentMethod === 'afterpay_clearpay' ? 'border-primary bg-primary/5' : 'border-border'
+                      }`}>
+                        <RadioGroupItem value="afterpay_clearpay" id="afterpay_clearpay" />
+                        <Label htmlFor="afterpay_clearpay" className="flex flex-1 cursor-pointer items-center gap-3">
+                          <Wallet className="h-5 w-5 text-primary" />
+                          <div>
+                            <p className="font-medium">Clearpay</p>
+                            <p className="text-sm text-muted-foreground">
+                              4 interest-free payments with Clearpay when eligible
                             </p>
                           </div>
                         </Label>
