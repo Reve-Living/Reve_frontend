@@ -1,3 +1,6 @@
+import clearpayLogo from '@/assets/clearpay.png';
+import gpayLogo from '@/assets/gpay.png';
+
 type PaymentBrand =
   | 'visa'
   | 'mastercard'
@@ -17,6 +20,7 @@ interface PaymentBrandMarkProps {
 const PaymentBrandMark = ({ brand, compact = false, className = '' }: PaymentBrandMarkProps) => {
   const base = compact ? 'h-6 text-xs' : 'h-8 text-sm';
   const common = `inline-flex shrink-0 items-center justify-center whitespace-nowrap ${base} ${className}`;
+  const logoClass = compact ? 'max-h-5 w-auto object-contain' : 'max-h-7 w-auto object-contain';
 
   switch (brand) {
     case 'visa':
@@ -37,15 +41,18 @@ const PaymentBrandMark = ({ brand, compact = false, className = '' }: PaymentBra
       return <span className={`${common} rounded bg-[#2e77bc] px-2 font-extrabold tracking-[0.08em] text-white`}>AMEX</span>;
     case 'google_pay':
       return (
-        <span className={`${common} gap-1 font-semibold text-slate-900`}>
-          <span className="font-bold text-[#4285f4]">G</span>
-          <span>Pay</span>
+        <span className={common}>
+          <img src={gpayLogo} alt="Google Pay" className={logoClass} />
         </span>
       );
     case 'klarna':
       return <span className={`${common} rounded bg-[#ffb3c7] px-2 font-extrabold text-[#17120f]`}>Klarna.</span>;
     case 'clearpay':
-      return <span className={`${common} font-extrabold tracking-tight text-[#00a66f]`}>clearpay</span>;
+      return (
+        <span className={common}>
+          <img src={clearpayLogo} alt="Clearpay" className={logoClass} />
+        </span>
+      );
     case 'cod':
       return <span className={`${common} font-semibold text-slate-700`}>COD</span>;
     default:
