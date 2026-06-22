@@ -51,6 +51,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 import ProductCard from '@/components/ProductCard';
+import PaymentBrandMark from '@/components/PaymentBrandMark';
 
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
 import { Category, Collection, Product, ProductDimensionRow, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
@@ -3234,34 +3235,14 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Secure payment methods
               </p>
-              <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
-                  <span className="text-sm font-bold tracking-[0.12em] text-blue-800">VISA</span>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#ece7df] bg-white px-4 shadow-sm">
-                  <div className="flex">
-                    <div className="h-6 w-6 rounded-full bg-red-500 -mr-2.5"></div>
-                    <div className="h-6 w-6 rounded-full bg-yellow-500"></div>
-                  </div>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
-                  <span className="text-sm font-bold text-blue-700">PayPal</span>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl bg-blue-600 px-4 shadow-sm">
-                  <span className="text-sm font-bold tracking-[0.08em] text-white">AMEX</span>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#f3d4e3] bg-white px-4 shadow-sm">
-                  <span className="text-sm font-bold text-[#ff6b9d]">clearpay</span>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#f4d5df] bg-[#ffb3c7] px-4 shadow-sm">
-                  <span className="text-sm font-bold text-[#17120f]">Klarna.</span>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#d9e4fb] bg-white px-4 shadow-sm">
-                  <span className="text-sm font-bold text-[#1a73e8]">G Pay</span>
-                </div>
-                <div className="flex h-11 w-full items-center justify-center rounded-xl border border-[#ece7df] bg-white px-4 shadow-sm">
-                  <span className="text-sm font-bold tracking-[0.04em] text-slate-800">Mastercard</span>
-                </div>
+              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
+                <PaymentBrandMark brand="visa" />
+                <PaymentBrandMark brand="mastercard" />
+                <PaymentBrandMark brand="paypal" />
+                <PaymentBrandMark brand="amex" />
+                <PaymentBrandMark brand="google_pay" />
+                <PaymentBrandMark brand="clearpay" />
+                <PaymentBrandMark brand="klarna" />
               </div>
               <div className="mt-4 space-y-2 text-center">
                 <p className="text-sm text-foreground">

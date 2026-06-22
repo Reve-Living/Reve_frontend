@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import Header from '@/components/Header';
 
 import Footer from '@/components/Footer';
+import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { useCart } from '@/context/CartContext';
 import { apiPost } from '@/lib/api';
 import type { PromotionAvailabilityResponse, PromotionValidationResponse } from '@/lib/types';
@@ -576,24 +577,14 @@ const CartPage = () => {
 
                   <p className="mb-2 text-sm text-muted-foreground">We Accept</p>
 
-                  <div className="flex justify-center gap-2">
-
-                    {['Visa', 'Mastercard', 'PayPal', 'COD'].map((method) => (
-
-                      <span
-
-                        key={method}
-
-                        className="rounded bg-muted px-2 py-1 text-xs"
-
-                      >
-
-                        {method}
-
-                      </span>
-
-                    ))}
-
+                  <div className="flex flex-wrap justify-center gap-x-4 gap-y-2">
+                    <PaymentBrandMark brand="visa" compact />
+                    <PaymentBrandMark brand="mastercard" compact />
+                    <PaymentBrandMark brand="paypal" compact />
+                    <PaymentBrandMark brand="google_pay" compact />
+                    <PaymentBrandMark brand="clearpay" compact />
+                    <PaymentBrandMark brand="klarna" compact />
+                    <PaymentBrandMark brand="cod" compact />
                   </div>
 
                 </div>

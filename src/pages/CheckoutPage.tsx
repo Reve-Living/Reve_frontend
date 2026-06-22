@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ChevronRight, CreditCard, Wallet, Banknote, Check, X } from 'lucide-react';
+import { ChevronRight, Banknote, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Checkbox } from '@/components/ui/checkbox';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { useCart } from '@/context/CartContext';
 import { apiPost } from '@/lib/api';
 import type {
@@ -1075,7 +1076,11 @@ const CheckoutPage = () => {
                       }`}>
                         <RadioGroupItem value="card" id="card" />
                         <Label htmlFor="card" className="flex flex-1 cursor-pointer items-center gap-3">
-                          <CreditCard className="h-5 w-5 text-primary" />
+                          <div className="flex min-w-32 items-center gap-3">
+                            <PaymentBrandMark brand="visa" compact />
+                            <PaymentBrandMark brand="mastercard" compact />
+                            <PaymentBrandMark brand="amex" compact />
+                          </div>
                           <div>
                             <p className="font-medium">Credit / Debit Card</p>
                             <p className="text-sm text-muted-foreground">
@@ -1089,7 +1094,7 @@ const CheckoutPage = () => {
                       }`}>
                         <RadioGroupItem value="google_pay" id="google_pay" />
                         <Label htmlFor="google_pay" className="flex flex-1 cursor-pointer items-center gap-3">
-                          <Wallet className="h-5 w-5 text-primary" />
+                          <PaymentBrandMark brand="google_pay" className="min-w-20 justify-start" />
                           <div>
                             <p className="font-medium">Google Pay</p>
                             <p className="text-sm text-muted-foreground">
@@ -1103,7 +1108,7 @@ const CheckoutPage = () => {
                       }`}>
                         <RadioGroupItem value="klarna" id="klarna" />
                         <Label htmlFor="klarna" className="flex flex-1 cursor-pointer items-center gap-3">
-                          <Wallet className="h-5 w-5 text-primary" />
+                          <PaymentBrandMark brand="klarna" className="min-w-20 justify-start" />
                           <div>
                             <p className="font-medium">Klarna</p>
                             <p className="text-sm text-muted-foreground">
@@ -1117,7 +1122,7 @@ const CheckoutPage = () => {
                       }`}>
                         <RadioGroupItem value="afterpay_clearpay" id="afterpay_clearpay" />
                         <Label htmlFor="afterpay_clearpay" className="flex flex-1 cursor-pointer items-center gap-3">
-                          <Wallet className="h-5 w-5 text-primary" />
+                          <PaymentBrandMark brand="clearpay" className="min-w-20 justify-start" />
                           <div>
                             <p className="font-medium">Clearpay</p>
                             <p className="text-sm text-muted-foreground">
@@ -1131,7 +1136,7 @@ const CheckoutPage = () => {
                       }`}>
                         <RadioGroupItem value="paypal" id="paypal" />
                         <Label htmlFor="paypal" className="flex flex-1 cursor-pointer items-center gap-3">
-                          <Wallet className="h-5 w-5 text-primary" />
+                          <PaymentBrandMark brand="paypal" className="min-w-20 justify-start" />
                           <div>
                             <p className="font-medium">PayPal</p>
                             <p className="text-sm text-muted-foreground">
