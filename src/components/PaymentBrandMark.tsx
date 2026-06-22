@@ -27,12 +27,11 @@ const PaymentBrandMark = ({ brand, compact = false, className = '' }: PaymentBra
       return <span className={`${common} font-extrabold italic tracking-[0.18em] text-[#1434cb]`}>VISA</span>;
     case 'mastercard':
       return (
-        <span className={`${common} gap-1`} aria-label="Mastercard">
-          <span className="flex items-center">
+        <span className={common} aria-label="Mastercard">
+          <span className="flex items-center justify-center">
             <span className={`${compact ? 'h-5 w-5' : 'h-6 w-6'} rounded-full bg-[#eb001b]`} />
             <span className={`${compact ? 'h-5 w-5' : 'h-6 w-6'} -ml-2.5 rounded-full bg-[#f79e1b] mix-blend-multiply`} />
           </span>
-          {!compact && <span className="text-xs font-semibold text-slate-700">Mastercard</span>}
         </span>
       );
     case 'paypal':

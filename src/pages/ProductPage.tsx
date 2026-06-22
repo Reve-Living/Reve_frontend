@@ -3235,25 +3235,25 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
                 Secure payment methods
               </p>
-              <div className="mt-3 flex flex-wrap items-center gap-x-5 gap-y-3">
-                <PaymentBrandMark brand="visa" />
-                <PaymentBrandMark brand="mastercard" />
-                <PaymentBrandMark brand="paypal" />
-                <PaymentBrandMark brand="amex" />
-                <PaymentBrandMark brand="google_pay" />
-                <PaymentBrandMark brand="clearpay" />
-                <PaymentBrandMark brand="klarna" />
+              <div className="mt-3 grid grid-cols-8 items-center gap-x-2 gap-y-3 sm:grid-cols-7 sm:gap-x-4">
+                <PaymentBrandMark brand="visa" className="col-span-2 w-full min-w-0 justify-center sm:col-span-1" />
+                <PaymentBrandMark brand="mastercard" className="col-span-2 w-full min-w-0 justify-center sm:col-span-1" />
+                <PaymentBrandMark brand="paypal" className="col-span-2 w-full min-w-0 justify-center sm:col-span-1" />
+                <PaymentBrandMark brand="amex" className="col-span-2 w-full min-w-0 justify-center sm:col-span-1" />
+                <PaymentBrandMark brand="google_pay" className="col-span-2 col-start-2 w-full min-w-0 justify-center sm:col-span-1 sm:col-start-auto" />
+                <PaymentBrandMark brand="clearpay" className="col-span-2 w-full min-w-0 justify-center sm:col-span-1" />
+                <PaymentBrandMark brand="klarna" className="col-span-2 w-full min-w-0 justify-center sm:col-span-1" />
               </div>
               <div className="mt-4 space-y-2 text-center">
-                <p className="text-sm text-foreground">
+                <p className="text-[13px] text-foreground sm:text-sm">
                   or 4 interest-free payments of <span className="font-semibold">{clearpayInstallment}</span> with{" "}
                   <span className="font-bold text-[#ff6b9d]">clearpay</span>
                 </p>
-                <p className="text-sm text-foreground">
+                <p className="text-[13px] text-foreground sm:text-sm">
                   3 payments of <span className="font-semibold">{klarnaInstallment}</span> at 0% interest with{" "}
                   <span className="font-bold">Klarna</span>
                 </p>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="mx-auto max-w-[28rem] text-[10px] leading-relaxed text-muted-foreground sm:text-[11px]">
                   18+, T&amp;C apply. Credit subject to status. Payment options depend on Stripe, provider approval, and eligibility at checkout.
                 </p>
               </div>
