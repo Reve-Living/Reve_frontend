@@ -71,7 +71,12 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
             />
 
             {/* Badges */}
-            <div className="absolute right-3 top-3 flex flex-col gap-2 items-end">
+            <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
+              {savings > 0 && product.original_price && (
+                <Badge className="bg-white text-card-foreground shadow font-semibold">
+                  Sale {Math.round((savings / product.original_price) * 100)}%
+                </Badge>
+              )}
               {product.is_bestseller && (
                 <Badge className="bg-primary text-primary-foreground">
                   Bestseller
@@ -80,11 +85,6 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
               {product.is_new && !product.original_price && (
                 <Badge variant="secondary" className="bg-accent text-accent-foreground">
                   New
-                </Badge>
-              )}
-              {savings > 0 && product.original_price && (
-                <Badge className="bg-white text-card-foreground shadow font-semibold">
-                  Sale {Math.round((savings / product.original_price) * 100)}%
                 </Badge>
               )}
             </div>
@@ -95,6 +95,11 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
         <div className="flex flex-1 flex-col p-4 gap-3">
           {!hasImage && (
             <div className="flex flex-wrap gap-2">
+              {savings > 0 && product.original_price && (
+                <Badge className="bg-white text-card-foreground shadow font-semibold">
+                  Sale {Math.round((savings / product.original_price) * 100)}%
+                </Badge>
+              )}
               {product.is_bestseller && (
                 <Badge className="bg-primary text-primary-foreground">
                   Bestseller
@@ -103,11 +108,6 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
               {product.is_new && !product.original_price && (
                 <Badge variant="secondary" className="bg-accent text-accent-foreground">
                   New
-                </Badge>
-              )}
-              {savings > 0 && product.original_price && (
-                <Badge className="bg-white text-card-foreground shadow font-semibold">
-                  Sale {Math.round((savings / product.original_price) * 100)}%
                 </Badge>
               )}
             </div>

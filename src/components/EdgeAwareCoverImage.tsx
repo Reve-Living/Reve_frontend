@@ -7,12 +7,20 @@ export type EdgeAwareImageStyle = {
   hoverScale: number;
 };
 
+export type EdgeAwareImageContentInsets = {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+};
+
 type EdgeAwareCoverImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'className'> & {
   imgClassName?: string;
   defaultStyle?: Partial<EdgeAwareImageStyle>;
   containerAspectRatio?: number;
   objectFit?: 'cover' | 'contain';
   enableScale?: boolean;
+  onContentInsetsChange?: (insets: EdgeAwareImageContentInsets | null) => void;
 };
 
 const DEFAULT_IMAGE_STYLE: EdgeAwareImageStyle = {
@@ -40,11 +48,17 @@ const colorDistance = (
   b: { r: number; g: number; b: number; a: number }
 ) => Math.abs(a.r - b.r) + Math.abs(a.g - b.g) + Math.abs(a.b - b.b) + Math.abs(a.a - b.a);
 
-const detectEdgeAwareImageStyle = (
-  img: HTMLImageElement,
-  containerAspectRatio: number,
-  fallbackStyle: EdgeAwareImageStyle
-): EdgeAwareImageStyle | null => {
+type SampledImageContentBounds = {
+  leftRatio: number;
+  rightRatio: number;
+  topRatio: number;
+  bottomRatio: number;
+  widthRatio: number;
+  heightRatio: number;
+  largestMargin: number;
+};
+
+const sampleImageContentBounds = (img: HTMLImageElement): SampledImageContentBounds | null => {
   const naturalWidth = img.naturalWidth;
   const naturalHeight = img.naturalHeight;
 
@@ -53,12 +67,14 @@ const detectEdgeAwareImageStyle = (
   }
 
   const sampleMax = 160;
-  const sampleWidth = naturalWidth >= naturalHeight
-    ? sampleMax
-    : Math.max(80, Math.round(sampleMax * (naturalWidth / naturalHeight)));
-  const sampleHeight = naturalHeight > naturalWidth
-    ? sampleMax
-    : Math.max(80, Math.round(sampleMax * (naturalHeight / naturalWidth)));
+  const sampleWidth =
+    naturalWidth >= naturalHeight
+      ? sampleMax
+      : Math.max(80, Math.round(sampleMax * (naturalWidth / naturalHeight)));
+  const sampleHeight =
+    naturalHeight > naturalWidth
+      ? sampleMax
+      : Math.max(80, Math.round(sampleMax * (naturalHeight / naturalWidth)));
 
   const canvas = document.createElement('canvas');
   canvas.width = sampleWidth;
@@ -151,18 +167,121 @@ const detectEdgeAwareImageStyle = (
     return null;
   }
 
-  const marginLeft = left / sampleWidth;
-  const marginRight = (sampleWidth - 1 - right) / sampleWidth;
-  const marginTop = top / sampleHeight;
-  const marginBottom = (sampleHeight - 1 - bottom) / sampleHeight;
+  const leftRatio = left / sampleWidth;
+  const rightRatio = (right + 1) / sampleWidth;
+  const topRatio = top / sampleHeight;
+  const bottomRatio = (bottom + 1) / sampleHeight;
+  const marginLeft = leftRatio;
+  const marginRight = 1 - rightRatio;
+  const marginTop = topRatio;
+  const marginBottom = 1 - bottomRatio;
   const largestMargin = Math.max(marginLeft, marginRight, marginTop, marginBottom);
 
-  if (largestMargin < 0.035) {
+  return {
+    leftRatio,
+    rightRatio,
+    topRatio,
+    bottomRatio,
+    widthRatio: (right - left + 1) / sampleWidth,
+    heightRatio: (bottom - top + 1) / sampleHeight,
+    largestMargin,
+  };
+};
+
+const computeRenderedImageBox = (
+  containerWidth: number,
+  containerHeight: number,
+  naturalWidth: number,
+  naturalHeight: number,
+  objectFit: 'cover' | 'contain'
+) => {
+  const imageAspectRatio = naturalWidth / naturalHeight;
+  const containerAspectRatio = containerWidth / containerHeight;
+
+  if (objectFit === 'contain') {
+    if (imageAspectRatio > containerAspectRatio) {
+      const width = containerWidth;
+      const height = containerWidth / imageAspectRatio;
+      return { width, height, offsetX: 0, offsetY: (containerHeight - height) / 2 };
+    }
+
+    const height = containerHeight;
+    const width = containerHeight * imageAspectRatio;
+    return { width, height, offsetX: (containerWidth - width) / 2, offsetY: 0 };
+  }
+
+  if (imageAspectRatio > containerAspectRatio) {
+    const height = containerHeight;
+    const width = containerHeight * imageAspectRatio;
+    return { width, height, offsetX: (containerWidth - width) / 2, offsetY: 0 };
+  }
+
+  const width = containerWidth;
+  const height = containerWidth / imageAspectRatio;
+  return { width, height, offsetX: 0, offsetY: (containerHeight - height) / 2 };
+};
+
+const detectImageContentInsets = (
+  img: HTMLImageElement,
+  objectFit: 'cover' | 'contain'
+): EdgeAwareImageContentInsets | null => {
+  const sampledBounds = sampleImageContentBounds(img);
+  if (!sampledBounds) {
     return null;
   }
 
-  const contentWidthRatio = clamp((right - left + 1) / sampleWidth + 0.06, 0.62, 1);
-  const contentHeightRatio = clamp((bottom - top + 1) / sampleHeight + 0.06, 0.62, 1);
+  const containerWidth = img.clientWidth;
+  const containerHeight = img.clientHeight;
+  const naturalWidth = img.naturalWidth;
+  const naturalHeight = img.naturalHeight;
+
+  if (!containerWidth || !containerHeight || !naturalWidth || !naturalHeight) {
+    return null;
+  }
+
+  const renderedBox = computeRenderedImageBox(
+    containerWidth,
+    containerHeight,
+    naturalWidth,
+    naturalHeight,
+    objectFit
+  );
+
+  return {
+    top: clamp(renderedBox.offsetY + renderedBox.height * sampledBounds.topRatio, 0, containerHeight),
+    right: clamp(
+      containerWidth - (renderedBox.offsetX + renderedBox.width * sampledBounds.rightRatio),
+      0,
+      containerWidth
+    ),
+    bottom: clamp(
+      containerHeight - (renderedBox.offsetY + renderedBox.height * sampledBounds.bottomRatio),
+      0,
+      containerHeight
+    ),
+    left: clamp(renderedBox.offsetX + renderedBox.width * sampledBounds.leftRatio, 0, containerWidth),
+  };
+};
+
+const detectEdgeAwareImageStyle = (
+  img: HTMLImageElement,
+  containerAspectRatio: number,
+  fallbackStyle: EdgeAwareImageStyle
+): EdgeAwareImageStyle | null => {
+  const naturalWidth = img.naturalWidth;
+  const naturalHeight = img.naturalHeight;
+  const sampledBounds = sampleImageContentBounds(img);
+
+  if (!naturalWidth || !naturalHeight || !sampledBounds) {
+    return null;
+  }
+
+  if (sampledBounds.largestMargin < 0.035) {
+    return null;
+  }
+
+  const contentWidthRatio = clamp(sampledBounds.widthRatio + 0.06, 0.62, 1);
+  const contentHeightRatio = clamp(sampledBounds.heightRatio + 0.06, 0.62, 1);
   const imageAspectRatio = naturalWidth / naturalHeight;
   const baseVisibleWidth = imageAspectRatio > containerAspectRatio ? containerAspectRatio / imageAspectRatio : 1;
   const baseVisibleHeight = imageAspectRatio > containerAspectRatio ? 1 : imageAspectRatio / containerAspectRatio;
@@ -172,8 +291,8 @@ const detectEdgeAwareImageStyle = (
     1.34
   );
 
-  const centerX = clamp((left + right) / 2 / sampleWidth, 0.15, 0.85);
-  const centerY = clamp((top + bottom) / 2 / sampleHeight, 0.15, 0.85);
+  const centerX = clamp((sampledBounds.leftRatio + sampledBounds.rightRatio) / 2, 0.15, 0.85);
+  const centerY = clamp((sampledBounds.topRatio + sampledBounds.bottomRatio) / 2, 0.15, 0.85);
 
   return {
     objectPosition: `${Math.round(centerX * 100)}% ${Math.round(centerY * 100)}%`,
@@ -190,6 +309,7 @@ const EdgeAwareCoverImage = ({
   containerAspectRatio = 4 / 3,
   objectFit = 'cover',
   enableScale = true,
+  onContentInsetsChange,
   onLoad,
   ...rest
 }: EdgeAwareCoverImageProps) => {
@@ -215,6 +335,7 @@ const EdgeAwareCoverImage = ({
       alt={alt}
       onLoad={(event) => {
         onLoad?.(event);
+        onContentInsetsChange?.(detectImageContentInsets(event.currentTarget, objectFit));
         if (!enableScale || objectFit !== 'cover') {
           return;
         }
