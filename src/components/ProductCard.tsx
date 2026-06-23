@@ -68,6 +68,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
               objectFit="contain"
               enableScale={false}
               imgClassName="bg-[#f7f3ef]"
+              defaultStyle={{ objectPosition: '50% 0%' }}
             />
 
             {/* Badges */}
