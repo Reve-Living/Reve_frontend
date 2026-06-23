@@ -2681,7 +2681,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           <div className="space-y-6 lg:sticky lg:top-24 self-start px-0 sm:px-2 max-w-[660px] w-full mx-auto">
 
             <motion.div
-              className="relative aspect-square max-h-[520px] w-full mx-auto overflow-hidden rounded-2xl bg-card shadow-md"
+              className="relative aspect-square max-h-[520px] w-full mx-auto overflow-hidden rounded-2xl bg-[#f7f3ef] shadow-md"
 
               onClick={() => setIsZoomed(!isZoomed)}
 
@@ -2699,13 +2699,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   initial={{ opacity: 0 }}
 
-                  animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1.16 }}
+                  animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1 }}
 
                   exit={{ opacity: 0 }}
 
                   transition={{ duration: 0.3 }}
 
-                  className="absolute inset-0 h-full w-full object-cover bg-[#f7f3ef]"
+                  className="absolute inset-0 h-full w-full object-contain bg-[#f7f3ef]"
 
                 />
 

@@ -34,30 +34,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
   const imageUrl = product.images?.[0]?.url || "";
   const hasImage = imageUrl.trim().length > 0;
   const shortText = (product.short_description || product.description || "").trim();
-  const isDentonReclinerCard = product.name.trim().toLowerCase() === 'denton recliner with footstool - pu & pvc'.toLowerCase();
   const hasMultipleSizePrices = Array.isArray(product.sizes) && product.sizes.length > 1;
-  const cardText = [
-    product.name,
-    product.category_name,
-    product.subcategory_name,
-    product.category_slug,
-    product.subcategory_slug,
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .toLowerCase();
-  const needsAggressiveImageFill = [
-    'table',
-    'tables',
-    'coffee',
-    'console',
-    'dining',
-    'side table',
-    'lamp table',
-    'chair',
-    'chairs',
-    'glass top',
-  ].some((token) => cardText.includes(token));
   // Build the product link - if coming from a bed product, add mattress selection params
   const productLink = fromBedProduct
     ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${
@@ -83,18 +60,14 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
         className="group flex h-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       >
         {hasImage && (
-          <div className="relative aspect-[4/3] overflow-hidden">
+          <div className="relative aspect-[4/3] overflow-hidden bg-[#f7f3ef]">
             <EdgeAwareCoverImage
               src={imageUrl}
               alt={product.name}
               containerAspectRatio={4 / 3}
-              defaultStyle={
-                isDentonReclinerCard
-                  ? { objectPosition: '50% 30%' }
-                  : needsAggressiveImageFill
-                    ? { baseScale: 1.18, hoverScale: 1.24 }
-                    : undefined
-              }
+              objectFit="contain"
+              enableScale={false}
+              imgClassName="bg-[#f7f3ef]"
             />
 
             {/* Badges */}

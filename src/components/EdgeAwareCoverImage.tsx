@@ -11,6 +11,8 @@ type EdgeAwareCoverImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'class
   imgClassName?: string;
   defaultStyle?: Partial<EdgeAwareImageStyle>;
   containerAspectRatio?: number;
+  objectFit?: 'cover' | 'contain';
+  enableScale?: boolean;
 };
 
 const DEFAULT_IMAGE_STYLE: EdgeAwareImageStyle = {
@@ -186,6 +188,8 @@ const EdgeAwareCoverImage = ({
   imgClassName,
   defaultStyle,
   containerAspectRatio = 4 / 3,
+  objectFit = 'cover',
+  enableScale = true,
   onLoad,
   ...rest
 }: EdgeAwareCoverImageProps) => {
@@ -211,20 +215,29 @@ const EdgeAwareCoverImage = ({
       alt={alt}
       onLoad={(event) => {
         onLoad?.(event);
+        if (!enableScale || objectFit !== 'cover') {
+          return;
+        }
         const nextStyle = detectEdgeAwareImageStyle(event.currentTarget, containerAspectRatio, mergedDefaultStyle);
         if (nextStyle) {
           setImageStyle(nextStyle);
         }
       }}
       className={cn(
-        'absolute inset-0 h-full w-full object-cover transition-transform duration-700 [transform:scale(var(--cover-image-scale,1.08))] group-hover:[transform:scale(var(--cover-image-hover-scale,1.14))]',
+        enableScale
+          ? `absolute inset-0 h-full w-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} transition-transform duration-700 [transform:scale(var(--cover-image-scale,1.08))] group-hover:[transform:scale(var(--cover-image-hover-scale,1.14))]`
+          : `absolute inset-0 h-full w-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`,
         imgClassName
       )}
       style={
         {
           objectPosition: imageStyle.objectPosition,
-          ['--cover-image-scale' as string]: String(imageStyle.baseScale),
-          ['--cover-image-hover-scale' as string]: String(imageStyle.hoverScale),
+          ...(enableScale
+            ? {
+                ['--cover-image-scale' as string]: String(imageStyle.baseScale),
+                ['--cover-image-hover-scale' as string]: String(imageStyle.hoverScale),
+              }
+            : {}),
         } as CSSProperties
       }
     />
