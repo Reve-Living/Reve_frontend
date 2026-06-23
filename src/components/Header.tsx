@@ -156,7 +156,7 @@ const Header = () => {
           if ('requestIdleCallback' in window) {
             window.requestIdleCallback(() => warmTopCategories(), { timeout: 1500 });
           } else {
-            window.setTimeout(warmTopCategories, 800);
+            setTimeout(warmTopCategories, 800);
           }
         }
 

@@ -428,11 +428,11 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
 
   return options
 
-    .map((option) => {
+    .map<NormalizedStyleOption | null>((option) => {
 
       if (typeof option === 'string') {
 
-        const label = option.trim();origin
+        const label = option.trim();
 
         return label ? { label } : null;
 
@@ -491,7 +491,7 @@ const normalizeStyleOptions = (options: unknown): NormalizedStyleOption[] => {
 
     })
 
-    .filter((option): option is NormalizedStyleOption => Boolean(option));
+    .filter((option): option is NormalizedStyleOption => option !== null);
 
 };
 
@@ -748,6 +748,11 @@ type SelectedReviewMedia = {
   type: 'image' | 'video';
 };
 
+type ReviewGalleryMedia = ReviewMedia & {
+  resolvedUrl: string;
+  reviewName: string;
+};
+
 
 
 const ProductPage = () => {
@@ -842,10 +847,14 @@ type MattressDetailView = {
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
   const [reviewMediaFiles, setReviewMediaFiles] = useState<SelectedReviewMedia[]>([]);
+  const [reviewGalleryMedia, setReviewGalleryMedia] = useState<ReviewGalleryMedia[]>([]);
+  const [selectedReviewMediaIndex, setSelectedReviewMediaIndex] = useState(0);
+  const [isReviewGalleryOpen, setIsReviewGalleryOpen] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const hasAutoSelectedIncludedMattress = useRef(false);
   const preloadedAssets = useRef(new Set<string>());
   const reviewMediaFilesRef = useRef<SelectedReviewMedia[]>([]);
+  const reviewGalleryTouchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   const scrollToReviewAnchor = useCallback((targetId: string, behavior: ScrollBehavior = 'smooth') => {
     window.setTimeout(() => {
@@ -950,8 +959,8 @@ type MattressDetailView = {
       const matchedSize = (m.prices || []).find(
         (p) => normalizeSizeName(p.size_label).toLowerCase() === normSize.toLowerCase()
       );
-      const toZero = (val: number | null | undefined) =>
-        val === null || val === undefined ? 0 : Number(val);
+      const toZero = (val: string | number | null | undefined) =>
+        val === null || val === undefined || val === '' ? 0 : Number(val);
       const base = toZero(m.price);
       const top = toZero(m.price_top);
       const bottom = toZero(m.price_bottom);
@@ -970,7 +979,7 @@ type MattressDetailView = {
   const fetchReviews = async (productId: number) => {
     setIsLoadingReviews(true);
     try {
-      const res = await apiGet<Review[]>(`/reviews/?product=${productId}`);
+      const res = await apiGet<Review[]>(`/reviews/?product=${productId}`, { noStore: true });
       setReviews(Array.isArray(res) ? res : []);
     } catch {
       setReviews([]);
@@ -978,6 +987,24 @@ type MattressDetailView = {
       setIsLoadingReviews(false);
     }
   };
+
+  const reviewSummary = useMemo(() => {
+    const productReviewCount = Number(product?.review_count ?? 0);
+    const productRating = Number(product?.rating ?? 0);
+
+    if ((productReviewCount > 0 || productRating > 0) || reviews.length === 0) {
+      return {
+        reviewCount: productReviewCount,
+        rating: productRating,
+      };
+    }
+
+    const totalRating = reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+    return {
+      reviewCount: reviews.length,
+      rating: totalRating / reviews.length,
+    };
+  }, [product?.rating, product?.review_count, reviews]);
 
   const loadSeriesProducts = useCallback(
     async (currentProduct: Product | null) => {
@@ -1053,7 +1080,7 @@ type MattressDetailView = {
         setEnabledGroups({});
         hasAutoSelectedIncludedMattress.current = false;
 
-        const productRes = await apiGet<Product[]>(`/products/?slug=${slug}`);
+        const productRes = await apiGet<Product[]>(`/products/?slug=${slug}`, { noStore: true });
 
         const normalizedProducts = Array.isArray(productRes)
 
@@ -1247,8 +1274,8 @@ type MattressDetailView = {
 
     if (selectedColor) {
       const colorMatched = resolved.filter((img) =>
-        (img as ProductImage).color_name
-          ? (img as ProductImage).color_name!.toLowerCase() === selectedColor.toLowerCase()
+        img.color_name
+          ? img.color_name.toLowerCase() === selectedColor.toLowerCase()
           : false
       );
       if (colorMatched.length > 0) {
@@ -1258,8 +1285,8 @@ type MattressDetailView = {
 
     if (activeStyleSelections.length > 0) {
       const styleMatched = resolved.filter((img) =>
-        (img as ProductImage).style_name
-          ? activeStyleSelections.includes((img as ProductImage).style_name!.toLowerCase())
+        img.style_name
+          ? activeStyleSelections.includes(img.style_name.toLowerCase())
           : false
       );
       if (styleMatched.length > 0) {
@@ -1384,6 +1411,90 @@ type MattressDetailView = {
   };
 
   const closeGallery = () => setIsGalleryOpen(false);
+
+  const reviewGalleryTotal = reviewGalleryMedia.length;
+  const activeReviewGalleryItem = reviewGalleryMedia[selectedReviewMediaIndex];
+
+  const openReviewGallery = useCallback((items: ReviewGalleryMedia[], index: number) => {
+    if (!items.length) return;
+    setReviewGalleryMedia(items);
+    setSelectedReviewMediaIndex(Math.min(Math.max(index, 0), items.length - 1));
+    setIsReviewGalleryOpen(true);
+  }, []);
+
+  const closeReviewGallery = useCallback(() => {
+    setIsReviewGalleryOpen(false);
+  }, []);
+
+  const goToNextReviewMedia = useCallback(() => {
+    if (!reviewGalleryTotal) return;
+    setSelectedReviewMediaIndex((prev) => (prev + 1) % reviewGalleryTotal);
+  }, [reviewGalleryTotal]);
+
+  const goToPrevReviewMedia = useCallback(() => {
+    if (!reviewGalleryTotal) return;
+    setSelectedReviewMediaIndex((prev) => (prev - 1 + reviewGalleryTotal) % reviewGalleryTotal);
+  }, [reviewGalleryTotal]);
+
+  const handleReviewGalleryTouchStart = useCallback((event: React.TouchEvent<HTMLDivElement>) => {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    reviewGalleryTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const handleReviewGalleryTouchEnd = useCallback(
+    (event: React.TouchEvent<HTMLDivElement>) => {
+      const start = reviewGalleryTouchStartRef.current;
+      const touch = event.changedTouches[0];
+      reviewGalleryTouchStartRef.current = null;
+      if (!start || !touch) return;
+
+      const deltaX = touch.clientX - start.x;
+      const deltaY = touch.clientY - start.y;
+      if (Math.abs(deltaX) < 40 || Math.abs(deltaX) < Math.abs(deltaY)) return;
+
+      if (deltaX < 0) {
+        goToNextReviewMedia();
+        return;
+      }
+
+      goToPrevReviewMedia();
+    },
+    [goToNextReviewMedia, goToPrevReviewMedia]
+  );
+
+  useEffect(() => {
+    if (!isReviewGalleryOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeReviewGallery();
+        return;
+      }
+      if (reviewGalleryTotal > 1 && event.key === 'ArrowRight') {
+        goToNextReviewMedia();
+        return;
+      }
+      if (reviewGalleryTotal > 1 && event.key === 'ArrowLeft') {
+        goToPrevReviewMedia();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [
+    closeReviewGallery,
+    goToNextReviewMedia,
+    goToPrevReviewMedia,
+    isReviewGalleryOpen,
+    reviewGalleryTotal,
+  ]);
 
   const goToNextImage = () => {
     if (!totalImages) return;
@@ -2464,27 +2575,52 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
   const renderReviewMedia = (media?: ReviewMedia[]) => {
     if (!media?.length) return null;
 
-    return (
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {media.map((item, index) => {
-          const url = resolveMediaUrl(item.url);
-          if (!url) return null;
+    const galleryItems = media.reduce<ReviewGalleryMedia[]>((items, item) => {
+      const resolvedUrl = resolveMediaUrl(item.url);
+      if (!resolvedUrl) return items;
+      items.push({
+        ...item,
+        resolvedUrl,
+        reviewName: item.name || 'Customer review media',
+      });
+      return items;
+    }, []);
 
-          return item.type === 'video' ? (
-            <video
+    if (!galleryItems.length) return null;
+
+    return (
+      <div className="mt-4 flex flex-wrap gap-3">
+        {galleryItems.map((item, index) => {
+          const isVideo = item.type === 'video';
+
+          return (
+            <button
               key={`${item.url}-${index}`}
-              src={url}
-              controls
-              className="aspect-square w-full rounded-lg border border-border bg-black object-cover"
-            />
-          ) : (
-            <img
-              key={`${item.url}-${index}`}
-              src={url}
-              alt={item.name || 'Customer review media'}
-              className="aspect-square w-full rounded-lg border border-border object-cover"
-              loading="lazy"
-            />
+              type="button"
+              onClick={() => openReviewGallery(galleryItems, index)}
+              className="group relative h-24 w-24 overflow-hidden rounded-lg border border-border bg-card shadow-sm transition hover:-translate-y-0.5 hover:shadow-md sm:h-28 sm:w-28"
+              aria-label={`Open review media ${index + 1} in full screen`}
+            >
+              {isVideo ? (
+                <video
+                  src={item.resolvedUrl}
+                  muted
+                  playsInline
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <img
+                  src={item.resolvedUrl}
+                  alt={item.reviewName}
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
+              )}
+              <div className="absolute inset-0 bg-black/0 transition group-hover:bg-black/10" />
+              <div className="absolute inset-x-0 bottom-0 bg-black/65 px-2 py-1 text-center text-[11px] font-medium text-white">
+                {isVideo ? 'Play full screen' : 'Tap to expand'}
+              </div>
+            </button>
           );
         })}
       </div>
@@ -2736,7 +2872,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                     className={`h-5 w-5 ${
 
-                      i < Math.floor(product.rating)
+                      i < Math.floor(reviewSummary.rating)
 
                         ? 'fill-primary text-primary'
 
@@ -2755,8 +2891,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 onClick={(event) => handleReviewAnchorClick(event, REVIEW_SECTION_ID)}
                 className="text-sm text-muted-foreground transition hover:text-primary hover:underline"
               >
-                {Number(product.rating || 0).toFixed(1)}/5 ({product.review_count}{' '}
-                {Number(product.review_count) === 1 ? 'Review' : 'Reviews'})
+                {Number(reviewSummary.rating || 0).toFixed(1)}/5 ({reviewSummary.reviewCount}{' '}
+                {Number(reviewSummary.reviewCount) === 1 ? 'Review' : 'Reviews'})
               </a>
 
               <span className="text-sm text-muted-foreground" aria-hidden="true">
@@ -3689,6 +3825,109 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   </div>
                 </div>
               </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {isReviewGalleryOpen && activeReviewGalleryItem && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 px-4 py-6 backdrop-blur-sm"
+          onClick={closeReviewGallery}
+        >
+          <div
+            className="relative flex w-full max-w-6xl flex-col gap-4"
+            onClick={(e) => e.stopPropagation()}
+            onTouchStart={handleReviewGalleryTouchStart}
+            onTouchEnd={handleReviewGalleryTouchEnd}
+          >
+            <button
+              type="button"
+              className="absolute right-0 top-0 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/75"
+              onClick={closeReviewGallery}
+              aria-label="Close review media gallery"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="relative overflow-hidden rounded-2xl bg-black/20 pt-12">
+              {activeReviewGalleryItem.type === 'video' ? (
+                <video
+                  src={activeReviewGalleryItem.resolvedUrl}
+                  controls
+                  playsInline
+                  className="h-full w-full max-h-[78vh] rounded-2xl bg-black object-contain"
+                />
+              ) : (
+                <img
+                  src={activeReviewGalleryItem.resolvedUrl}
+                  alt={activeReviewGalleryItem.reviewName || 'Expanded customer review media'}
+                  className="h-full w-full max-h-[78vh] rounded-2xl bg-black/20 object-contain"
+                />
+              )}
+
+              {reviewGalleryTotal > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={goToPrevReviewMedia}
+                    className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-3 text-white shadow-lg transition hover:bg-black/75"
+                    aria-label="Previous review media"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={goToNextReviewMedia}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-3 text-white shadow-lg transition hover:bg-black/75"
+                    aria-label="Next review media"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 text-white/80">
+              <p className="text-sm font-medium">
+                {selectedReviewMediaIndex + 1} / {reviewGalleryTotal}
+              </p>
+              <p className="text-xs sm:text-sm">
+                {reviewGalleryTotal > 1 ? 'Swipe, use arrows, or tap a thumbnail to browse.' : 'Tap outside to close.'}
+              </p>
+            </div>
+
+            {reviewGalleryTotal > 1 && (
+              <div className="flex items-center gap-2 overflow-x-auto rounded-xl bg-black/45 px-3 py-3 shadow-lg backdrop-blur">
+                {reviewGalleryMedia.map((item, idx) => (
+                  <button
+                    key={`review-gallery-thumb-${idx}`}
+                    type="button"
+                    onClick={() => setSelectedReviewMediaIndex(idx)}
+                    className={`relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border transition ${
+                      selectedReviewMediaIndex === idx
+                        ? 'border-white ring-2 ring-white/80'
+                        : 'border-white/25 hover:border-white/60'
+                    }`}
+                    aria-label={`View review media ${idx + 1}`}
+                  >
+                    {item.type === 'video' ? (
+                      <video
+                        src={item.resolvedUrl}
+                        muted
+                        playsInline
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={item.resolvedUrl}
+                        alt={item.reviewName || `Review media ${idx + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>

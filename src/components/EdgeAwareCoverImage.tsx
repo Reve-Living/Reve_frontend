@@ -1,4 +1,4 @@
-import { ImgHTMLAttributes, useEffect, useState } from 'react';
+import { ImgHTMLAttributes, useEffect, useState, type CSSProperties } from 'react';
 import { cn } from '@/lib/utils';
 
 export type EdgeAwareImageStyle = {
@@ -220,11 +220,13 @@ const EdgeAwareCoverImage = ({
         'absolute inset-0 h-full w-full object-cover transition-transform duration-700 [transform:scale(var(--cover-image-scale,1.08))] group-hover:[transform:scale(var(--cover-image-hover-scale,1.14))]',
         imgClassName
       )}
-      style={{
-        objectPosition: imageStyle.objectPosition,
-        ['--cover-image-scale' as '--cover-image-scale']: String(imageStyle.baseScale),
-        ['--cover-image-hover-scale' as '--cover-image-hover-scale']: String(imageStyle.hoverScale),
-      }}
+      style={
+        {
+          objectPosition: imageStyle.objectPosition,
+          ['--cover-image-scale' as string]: String(imageStyle.baseScale),
+          ['--cover-image-hover-scale' as string]: String(imageStyle.hoverScale),
+        } as CSSProperties
+      }
     />
   );
 };
