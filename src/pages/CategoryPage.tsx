@@ -101,6 +101,86 @@ const parsePageParam = (value: string | null): number => {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 };
 
+const DEFAULT_SORT = 'featured';
+const SORT_VALUES = new Set(['featured', 'price-low', 'price-high', 'rating', 'newest']);
+const FILTER_PARAM_PREFIX = 'filter-';
+const FILTER_RESERVED_PARAM_KEYS = new Set([
+  'sub',
+  'bed-size',
+  'from',
+  'page',
+  'sort',
+  'min-price',
+  'max-price',
+  'size',
+]);
+
+const normalizeSortParam = (value: string | null): string => {
+  const candidate = String(value || '').trim().toLowerCase();
+  return SORT_VALUES.has(candidate) ? candidate : DEFAULT_SORT;
+};
+
+const parseNumberParam = (value: string | null): number | null => {
+  const parsed = Number.parseInt(String(value || ''), 10);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const clampNumber = (value: number, min: number, max: number): number => Math.min(max, Math.max(min, value));
+
+const arraysEqual = (left: string[], right: string[]): boolean =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
+
+const recordsEqual = (
+  left: Record<string, string[]>,
+  right: Record<string, string[]>
+): boolean => {
+  const leftKeys = Object.keys(left).sort();
+  const rightKeys = Object.keys(right).sort();
+  if (!arraysEqual(leftKeys, rightKeys)) return false;
+  return leftKeys.every((key) => arraysEqual(left[key] || [], right[key] || []));
+};
+
+const rangesEqual = (left: number[], right: number[]): boolean =>
+  left.length === right.length && left.every((value, index) => value === right[index]);
+
+const toQuerySlug = (value?: string): string =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+const parseMultiValueParam = (params: URLSearchParams, key: string): string[] =>
+  Array.from(
+    new Set(
+      params
+        .getAll(key)
+        .flatMap((value) => value.split(','))
+        .map((value) => value.trim())
+        .filter(Boolean)
+    )
+  );
+
+const setMultiValueParam = (params: URLSearchParams, key: string, values: string[]) => {
+  const nextValues = Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
+  if (nextValues.length === 0) {
+    params.delete(key);
+    return;
+  }
+  params.set(key, nextValues.join(','));
+};
+
+const getFilterParamKey = (filterSlug: string): string =>
+  FILTER_RESERVED_PARAM_KEYS.has(filterSlug) ? `${FILTER_PARAM_PREFIX}${filterSlug}` : filterSlug;
+
+const getFilterParamAliases = (filterSlug: string): string[] =>
+  Array.from(new Set([getFilterParamKey(filterSlug), `${FILTER_PARAM_PREFIX}${filterSlug}`]));
+
+const parseFilterParamValues = (params: URLSearchParams, filterSlug: string): string[] =>
+  Array.from(
+    new Set(getFilterParamAliases(filterSlug).flatMap((key) => parseMultiValueParam(params, key)))
+  );
+
 const CategoryPage = () => {
   const getDisplayOrder = (value?: number) => {
     const num = Number(value);
@@ -110,9 +190,11 @@ const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const searchParamsKey = searchParams.toString();
   const subSlug = searchParams.get('sub') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
   const linkedBedProduct = searchParams.get('from') || '';
+  const sortFromQuery = normalizeSortParam(searchParams.get('sort'));
   const pageFromQuery = parsePageParam(searchParams.get('page'));
   const returnTo = `${location.pathname}${location.search}`;
   const [category, setCategory] = useState<Category | null>(null);
@@ -122,7 +204,7 @@ const CategoryPage = () => {
   const [isFiltersLoading, setIsFiltersLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
 
-  const [sortBy, setSortBy] = useState('featured');
+  const [sortBy, setSortBy] = useState(sortFromQuery);
   const [currentPage, setCurrentPage] = useState(pageFromQuery);
   const [priceRange, setPriceRange] = useState([0, 1500]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -144,6 +226,30 @@ const CategoryPage = () => {
     );
     return present;
   }, [allProducts]);
+
+  const priceBounds = useMemo(() => {
+    const prices = allProducts.map((p) => Number(p.price)).filter((v) => !Number.isNaN(v));
+    if (prices.length === 0) return { min: 0, max: 1500 };
+    const min = Math.min(...prices);
+    const max = Math.max(...prices);
+    const roundedMin = Math.max(0, Math.floor(min / 50) * 50);
+    const roundedMax = Math.max(50, Math.ceil(max / 50) * 50);
+    return { min: roundedMin, max: roundedMax };
+  }, [allProducts]);
+
+  const allSizes = useMemo(() => {
+    if (!showSizeFilter) return [];
+    const map = new Map<string, string>();
+    allProducts.forEach((p) =>
+      (p.sizes || []).forEach((s) => {
+        const label = normalizeSizeName(s.name);
+        if (!label) return;
+        const key = label.replace(/\s+/g, '').toLowerCase();
+        if (!map.has(key)) map.set(key, label);
+      })
+    );
+    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
+  }, [allProducts, showSizeFilter]);
 
   useEffect(() => {
     const load = async () => {
@@ -265,20 +371,153 @@ const CategoryPage = () => {
 
   useEffect(() => {
     if (availableFilters.length === 0) {
-      setSelectedFilters({});
+      setSelectedFilters((prev) => (Object.keys(prev).length === 0 ? prev : {}));
       return;
     }
-    setSelectedFilters((prev) => {
-      const next: Record<string, string[]> = {};
-      const valid = new Set(availableFilters.map((f) => f.slug));
-      availableFilters.forEach((f) => {
-        const options = new Set(f.options.map((o) => o.slug));
-        const selected = (prev[f.slug] || []).filter((s) => options.has(s));
-        if (selected.length) next[f.slug] = selected;
-      });
-      return next;
+    const next: Record<string, string[]> = {};
+    availableFilters.forEach((filter) => {
+      const optionSlugs = new Set(filter.options.map((option) => option.slug));
+      const selected = parseFilterParamValues(searchParams, filter.slug).filter((value) => optionSlugs.has(value));
+      if (selected.length > 0) {
+        next[filter.slug] = selected;
+      }
     });
-  }, [availableFilters]);
+    setSelectedFilters((prev) => (recordsEqual(prev, next) ? prev : next));
+  }, [availableFilters, searchParams, searchParamsKey]);
+
+  useEffect(() => {
+    setSortBy((prev) => (prev === sortFromQuery ? prev : sortFromQuery));
+  }, [sortFromQuery]);
+
+  useEffect(() => {
+    const minFromQuery = parseNumberParam(searchParams.get('min-price'));
+    const maxFromQuery = parseNumberParam(searchParams.get('max-price'));
+    let nextMin = minFromQuery == null ? priceBounds.min : clampNumber(minFromQuery, priceBounds.min, priceBounds.max);
+    let nextMax = maxFromQuery == null ? priceBounds.max : clampNumber(maxFromQuery, priceBounds.min, priceBounds.max);
+    if (nextMin > nextMax) {
+      [nextMin, nextMax] = [nextMax, nextMin];
+    }
+    const nextRange = [nextMin, nextMax];
+    setPriceRange((prev) => (rangesEqual(prev, nextRange) ? prev : nextRange));
+  }, [priceBounds.max, priceBounds.min, searchParams, searchParamsKey]);
+
+  useEffect(() => {
+    if (!showSizeFilter) {
+      setSelectedSizes((prev) => (prev.length === 0 ? prev : []));
+      return;
+    }
+    const availableSizeMap = new Map(allSizes.map((size) => [toQuerySlug(size), size]));
+    const nextSelectedSizes = parseMultiValueParam(searchParams, 'size')
+      .map((value) => availableSizeMap.get(value) || '')
+      .filter(Boolean);
+    setSelectedSizes((prev) => (arraysEqual(prev, nextSelectedSizes) ? prev : nextSelectedSizes));
+  }, [allSizes, searchParams, searchParamsKey, showSizeFilter]);
+
+  const updateSearchParams = (updater: (params: URLSearchParams) => void, replace = true) => {
+    const nextParams = new URLSearchParams(searchParams);
+    updater(nextParams);
+    if (nextParams.toString() === searchParamsKey) return;
+    setSearchParams(nextParams, { replace });
+  };
+
+  const resetPageInSearch = (params: URLSearchParams) => {
+    params.delete('page');
+  };
+
+  const updatePageInSearch = (nextPage: number, replace = false) => {
+    updateSearchParams((nextParams) => {
+      if (nextPage <= 1) nextParams.delete('page');
+      else nextParams.set('page', String(nextPage));
+    }, replace);
+  };
+
+  const goToPage = (nextPage: number, replace = false) => {
+    const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
+    setCurrentPage(clampedPage);
+    updatePageInSearch(clampedPage, replace);
+  };
+
+  const handleSortChange = (value: string) => {
+    const normalizedSort = normalizeSortParam(value);
+    setSortBy(normalizedSort);
+    setCurrentPage(1);
+    updateSearchParams((nextParams) => {
+      if (normalizedSort === DEFAULT_SORT) nextParams.delete('sort');
+      else nextParams.set('sort', normalizedSort);
+      resetPageInSearch(nextParams);
+    }, true);
+  };
+
+  const handlePriceRangeChange = (range: number[]) => {
+    let [nextMin, nextMax] = range;
+    if (nextMin > nextMax) {
+      [nextMin, nextMax] = [nextMax, nextMin];
+    }
+    setPriceRange([nextMin, nextMax]);
+    setCurrentPage(1);
+    updateSearchParams((nextParams) => {
+      if (nextMin <= priceBounds.min) nextParams.delete('min-price');
+      else nextParams.set('min-price', String(nextMin));
+      if (nextMax >= priceBounds.max) nextParams.delete('max-price');
+      else nextParams.set('max-price', String(nextMax));
+      resetPageInSearch(nextParams);
+    }, true);
+  };
+
+  const toggleSize = (size: string) => {
+    const nextSelectedSizes = selectedSizes.includes(size)
+      ? selectedSizes.filter((value) => value !== size)
+      : [...selectedSizes, size];
+    setSelectedSizes(nextSelectedSizes);
+    setCurrentPage(1);
+    updateSearchParams((nextParams) => {
+      setMultiValueParam(
+        nextParams,
+        'size',
+        nextSelectedSizes.map((value) => toQuerySlug(value))
+      );
+      resetPageInSearch(nextParams);
+    }, true);
+  };
+
+  const toggleFilterOption = (filterSlug: string, optionSlug: string) => {
+    const current = selectedFilters[filterSlug] || [];
+    const next = current.includes(optionSlug)
+      ? current.filter((value) => value !== optionSlug)
+      : [...current, optionSlug];
+    const nextSelectedFilters = { ...selectedFilters };
+    if (next.length > 0) nextSelectedFilters[filterSlug] = next;
+    else delete nextSelectedFilters[filterSlug];
+    setSelectedFilters(nextSelectedFilters);
+    setCurrentPage(1);
+    updateSearchParams((nextParams) => {
+      const filterParamKey = getFilterParamKey(filterSlug);
+      getFilterParamAliases(filterSlug)
+        .filter((key) => key !== filterParamKey)
+        .forEach((key) => nextParams.delete(key));
+      setMultiValueParam(nextParams, filterParamKey, next);
+      resetPageInSearch(nextParams);
+    }, true);
+  };
+
+  const isFilterSelected = (filterSlug: string, optionSlug: string) =>
+    (selectedFilters[filterSlug] || []).includes(optionSlug);
+
+  const clearFilters = () => {
+    setPriceRange([priceBounds.min, priceBounds.max]);
+    setSelectedSizes([]);
+    setSelectedFilters({});
+    setCurrentPage(1);
+    updateSearchParams((nextParams) => {
+      nextParams.delete('min-price');
+      nextParams.delete('max-price');
+      nextParams.delete('size');
+      availableFilters.forEach((filter) =>
+        getFilterParamAliases(filter.slug).forEach((key) => nextParams.delete(key))
+      );
+      resetPageInSearch(nextParams);
+    }, true);
+  };
 
   const selectedSubcategory = useMemo(() => {
     if (!subSlug) return null;
@@ -314,34 +553,6 @@ const CategoryPage = () => {
     }
     meta.setAttribute('content', seoDescription);
   }, [seoDescription, seoTitle]);
-
-  const priceBounds = useMemo(() => {
-    const prices = allProducts.map((p) => Number(p.price)).filter((v) => !Number.isNaN(v));
-    if (prices.length === 0) return { min: 0, max: 1500 };
-    const min = Math.min(...prices);
-    const max = Math.max(...prices);
-    const roundedMin = Math.max(0, Math.floor(min / 50) * 50);
-    const roundedMax = Math.max(50, Math.ceil(max / 50) * 50);
-    return { min: roundedMin, max: roundedMax };
-  }, [allProducts]);
-
-  useEffect(() => {
-    setPriceRange([priceBounds.min, priceBounds.max]);
-  }, [priceBounds.min, priceBounds.max]);
-
-  const allSizes = useMemo(() => {
-    if (!showSizeFilter) return [];
-    const map = new Map<string, string>();
-    allProducts.forEach((p) =>
-      (p.sizes || []).forEach((s) => {
-        const label = normalizeSizeName(s.name);
-        if (!label) return;
-        const key = label.replace(/\s+/g, '').toLowerCase();
-        if (!map.has(key)) map.set(key, label);
-      })
-    );
-    return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
-  }, [allProducts, showSizeFilter]);
 
   useEffect(() => {
     if (!showSizeFilter && selectedSizes.length > 0) {
@@ -397,19 +608,6 @@ const CategoryPage = () => {
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
 
-  const updatePageInSearch = (nextPage: number, replace = false) => {
-    const nextParams = new URLSearchParams(searchParams);
-    if (nextPage <= 1) nextParams.delete('page');
-    else nextParams.set('page', String(nextPage));
-    setSearchParams(nextParams, { replace });
-  };
-
-  const goToPage = (nextPage: number, replace = false) => {
-    const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
-    setCurrentPage(clampedPage);
-    updatePageInSearch(clampedPage, replace);
-  };
-
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
     return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
@@ -429,42 +627,6 @@ const CategoryPage = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentPage]);
-
-  const handleSortChange = (value: string) => {
-    setSortBy(value);
-    goToPage(1, true);
-  };
-
-  const handlePriceRangeChange = (range: number[]) => {
-    setPriceRange(range);
-    goToPage(1, true);
-  };
-
-  const toggleSize = (size: string) => {
-    setSelectedSizes((prev) => (prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]));
-    goToPage(1, true);
-  };
-
-  const toggleFilterOption = (filterSlug: string, optionSlug: string) => {
-    setSelectedFilters((prev) => {
-      const current = prev[filterSlug] || [];
-      const next = current.includes(optionSlug)
-        ? current.filter((o) => o !== optionSlug)
-        : [...current, optionSlug];
-      return { ...prev, [filterSlug]: next };
-    });
-    goToPage(1, true);
-  };
-
-  const isFilterSelected = (filterSlug: string, optionSlug: string) =>
-    (selectedFilters[filterSlug] || []).includes(optionSlug);
-
-  const clearFilters = () => {
-    setPriceRange([priceBounds.min, priceBounds.max]);
-    setSelectedSizes([]);
-    setSelectedFilters({});
-    goToPage(1, true);
-  };
 
   const hasData = Boolean(category) || allProducts.length > 0;
 
