@@ -19,7 +19,7 @@ import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
-const PRODUCTS_PER_PAGE = 12;
+const PRODUCTS_PER_PAGE = 18;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';

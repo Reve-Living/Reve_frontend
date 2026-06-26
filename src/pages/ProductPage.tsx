@@ -3433,7 +3433,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               ))}
           </div>
 
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="rounded-xl border border-border bg-white p-4">
             {activeInfoTab === 'description' && fullDescription && (
               <div className="text-muted-foreground leading-relaxed space-y-4">
                 {renderMultilineParagraphs(fullDescription, false)}
@@ -3554,7 +3554,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           </div>
 
           {showReviewForm && (
-            <div id={REVIEW_FORM_ID} className="mt-6 scroll-mt-28 rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div id={REVIEW_FORM_ID} className="mt-6 scroll-mt-28 rounded-xl border border-border bg-white p-5 shadow-sm">
               <p className="text-sm text-muted-foreground">New reviews are published once approved by our team.</p>
               <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={handleSubmitReview}>
                 <div className="space-y-2">
@@ -3655,16 +3655,16 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
           <div className="mt-6 space-y-4">
             {isLoadingReviews ? (
-              <div className="rounded-lg border border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-lg border border-border bg-white p-6 text-center text-sm text-muted-foreground">
                 Loading reviews...
               </div>
             ) : reviews.length === 0 ? (
-              <div className="rounded-lg border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+              <div className="rounded-lg border border-dashed border-border bg-white p-6 text-center text-sm text-muted-foreground">
                 No reviews yet. Be the first to share your thoughts.
               </div>
             ) : (
               reviews.map((review) => (
-                <div key={review.id} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+                <div key={review.id} className="rounded-xl border border-border bg-white p-5 shadow-sm">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div className="space-y-1">
                       <p className="text-sm font-semibold text-foreground">{review.name || 'Anonymous'}</p>

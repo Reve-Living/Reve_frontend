@@ -19,7 +19,7 @@ import ProductCard from '@/components/ProductCard';
 import { apiGet } from '@/lib/api';
 import { Product, ProductStyleOption } from '@/lib/types';
 
-const PRODUCTS_PER_PAGE = 12;
+const PRODUCTS_PER_PAGE = 18;
 
 // Helper function to determine if a hex color is light
 const isLightColor = (hexColor: string): boolean => {
