@@ -577,6 +577,11 @@ const normalizeSizeName = (raw?: string): string => {
   return value.replace(/\s+/g, ' ').replace(/\s*-\s*/g, ' ').trim();
 };
 
+const getMattressDisplayName = (mattress?: ProductMattress | null): string => {
+  const label = String(mattress?.display_name || mattress?.name || '').trim();
+  return label || 'Mattress';
+};
+
 const getSizeDisplayOrderIndex = (raw?: string): number => {
   const normalized = normalizeSizeName(raw);
   const index = SIZE_DISPLAY_ORDER.findIndex((size) => size === normalized);
@@ -1901,14 +1906,15 @@ type MattressDetailView = {
   const openMattressDetails = useCallback(async (mattress: ProductMattress) => {
     setMattressDetail(null);
     setActiveMattressDetailImage(0);
+    const mattressTitle = getMattressDisplayName(mattress);
 
     const fallbackDetail: MattressDetailView = {
       id: Number(mattress.id),
-      title: mattress.name || 'Mattress',
+      title: mattressTitle,
       description: mattress.description || 'More details for this mattress will be available soon.',
       features: mattress.features || '',
       images: resolveMediaUrl(mattress.image_url)
-        ? [{ url: resolveMediaUrl(mattress.image_url) as string, alt: mattress.name || 'Mattress' }]
+        ? [{ url: resolveMediaUrl(mattress.image_url) as string, alt: mattressTitle }]
         : [],
       price: Number(mattress.price ?? 0),
       originalPrice:
@@ -1937,7 +1943,7 @@ type MattressDetailView = {
 
       setMattressDetail({
         id: productData.id,
-        title: productData.name || fallbackDetail.title,
+        title: mattressTitle || productData.name || fallbackDetail.title,
         description:
           productData.short_description ||
           productData.description ||
@@ -2451,7 +2457,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       : { ...selectedStyles };
     if (selectedMattressDetails.length > 0) {
       variantMap['Mattress'] = selectedMattressDetails
-        .map((m) => `${m.name || 'Mattress'}${m.position ? ` (${m.position})` : ''}`)
+        .map((m) => `${getMattressDisplayName(m)}${m.position ? ` (${m.position})` : ''}`)
         .join(' | ');
     }
     addItem({
@@ -2462,12 +2468,12 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       selectedVariants: variantMap,
       mattresses: selectedMattressDetails.map((m) => ({
         id: m.id!,
-        name: m.name,
+        name: getMattressDisplayName(m),
         position: m.position,
         price: m.price_value,
       })),
       mattress_id: primaryMattress?.id || null,
-      mattress_name: primaryMattress?.name || null,
+      mattress_name: primaryMattress ? getMattressDisplayName(primaryMattress) : null,
       mattress_price: primaryMattress ? primaryMattress.price_value : null,
       mattress_position: primaryMattress?.enable_bunk_positions ? primaryMattress.position : null,
       fabric: selectedFabric || undefined,
@@ -3274,7 +3280,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-foreground">
                       {selectedMattressDetails.length > 0
-                        ? selectedMattressDetails.map((m) => m.name || 'Mattress').join(' · ')
+                        ? selectedMattressDetails.map((m) => getMattressDisplayName(m)).join(' · ')
                         : 'No mattress selected'}
                     </span>
                     <span className="text-xs text-muted-foreground">
@@ -4055,7 +4061,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       {resolveMediaUrl(mattress.image_url) ? (
                         <img
                           src={resolveMediaUrl(mattress.image_url)}
-                          alt={mattress.name || 'Mattress option'}
+                          alt={getMattressDisplayName(mattress)}
                           className="h-[78px] w-[78px] shrink-0 rounded-xl object-cover ring-1 ring-border/70 md:h-[88px] md:w-[88px]"
                         />
                       ) : (
@@ -4066,7 +4072,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <div className="min-w-0 flex-1 space-y-2">
                         <div className="min-w-0 space-y-1.5">
                             <p className="text-[15px] font-medium leading-5 text-foreground md:text-[16px]">
-                              {mattress.name || 'Mattress'}
+                              {getMattressDisplayName(mattress)}
                             </p>
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
                               {displaySizeLabel && (

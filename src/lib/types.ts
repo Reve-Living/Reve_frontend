@@ -212,6 +212,7 @@ export interface ProductFabric {
 export interface ProductMattress {
   id: number;
   name?: string;
+  display_name?: string;
   description?: string;
   features?: string;
   image_url?: string;
@@ -227,6 +228,8 @@ export interface ProductMattress {
   is_active?: boolean;
   sort_order?: number;
   categories?: number[];
+  subcategories?: number[];
+  products?: number[];
 }
 
 export interface MattressOptionPrice {
