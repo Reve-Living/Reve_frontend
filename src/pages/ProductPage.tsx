@@ -218,6 +218,10 @@ const DEFAULT_DIMENSION_LOOKUP: Record<string, Record<string, string>> = DEFAULT
 
 
 
+const formatExactPrice = (value: number): string => {
+  const safe = Number(value);
+  return gbpFormatter.format(Number.isFinite(safe) ? Math.max(0, safe) : 0);
+};
 const formatPrice = (value: number): string => formatWholePrice(value);
 const formatAddonPrice = (value: number): string => `+${formatWholePrice(value)}`;
 
@@ -2112,6 +2116,9 @@ type MattressDetailView = {
       : undefined;
 
   const totalPrice = unitPrice * quantity;
+  const useExactKidsMattressPricing = kidsMattressTabsEnabled && chargeableMattressDetails.length > 0;
+  const formatProductTotalPrice = useExactKidsMattressPricing ? formatExactPrice : formatPrice;
+  const formatMattressChoicePrice = kidsMattressTabsEnabled ? formatExactPrice : formatPrice;
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";
 
@@ -3038,11 +3045,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                 {unitOriginalPrice && unitOriginalPrice > unitPrice && (
 
-                  <span className="text-lg text-muted-foreground line-through">{formatPrice(unitOriginalPrice)}</span>
+                  <span className="text-lg text-muted-foreground line-through">{formatProductTotalPrice(unitOriginalPrice)}</span>
 
                 )}
 
-                <span className="text-3xl font-bold text-primary">{formatPrice(unitPrice)}</span>
+                <span className="text-3xl font-bold text-primary">{formatProductTotalPrice(unitPrice)}</span>
 
                 {discountPercentage > 0 && (
                   <div className="ml-8 sm:ml-12">
@@ -3410,7 +3417,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       {selectedMattressDetails.length > 0
                         ? selectedMattressDetails.every((m) => isIncludedMattress(m, selectedSize))
                           ? 'Included'
-                          : formatPrice(totalMattressPrice)
+                          : formatMattressChoicePrice(totalMattressPrice)
                         : 'Tap to choose a mattress'}
                     </span>
                   </div>
@@ -3490,7 +3497,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
               >
 
-                {selectForBedSlug ? 'Select Mattress' : `Add to Cart - ${formatPrice(totalPrice)}`}
+                {selectForBedSlug ? 'Select Mattress' : `Add to Cart - ${formatProductTotalPrice(totalPrice)}`}
 
               </Button>
 
@@ -4246,9 +4253,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                 </p>
                               )}
                               <p className="leading-4">
-                                <span className="font-semibold text-primary">{formatPrice(priceDisplay)}</span>
+                                <span className="font-semibold text-primary">{formatMattressChoicePrice(priceDisplay)}</span>
                                 {originalPriceDisplay > priceDisplay && (
-                                  <span className="ml-2 line-through">{formatPrice(originalPriceDisplay)}</span>
+                                  <span className="ml-2 line-through">{formatMattressChoicePrice(originalPriceDisplay)}</span>
                                 )}
                               </p>
                               {useBunkPositions && (
@@ -4286,7 +4293,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           <div className="flex flex-wrap items-center gap-4">
                             {savingsAmount > 0 && (
                               <div className="inline-flex max-w-full rounded-md bg-primary px-3 py-1.5 text-[11px] font-semibold leading-4 text-primary-foreground md:text-xs">
-                                (Save extra {formatPrice(savingsAmount)} when bought with a bed)
+                                (Save extra {formatMattressChoicePrice(savingsAmount)} when bought with a bed)
                               </div>
                             )}
                             <button
