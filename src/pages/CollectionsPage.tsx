@@ -39,6 +39,21 @@ const resolveImageUrl = (value?: string): string => {
   return raw;
 };
 
+const productMatchesCategoryTile = (product: Product, category: Category) => {
+  const categorySlug = (category.slug || '').trim().toLowerCase();
+  if (!categorySlug) return false;
+
+  const productCategorySlug = (product.category_slug || '').trim().toLowerCase();
+  if (productCategorySlug === categorySlug) return true;
+
+  const productSubcategorySlug = (product.subcategory_slug || '').trim().toLowerCase();
+  if (!productSubcategorySlug) return false;
+
+  return (category.subcategories || []).some(
+    (subcategory) => (subcategory.slug || '').trim().toLowerCase() === productSubcategorySlug
+  );
+};
+
 const getCollectionImageStyle = (name: string): Partial<EdgeAwareImageStyle> => {
   const normalized = (name || '').toLowerCase();
 
@@ -95,7 +110,7 @@ const CollectionsPage = () => {
     const categoryTiles = categories
       .filter((category) => category.show_in_all_collections)
       .map((category) => {
-        const categoryProducts = products.filter((product) => product.category_slug === category.slug);
+        const categoryProducts = products.filter((product) => productMatchesCategoryTile(product, category));
         const image =
           resolveImageUrl(category.image) ||
           resolveImageUrl(categoryProducts[0]?.images?.[0]?.url) ||

@@ -22,7 +22,7 @@ import { toast } from 'sonner';
 
 const getVariantsKey = (item: {
   selectedVariants?: Record<string, string>;
-  mattresses?: { id: number; position?: 'top' | 'bottom' | 'both' | null }[];
+  mattresses?: { id: number; group_label?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -35,7 +35,11 @@ const getVariantsKey = (item: {
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
-    mattresses: (item.mattresses || []).map((m) => ({ id: m.id, position: m.position || null })),
+    mattresses: (item.mattresses || []).map((m) => ({
+      id: m.id,
+      group_label: m.group_label || null,
+      position: m.position || null,
+    })),
     fabric: item.fabric || '',
     dimension: item.dimension || '',
     dimension_details: item.dimension_details || '',
@@ -275,7 +279,7 @@ const CartPage = () => {
                               Mattresses:{' '}
                               {item.mattresses
                                 .map((m) => {
-                                  const label = m.name || 'Mattress';
+                                  const label = m.group_label ? `${m.group_label}: ${m.name || 'Mattress'}` : m.name || 'Mattress';
                                   const pos = m.position ? ` (${m.position})` : '';
                                   const price =
                                     typeof m.price === 'number' ? ` (${m.price.toFixed(2)})` : '';

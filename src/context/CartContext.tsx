@@ -10,6 +10,7 @@ export interface CartItem {
   mattresses?: {
     id: number;
     name?: string | null;
+    group_label?: string | null;
     position?: 'top' | 'bottom' | 'both' | null;
     price?: number | null;
   }[];
@@ -86,6 +87,7 @@ const getVariantsKey = (
     assembly_service_price: item.assembly_service_price || 0,
     mattresses: (item.mattresses || []).map((m) => ({
       id: m.id,
+      group_label: m.group_label || null,
       position: m.position || null,
     })),
     mattress_id: item.mattress_id || null,

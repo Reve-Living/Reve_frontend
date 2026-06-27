@@ -71,7 +71,7 @@ const resolveVariantValue = (styles: ProductStyle[] | undefined, rawValue: strin
 
 const getVariantsKey = (item: {
   selectedVariants?: Record<string, string>;
-  mattresses?: { id: number; position?: 'top' | 'bottom' | 'both' | null }[];
+  mattresses?: { id: number; group_label?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -83,7 +83,11 @@ const getVariantsKey = (item: {
 }) =>
   JSON.stringify({
     selectedVariants: item.selectedVariants || {},
-    mattresses: (item.mattresses || []).map((m) => ({ id: m.id, position: m.position || null })),
+    mattresses: (item.mattresses || []).map((m) => ({
+      id: m.id,
+      group_label: m.group_label || null,
+      position: m.position || null,
+    })),
     fabric: item.fabric || '',
     dimension: item.dimension || '',
     dimension_details: item.dimension_details || '',
@@ -126,7 +130,7 @@ const sortOrderParts = (parts: string[]) =>
 const getVariantSummary = (item: {
   product?: { styles?: ProductStyle[] };
   selectedVariants?: Record<string, string>;
-  mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
+  mattresses?: { name?: string | null; group_label?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
@@ -171,7 +175,10 @@ const getVariantSummary = (item: {
   if (Array.isArray(item.mattresses) && item.mattresses.length > 0) {
     addPart(
       `Mattress${item.mattresses.length > 1 ? 'es' : ''}: ${item.mattresses
-        .map((m) => `${m.name || 'Mattress'}${m.position ? ` (${m.position})` : ''}`)
+        .map((m) => {
+          const label = m.group_label ? `${m.group_label}: ${m.name || 'Mattress'}` : m.name || 'Mattress';
+          return `${label}${m.position ? ` (${m.position})` : ''}`;
+        })
         .join(', ')}`
     );
   } else if (item.mattress_name) {
@@ -188,7 +195,7 @@ const getVariantSummary = (item: {
 const getStyleSummary = (item: {
   product?: { styles?: ProductStyle[] };
   selectedVariants?: Record<string, string>;
-  mattresses?: { name?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
+  mattresses?: { name?: string | null; group_label?: string | null; position?: 'top' | 'bottom' | 'both' | null }[];
   fabric?: string;
   mattress_name?: string | null;
   assembly_service_selected?: boolean;
@@ -220,7 +227,10 @@ const getStyleSummary = (item: {
   if (Array.isArray(item.mattresses) && item.mattresses.length > 0) {
     addPart(
       `Mattress${item.mattresses.length > 1 ? 'es' : ''}: ${item.mattresses
-        .map((m) => `${m.name || 'Mattress'}${m.position ? ` (${m.position})` : ''}`)
+        .map((m) => {
+          const label = m.group_label ? `${m.group_label}: ${m.name || 'Mattress'}` : m.name || 'Mattress';
+          return `${label}${m.position ? ` (${m.position})` : ''}`;
+        })
         .join(', ')}`
     );
   } else if (item.mattress_name) {

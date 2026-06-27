@@ -71,8 +71,24 @@ const CategoryGrid = () => {
         const selectedSubcategories = subcategoryData.filter((subcategory) => subcategory.show_in_collections);
 
         const categoryMap = new Map(categoryData.map((category) => [category.id, category]));
+        const categorySlugsBySubcategorySlug = new Map<string, string[]>();
         const firstProductImageByCategory = new Map<string, string>();
         const firstProductImageBySubcategory = new Map<string, string>();
+
+        for (const category of categoryData) {
+          const categorySlug = (category.slug || '').trim();
+          if (!categorySlug) continue;
+
+          for (const subcategory of category.subcategories || []) {
+            const subcategorySlug = (subcategory.slug || '').trim();
+            if (!subcategorySlug) continue;
+
+            const existing = categorySlugsBySubcategorySlug.get(subcategorySlug) || [];
+            if (!existing.includes(categorySlug)) {
+              categorySlugsBySubcategorySlug.set(subcategorySlug, [...existing, categorySlug]);
+            }
+          }
+        }
 
         for (const product of productData) {
           const fallbackImage = resolveImageUrl(product.images?.[0]?.url);
@@ -84,6 +100,12 @@ const CategoryGrid = () => {
 
           if (product.subcategory_slug && !firstProductImageBySubcategory.has(product.subcategory_slug)) {
             firstProductImageBySubcategory.set(product.subcategory_slug, fallbackImage);
+          }
+
+          for (const categorySlug of categorySlugsBySubcategorySlug.get(product.subcategory_slug || '') || []) {
+            if (!firstProductImageByCategory.has(categorySlug)) {
+              firstProductImageByCategory.set(categorySlug, fallbackImage);
+            }
           }
         }
 
