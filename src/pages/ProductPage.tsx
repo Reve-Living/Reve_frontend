@@ -775,6 +775,7 @@ const ProductPage = () => {
   const locationState =
     ((location.state as { previewProduct?: Product; returnTo?: string } | null) || null);
   const returnTo = typeof locationState?.returnTo === 'string' ? locationState.returnTo : '';
+  const previewProductId = Number(locationState?.previewProduct?.id);
   const returnToHasSubcategory = returnTo.includes('?sub=');
   const selectForBedSlug = searchParams.get('select-for-bed') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
@@ -1099,7 +1100,17 @@ type MattressDetailView = {
         setEnabledGroups({});
         hasAutoSelectedIncludedMattress.current = false;
 
-        const productRes = await apiGet<Product[]>(`/products/?slug=${slug}`, { noStore: true });
+        const routeProductId = Number(slug);
+        const fallbackProductId = Number.isInteger(previewProductId) && previewProductId > 0
+          ? previewProductId
+          : Number.isInteger(routeProductId) && routeProductId > 0
+          ? routeProductId
+          : 0;
+
+        const productRes = await apiGet<Product[] | { results?: Product[] }>(
+          `/products/?slug=${encodeURIComponent(slug)}`,
+          { noStore: true }
+        );
 
         const normalizedProducts = Array.isArray(productRes)
 
@@ -1111,7 +1122,12 @@ type MattressDetailView = {
 
           : [];
 
-        const fetched = normalizedProducts[0] || null;
+        let fetched = normalizedProducts[0] || null;
+
+        if (!fetched && fallbackProductId) {
+          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/`, { noStore: true });
+          fetched = Array.isArray(productDetailRes) ? productDetailRes[0] || null : productDetailRes || null;
+        }
 
         setProduct(fetched);
         await loadSeriesProducts(fetched);
@@ -1242,7 +1258,7 @@ type MattressDetailView = {
 
     load();
 
-  }, [slug, loadSeriesProducts]);
+  }, [slug, loadSeriesProducts, previewProductId]);
 
 
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, type FormEvent } from 'react';
+import { useState, useEffect, useMemo, type FormEvent, type PointerEvent } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Search,
@@ -33,6 +33,7 @@ const TRUST_BADGES = [
   { label: 'Handmade in the UK', Icon: Hammer },
   { label: '30-Day Returns', Icon: RotateCcw },
 ] as const;
+const SEARCH_ROOT_SELECTOR = '[data-header-search]';
 
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
@@ -106,7 +107,6 @@ const Header = () => {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const searchRef = useRef<HTMLDivElement | null>(null);
   const [navLinks, setNavLinks] = useState<
     { name: string; href: string; children?: { name: string; href: string }[] }[]
   >(() => readCachedNavLinks() || [...STATIC_START_LINKS, ...STATIC_END_LINKS]);
@@ -211,7 +211,8 @@ const Header = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!searchRef.current?.contains(event.target as Node)) {
+      const target = event.target;
+      if (!(target instanceof Element) || !target.closest(SEARCH_ROOT_SELECTOR)) {
         setSearchResults([]);
       }
     };
@@ -228,17 +229,27 @@ const Header = () => {
     }
   };
 
-  const handleSearchSelect = (slug: string) => {
+  const productDetailPath = (product: Product) => {
+    const slugOrId = (product.slug || String(product.id)).trim();
+    return slugOrId ? `/product/${encodeURIComponent(slugOrId)}` : '/categories';
+  };
+
+  const handleSearchSelect = (product: Product) => {
     setIsSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
-    navigate(`/product/${slug}`);
+    navigate(productDetailPath(product), { state: { previewProduct: product } });
+  };
+
+  const handleSearchResultPointerDown = (event: PointerEvent<HTMLButtonElement>, product: Product) => {
+    event.preventDefault();
+    handleSearchSelect(product);
   };
 
   const handleSearchSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (limitedSearchResults[0]) {
-      handleSearchSelect(limitedSearchResults[0].slug);
+      handleSearchSelect(limitedSearchResults[0]);
     }
   };
 
@@ -259,7 +270,8 @@ const Header = () => {
               <button
                 key={product.id}
                 type="button"
-                onClick={() => handleSearchSelect(product.slug)}
+                onPointerDown={(event) => handleSearchResultPointerDown(event, product)}
+                onClick={() => handleSearchSelect(product)}
                 className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
               >
                 {product.images?.[0]?.url ? (
@@ -325,7 +337,7 @@ const Header = () => {
 
             {/* Right Actions */}
             <div className="ml-auto flex items-center gap-4">
-              <div ref={searchRef} className="hidden lg:flex lg:items-center lg:gap-4">
+              <div data-header-search className="hidden lg:flex lg:items-center lg:gap-4">
                 <div className="relative">
                   {isSearchOpen ? (
                     <>
@@ -354,7 +366,8 @@ const Header = () => {
                                 <button
                                   key={product.id}
                                   type="button"
-                                  onClick={() => handleSearchSelect(product.slug)}
+                                  onPointerDown={(event) => handleSearchResultPointerDown(event, product)}
+                                  onClick={() => handleSearchSelect(product)}
                                   className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
                                 >
                                   {product.images?.[0]?.url ? (
@@ -422,7 +435,7 @@ const Header = () => {
 
               {/* Search */}
               {isSearchOpen && (
-                <div ref={searchRef} className="relative hidden md:block lg:hidden">
+                <div data-header-search className="relative hidden md:block lg:hidden">
                   <form onSubmit={handleSearchSubmit}>
                     <Input
                       placeholder="Search..."
@@ -441,7 +454,8 @@ const Header = () => {
                             <button
                               key={product.id}
                               type="button"
-                              onClick={() => handleSearchSelect(product.slug)}
+                              onPointerDown={(event) => handleSearchResultPointerDown(event, product)}
+                              onClick={() => handleSearchSelect(product)}
                               className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
                             >
                               {product.images?.[0]?.url ? (
@@ -522,7 +536,7 @@ const Header = () => {
           </div>
 
           {isSearchOpen && !isMobileMenuOpen && (
-            <div ref={searchRef} className="pb-4 md:hidden">
+            <div data-header-search className="pb-4 md:hidden">
               <form onSubmit={handleSearchSubmit} className="relative">
                 <Input
                   placeholder="Search products..."
@@ -566,7 +580,7 @@ const Header = () => {
               </Link>
 
               <div className="ml-auto flex items-start gap-5 pt-1">
-                <div ref={searchRef} className="flex items-center gap-4">
+                <div data-header-search className="flex items-center gap-4">
                   <div className="relative">
                     {isSearchOpen ? (
                       <>
@@ -595,7 +609,8 @@ const Header = () => {
                                   <button
                                     key={product.id}
                                     type="button"
-                                    onClick={() => handleSearchSelect(product.slug)}
+                                    onPointerDown={(event) => handleSearchResultPointerDown(event, product)}
+                                    onClick={() => handleSearchSelect(product)}
                                     className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-muted"
                                   >
                                     {product.images?.[0]?.url ? (
@@ -783,7 +798,7 @@ const Header = () => {
               </div>
 
               {/* Mobile Search */}
-              <div ref={searchRef} className="mt-6 md:hidden">
+              <div data-header-search className="mt-6 md:hidden">
                 <form onSubmit={handleSearchSubmit} className="relative">
                   <Input
                     placeholder="Search products..."
