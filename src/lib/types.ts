@@ -285,6 +285,12 @@ export interface ProductDimensionRow {
   values: Record<string, string>;
 }
 
+export type ProductStockStatus =
+  | 'available'
+  | 'low_stock'
+  | 'out_of_stock'
+  | 'stock_check_needed';
+
 export interface Product {
   id: number;
   name: string;
@@ -300,6 +306,7 @@ export interface Product {
   price: number;
   original_price?: number | null;
   discount_percentage?: number;
+  stock_status?: ProductStockStatus;
   description: string;
   short_description?: string;
   features: string[];

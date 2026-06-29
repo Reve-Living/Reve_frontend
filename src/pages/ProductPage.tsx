@@ -19,6 +19,7 @@ import {
   Armchair,
   BedDouble,
   Bluetooth,
+  AlertCircle,
   CheckCircle2,
   CupSoda,
   Lightbulb,
@@ -54,7 +55,7 @@ import ProductCard from '@/components/ProductCard';
 import PaymentBrandMark from '@/components/PaymentBrandMark';
 
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
-import { Category, Collection, Product, ProductDimensionRow, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
+import { Category, Collection, Product, ProductDimensionRow, ProductStockStatus, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 
 import { toast } from 'sonner';
@@ -119,6 +120,21 @@ type VariantGroup = {
 
   options: VariantOption[];
 
+};
+
+const normalizeProductStockStatus = (
+  stockStatus?: ProductStockStatus | string | null,
+  inStock: boolean = true
+): ProductStockStatus => {
+  switch (stockStatus) {
+    case 'available':
+    case 'low_stock':
+    case 'out_of_stock':
+    case 'stock_check_needed':
+      return stockStatus;
+    default:
+      return inStock ? 'available' : 'out_of_stock';
+  }
 };
 
 
@@ -1375,7 +1391,11 @@ type MattressDetailView = {
     ? hasAvailableStandaloneColor
     : true;
 
-  const isProductPurchasable = Boolean(product?.in_stock) && productHasPurchasableVariant;
+  const productStockStatus = normalizeProductStockStatus(product?.stock_status, product?.in_stock !== false);
+  const isProductPurchasable =
+    productStockStatus !== 'out_of_stock' &&
+    productStockStatus !== 'stock_check_needed' &&
+    productHasPurchasableVariant;
 
   const displayColors = useMemo(() => {
     return availableColors || [];
@@ -2532,7 +2552,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
   const handleAddToCart = () => {
     if (!isProductPurchasable) {
-      toast.error('This option is currently out of stock');
+      toast.error(
+        productStockStatus === 'stock_check_needed'
+          ? 'Stock check needed before this item can be ordered'
+          : 'This option is currently out of stock'
+      );
       return;
     }
 
@@ -3062,12 +3086,25 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               </div>
 
               <div className="mt-3 flex items-center gap-2 text-sm">
-                {isProductPurchasable ? (
+                {productStockStatus === 'available' && (
                   <>
                     <CheckCircle2 className="h-4 w-4 text-emerald-600" />
                     <span className="font-medium text-emerald-700">In stock</span>
                   </>
-                ) : (
+                )}
+                {productStockStatus === 'low_stock' && (
+                  <>
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <span className="font-medium text-amber-700">Low stock</span>
+                  </>
+                )}
+                {productStockStatus === 'stock_check_needed' && (
+                  <>
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                    <span className="font-medium text-orange-700">Stock check needed</span>
+                  </>
+                )}
+                {productStockStatus === 'out_of_stock' && (
                   <>
                     <X className="h-4 w-4 text-rose-600" />
                     <span className="font-medium text-rose-700">Out of stock</span>
