@@ -599,14 +599,16 @@ const normalizeSizeName = (raw?: string): string => {
 };
 
 const getMattressDisplayName = (mattress?: ProductMattress | null): string => {
-  const label = String(mattress?.display_name || mattress?.name || '').trim();
+  const label = String(mattress?.name || mattress?.display_name || '').trim();
   return label || 'Mattress';
 };
 
-const getKidsMattressButtonLabel = (mattress?: ProductMattress | null): string => {
+const getMattressButtonLabel = (mattress?: ProductMattress | null): string => {
   const label = String(mattress?.kids_button_label || '').trim();
   return label;
 };
+
+const DEFAULT_MATTRESS_GROUP_LABEL = 'Mattress Options';
 
 const getSizeDisplayOrderIndex = (raw?: string): number => {
   const normalized = normalizeSizeName(raw);
@@ -970,11 +972,6 @@ type MattressDetailView = {
       match.test(subName)
     );
   }, [product?.category_slug, product?.subcategory_slug, product?.name, product?.category_name, product?.subcategory_name]);
-  const isKidsBedsProduct = useMemo(() => {
-    const slug = (product?.category_slug || '').toLowerCase().trim();
-    const name = (product?.category_name || '').toLowerCase().trim();
-    return slug === 'kids-beds' || name === 'kids beds' || name.includes('kids bed');
-  }, [product?.category_name, product?.category_slug]);
   const showDimensionsTable = (product as Product | undefined)?.show_dimensions_table !== false;
 
   // Exclude placeholder mattresses globally.
@@ -989,31 +986,6 @@ type MattressDetailView = {
         return name && !EXCLUDED_MATTRESS_NAMES.includes(name);
       }),
     [EXCLUDED_MATTRESS_NAMES]
-  );
-
-  const isIncludedMattress = useCallback(
-    (m: ProductMattress | null | undefined, sizeLabel?: string) => {
-      if (!m) return false;
-      const useKidsButtonPricing = isKidsBedsProduct && getKidsMattressButtonLabel(m).length > 0;
-      const normSize = normalizeSizeName(sizeLabel || selectedSize || "");
-      const matchedSize = (m.prices || []).find(
-        (p) => normalizeSizeName(p.size_label).toLowerCase() === normSize.toLowerCase()
-      );
-      const toZero = (val: string | number | null | undefined) =>
-        val === null || val === undefined || val === '' ? 0 : Number(val);
-      const base = toZero(m.price);
-      const top = toZero(m.price_top);
-      const bottom = toZero(m.price_bottom);
-      const sizePrice = matchedSize ? toZero(matchedSize.price) : base;
-      const sizeTop = matchedSize ? toZero(matchedSize.price_top) : top;
-      const sizeBottom = matchedSize ? toZero(matchedSize.price_bottom) : bottom;
-      // Included if all relevant prices for this size are zero.
-      const bunkFree = m.enable_bunk_positions && !useKidsButtonPricing
-        ? sizeTop === 0 && sizeBottom === 0
-        : true;
-      return sizePrice === 0 && bunkFree;
-    },
-    [isKidsBedsProduct, selectedSize]
   );
 
   const fetchReviews = async (productId: number) => {
@@ -1945,11 +1917,12 @@ type MattressDetailView = {
     return Array.from(map.values());
   }, [mattressOptions, externalMattress, filterOutExcludedMattresses]);
   const kidsMattressGroups = useMemo(() => {
-    if (!isKidsBedsProduct) return [] as Array<{ label: string; mattresses: ProductMattress[] }>;
+    const hasAnyButtonLabels = mattresses.some((mattress) => getMattressButtonLabel(mattress).length > 0);
+    if (!hasAnyButtonLabels) return [] as Array<{ label: string; mattresses: ProductMattress[] }>;
 
     const grouped = new Map<string, ProductMattress[]>();
     mattresses.forEach((mattress) => {
-      const label = getKidsMattressButtonLabel(mattress) || 'Mattress Options';
+      const label = getMattressButtonLabel(mattress) || DEFAULT_MATTRESS_GROUP_LABEL;
       const existing = grouped.get(label) || [];
       existing.push(mattress);
       grouped.set(label, existing);
@@ -1959,8 +1932,30 @@ type MattressDetailView = {
       label,
       mattresses: items,
     }));
-  }, [isKidsBedsProduct, mattresses]);
+  }, [mattresses]);
   const kidsMattressTabsEnabled = kidsMattressGroups.length > 0;
+  const isIncludedMattress = useCallback(
+    (m: ProductMattress | null | undefined, sizeLabel?: string) => {
+      if (!m) return false;
+      const normSize = normalizeSizeName(sizeLabel || selectedSize || "");
+      const matchedSize = (m.prices || []).find(
+        (p) => normalizeSizeName(p.size_label).toLowerCase() === normSize.toLowerCase()
+      );
+      const toZero = (val: string | number | null | undefined) =>
+        val === null || val === undefined || val === '' ? 0 : Number(val);
+      const base = toZero(m.price);
+      const top = toZero(m.price_top);
+      const bottom = toZero(m.price_bottom);
+      const sizePrice = matchedSize ? toZero(matchedSize.price) : base;
+      const sizeTop = matchedSize ? toZero(matchedSize.price_top) : top;
+      const sizeBottom = matchedSize ? toZero(matchedSize.price_bottom) : bottom;
+      const bunkFree = m.enable_bunk_positions && !kidsMattressTabsEnabled
+        ? sizeTop === 0 && sizeBottom === 0
+        : true;
+      return sizePrice === 0 && bunkFree;
+    },
+    [kidsMattressTabsEnabled, selectedSize]
+  );
   const activeKidsMattressGroup = useMemo(
     () => kidsMattressGroups.find((group) => group.label === activeKidsMattressButton) || kidsMattressGroups[0] || null,
     [activeKidsMattressButton, kidsMattressGroups]
@@ -2242,7 +2237,7 @@ type MattressDetailView = {
   );
   const selectKidsMattress = useCallback(
     (mattress: ProductMattress) => {
-      const groupLabel = getKidsMattressButtonLabel(mattress) || activeKidsMattressGroup?.label || 'Mattress Options';
+      const groupLabel = getMattressButtonLabel(mattress) || activeKidsMattressGroup?.label || DEFAULT_MATTRESS_GROUP_LABEL;
       setHasUserChangedMattressSelection(true);
       setSelectedMattresses((prev) => {
         const existingSelection = prev.find((item) => (item.group_label || '') === groupLabel);
@@ -2339,7 +2334,7 @@ type MattressDetailView = {
           {
             id: Number(mattress.id),
             position: kidsMattressTabsEnabled ? null : mattress.enable_bunk_positions ? 'top' : null,
-            group_label: kidsMattressTabsEnabled ? getKidsMattressButtonLabel(mattress) || null : null,
+            group_label: kidsMattressTabsEnabled ? getMattressButtonLabel(mattress) || DEFAULT_MATTRESS_GROUP_LABEL : null,
           },
         ])
       );
@@ -3416,7 +3411,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   <div>
                     <p className="text-base font-semibold">Mattress</p>
                     <p className="text-xs text-muted-foreground">
-                      {kidsMattressTabsEnabled ? 'Add mattress options for each section' : 'Choose after picking your style'}
+                      {kidsMattressTabsEnabled ? 'Add mattress options for each button group' : 'Choose after picking your style'}
                     </p>
                   </div>
                   <Button
@@ -4113,7 +4108,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <div>
                 <p className="text-2xl font-semibold">{kidsMattressTabsEnabled ? 'Add a Mattress' : 'Choose a mattress'}</p>
                 <p className="text-sm text-muted-foreground">
-                  {kidsMattressTabsEnabled ? 'Pick a mattress for each section' : 'Choose the best comfort'}
+                  {kidsMattressTabsEnabled ? 'Pick a mattress from each button group' : 'Choose the best comfort'}
                 </p>
               </div>
               <button
