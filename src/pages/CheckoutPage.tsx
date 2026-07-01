@@ -12,7 +12,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { useCart } from '@/context/CartContext';
-import { apiPost } from '@/lib/api';
+import { apiPost, apiUpload } from '@/lib/api';
 import type {
   Order,
   ProductStyle,
@@ -24,6 +24,12 @@ import { toast } from 'sonner';
 
 type CheckoutStep = 'information' | 'payment' | 'confirmation';
 type StripeBackedPaymentMethod = 'card' | 'google_pay' | 'klarna' | 'afterpay_clearpay';
+type ReferenceImageUpload = {
+  id: string;
+  previewUrl: string;
+  file: File;
+  name: string;
+};
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
 const REFERENCE_IMAGE_ACCEPT = 'image/webp,image/*';
@@ -327,7 +333,7 @@ const CheckoutPage = () => {
     specialNotes: '',
   });
   const [referenceImages, setReferenceImages] = useState<
-    { id: string; previewUrl: string; dataUrl: string; name: string }[]
+    ReferenceImageUpload[]
   >([]);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
   const [isLoadingConfirmedOrder, setIsLoadingConfirmedOrder] = useState(false);
@@ -600,19 +606,15 @@ const CheckoutPage = () => {
     const files = Array.from(e.target.files || []);
     files.forEach((file) => {
       if (!file.type.startsWith('image/')) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        setReferenceImages((prev) => [
-          ...prev,
-          {
-            id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
-            previewUrl: URL.createObjectURL(file),
-            dataUrl: reader.result as string,
-            name: file.name,
-          },
-        ]);
-      };
-      reader.readAsDataURL(file);
+      setReferenceImages((prev) => [
+        ...prev,
+        {
+          id: `${file.name}-${file.size}-${file.lastModified}-${Math.random().toString(36).slice(2)}`,
+          previewUrl: URL.createObjectURL(file),
+          file,
+          name: file.name,
+        },
+      ]);
     });
     e.target.value = '';
   };
@@ -652,6 +654,15 @@ const CheckoutPage = () => {
     setIsProcessing(true);
     try {
       const { firstName, lastName } = splitFullName(formData.fullName);
+      const uploadedReferenceImages =
+        referenceImages.length > 0
+          ? await Promise.all(
+              referenceImages.map(async (image) => {
+                const uploaded = await apiUpload('/orders/upload_reference_image/', image.file);
+                return uploaded.url;
+              })
+            )
+          : [];
 
       const orderPayload = {
         first_name: firstName,
@@ -683,7 +694,7 @@ const CheckoutPage = () => {
           assembly_service_price: item.assembly_service_selected ? item.assembly_service_price || 0 : 0,
         })),
         special_notes: formData.specialNotes.trim() || undefined,
-        reference_images: referenceImages.map((img) => img.dataUrl),
+        reference_images: uploadedReferenceImages,
       };
 
       const orderRes = await apiPost<Order>('/orders/', orderPayload);

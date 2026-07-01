@@ -9,7 +9,7 @@ type CacheEntry = { ts: number; data: unknown };
 const getCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<unknown>>();
 const mutationInFlight = new Map<string, Promise<unknown>>();
-const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 type ApiGetOptions = {
   noStore?: boolean;
 };
