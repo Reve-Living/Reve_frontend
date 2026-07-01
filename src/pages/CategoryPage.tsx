@@ -294,41 +294,26 @@ const CategoryPage = () => {
         }
 
         setCategory(categoryItem);
+        const resolvedSubcategories = Array.isArray(categoryItem?.subcategories) ? categoryItem.subcategories : [];
+        setSubcategories(resolvedSubcategories);
 
         const resolvedSlug = categoryItem?.slug || slug;
         const needsSlugRetry = resolvedSlug !== initialResolvedSlug;
 
-        const [subcategoryRes, productsRes] = await Promise.allSettled([
-          categoryItem?.id
-            ? apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`)
-            : Promise.resolve([]),
-          needsSlugRetry
-            ? apiGet<Product[] | { results?: Product[] }>(
-                subSlug ? `/products/?subcategory=${subSlug}&summary=1` : `/products/?category=${resolvedSlug}&summary=1`
-              )
-            : initialProductsPromise,
-        ]);
+        const productsRes = await (needsSlugRetry
+          ? apiGet<Product[] | { results?: Product[] }>(
+              subSlug ? `/products/?subcategory=${subSlug}&summary=1` : `/products/?category=${resolvedSlug}&summary=1`
+            )
+          : initialProductsPromise);
 
-        if (subcategoryRes.status === 'fulfilled' && Array.isArray(subcategoryRes.value)) {
-          setSubcategories(subcategoryRes.value);
-        } else {
-          setSubcategories([]);
-        }
-
-        const normalizedProducts =
-          productsRes.status === 'fulfilled'
-            ? Array.isArray(productsRes.value)
-              ? productsRes.value
-              : Array.isArray((productsRes.value as { results?: Product[] })?.results)
-              ? (productsRes.value as { results: Product[] }).results
-              : []
-            : [];
-
-        const loadedSubcategories =
-          subcategoryRes.status === 'fulfilled' && Array.isArray(subcategoryRes.value) ? subcategoryRes.value : [];
+        const normalizedProducts = Array.isArray(productsRes)
+          ? productsRes
+          : Array.isArray((productsRes as { results?: Product[] })?.results)
+          ? (productsRes as { results: Product[] }).results
+          : [];
 
         const subcategoryOrderLookup = new Map(
-          loadedSubcategories.map((sub) => [
+          resolvedSubcategories.map((sub) => [
             Number(sub.id),
             {
               order: getDisplayOrder(sub.sort_order),

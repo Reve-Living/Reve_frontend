@@ -93,31 +93,20 @@ const CategorySubcategoriesPage = () => {
         }
 
         setCategory(categoryItem);
+        setSubcategories(Array.isArray(categoryItem.subcategories) ? categoryItem.subcategories : []);
 
         const resolvedSlug = categoryItem.slug || slug;
         const needsSlugRetry = resolvedSlug !== slug;
 
-        const [subcategoriesRes, productsRes] = await Promise.allSettled([
-          apiGet<SubCategory[]>(`/subcategories/?category=${categoryItem.id}`),
-          needsSlugRetry
-            ? apiGet<Product[] | { results?: Product[] }>(`/products/?category=${resolvedSlug}&summary=1`)
-            : initialProductsPromise,
-        ]);
+        const productsRes = await (needsSlugRetry
+          ? apiGet<Product[] | { results?: Product[] }>(`/products/?category=${resolvedSlug}&summary=1`)
+          : initialProductsPromise);
 
-        if (subcategoriesRes.status === 'fulfilled' && Array.isArray(subcategoriesRes.value)) {
-          setSubcategories(subcategoriesRes.value);
-        } else {
-          setSubcategories([]);
-        }
-
-        const normalizedProducts =
-          productsRes.status === 'fulfilled'
-            ? Array.isArray(productsRes.value)
-              ? productsRes.value
-              : Array.isArray(productsRes.value?.results)
-              ? productsRes.value.results
-              : []
-            : [];
+        const normalizedProducts = Array.isArray(productsRes)
+          ? productsRes
+          : Array.isArray(productsRes?.results)
+          ? productsRes.results
+          : [];
 
         setProducts(normalizedProducts);
       } catch {
