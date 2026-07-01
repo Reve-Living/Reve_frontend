@@ -65,10 +65,10 @@ const CategoriesPage = () => {
       setIsLoading(true);
       try {
         const productsPath = isNewArrivalsOnly
-          ? '/products/?is_new=1'
+          ? '/products/?is_new=1&summary=1'
           : isBestsellerOnly
-          ? '/products/?bestseller=1'
-          : '/products/';
+          ? '/products/?bestseller=1&summary=1'
+          : '/products/?summary=1';
         const productsRes = await apiGet<Product[]>(productsPath);
         const orderedProducts = Array.isArray(productsRes)
           ? [...productsRes].sort((a, b) => {

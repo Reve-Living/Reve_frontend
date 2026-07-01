@@ -273,7 +273,7 @@ const CategoryPage = () => {
         const initialResolvedSlug = slug;
 
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
-          subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${initialResolvedSlug}`
+          subSlug ? `/products/?subcategory=${subSlug}&summary=1` : `/products/?category=${initialResolvedSlug}&summary=1`
         );
         const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
           `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
@@ -304,7 +304,7 @@ const CategoryPage = () => {
             : Promise.resolve([]),
           needsSlugRetry
             ? apiGet<Product[] | { results?: Product[] }>(
-                subSlug ? `/products/?subcategory=${subSlug}` : `/products/?category=${resolvedSlug}`
+                subSlug ? `/products/?subcategory=${subSlug}&summary=1` : `/products/?category=${resolvedSlug}&summary=1`
               )
             : initialProductsPromise,
         ]);
