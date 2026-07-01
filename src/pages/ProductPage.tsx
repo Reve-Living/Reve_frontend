@@ -797,12 +797,31 @@ const ProductPage = () => {
   const locationState =
     ((location.state as { previewProduct?: Product; returnTo?: string } | null) || null);
   const returnTo = typeof locationState?.returnTo === 'string' ? locationState.returnTo : '';
-  const previewProductId = Number(locationState?.previewProduct?.id);
+  const previewProduct = useMemo(() => {
+    const candidate = locationState?.previewProduct;
+    const routeSlug = String(slug || '').trim().toLowerCase();
+
+    if (!candidate || !routeSlug) return null;
+
+    const candidateSlug = String(candidate.slug || '').trim().toLowerCase();
+    if (candidateSlug && candidateSlug === routeSlug) {
+      return candidate;
+    }
+
+    const candidateId = Number(candidate.id);
+    if (Number.isInteger(candidateId) && candidateId > 0 && String(candidateId) === routeSlug) {
+      return candidate;
+    }
+
+    return null;
+  }, [locationState?.previewProduct, slug]);
+  const previewProductId = Number(previewProduct?.id);
   const returnToHasSubcategory = returnTo.includes('?sub=');
   const selectForBedSlug = searchParams.get('select-for-bed') || '';
   const linkedBedSize = searchParams.get('bed-size') || '';
+  const preSelectedMattressId = searchParams.get('pre-select-mattress') || '';
   
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<Product | null>(() => previewProduct);
 
   const [isLoading, setIsLoading] = useState(true);
 
@@ -1077,8 +1096,11 @@ type MattressDetailView = {
 
       try {
         // Clear previous product to prevent stale options flashing while new product loads
-        setProduct(null);
+        setProduct(previewProduct);
         setCategory(null);
+        setRelatedProducts([]);
+        setSeriesCollection(null);
+        setSeriesProducts([]);
         setSelectedImage(0);
         setSelectedSize('');
         setSelectedColor('');
@@ -1100,8 +1122,7 @@ type MattressDetailView = {
           : 0;
 
         const productRes = await apiGet<Product[] | { results?: Product[] }>(
-          `/products/?slug=${encodeURIComponent(slug)}`,
-          { noStore: true }
+          `/products/?slug=${encodeURIComponent(slug)}`
         );
 
         const normalizedProducts = Array.isArray(productRes)
@@ -1117,7 +1138,7 @@ type MattressDetailView = {
         let fetched = normalizedProducts[0] || null;
 
         if (!fetched && fallbackProductId) {
-          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/`, { noStore: true });
+          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/`);
           fetched = Array.isArray(productDetailRes) ? productDetailRes[0] || null : productDetailRes || null;
         }
 
@@ -1131,21 +1152,18 @@ type MattressDetailView = {
         hasAutoSelectedIncludedMattress.current = false;
         
         // Pre-select mattress if coming from a mattress selection flow
-        const preSelectMattressId = searchParams.get('pre-select-mattress');
-        if (preSelectMattressId && fetched?.mattresses) {
-          const targetId = Number(preSelectMattressId);
+        if (preSelectedMattressId && fetched?.mattresses) {
+          const targetId = Number(preSelectedMattressId);
           const mattressToSelect =
             fetched.mattresses.find((m) => Number(m.id) === targetId) ||
             fetched.mattresses.find((m) => Number(m.source_product) === targetId);
           if (mattressToSelect?.id) {
-            setSelectedMattresses(
-              normalizeBunkMattressSelections([
-                {
-                  id: mattressToSelect.id,
-                  position: mattressToSelect.enable_bunk_positions ? 'top' : null,
-                },
-              ])
-            );
+            setSelectedMattresses([
+              {
+                id: mattressToSelect.id,
+                position: mattressToSelect.enable_bunk_positions ? 'top' : null,
+              },
+            ]);
           }
         }
         
@@ -1239,8 +1257,10 @@ type MattressDetailView = {
 
       } catch {
 
-        setProduct(null);
-        await loadSeriesProducts(null);
+        if (!previewProduct) {
+          setProduct(null);
+          await loadSeriesProducts(null);
+        }
 
         setIsLoading(false);
 
@@ -1250,7 +1270,7 @@ type MattressDetailView = {
 
     load();
 
-  }, [slug, loadSeriesProducts, previewProductId]);
+  }, [slug, loadSeriesProducts, previewProduct, previewProductId, linkedBedSize, preSelectedMattressId]);
 
 
 

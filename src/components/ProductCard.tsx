@@ -7,6 +7,15 @@ import { formatWholePrice } from '@/lib/pricing';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 import { apiGet } from '@/lib/api';
 
+let productPagePreloadPromise: Promise<unknown> | null = null;
+
+const preloadProductPage = () => {
+  if (!productPagePreloadPromise) {
+    productPagePreloadPromise = import('@/pages/ProductPage');
+  }
+  return productPagePreloadPromise;
+};
+
 const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number): number => {
   const base = Number.isFinite(productBasePrice) ? Number(productBasePrice) : 0;
   const raw = Number(storedValue ?? 0);
@@ -46,8 +55,10 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
   const isInMattressSelection = !!fromBedProduct;
   const buttonText = isInMattressSelection ? 'Select Mattress' : 'View Options';
   const prefetchProductDetail = () => {
-    if (!product.slug) return;
-    void apiGet(`/products/?slug=${encodeURIComponent(product.slug)}`).catch(() => undefined);
+    void preloadProductPage();
+    const productSlug = String(product.slug || '').trim();
+    if (!productSlug) return;
+    void apiGet(`/products/?slug=${encodeURIComponent(productSlug)}`).catch(() => undefined);
   };
 
   return (
@@ -57,6 +68,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
         state={{ previewProduct: product, returnTo }}
         onMouseEnter={prefetchProductDetail}
         onFocus={prefetchProductDetail}
+        onPointerDown={prefetchProductDetail}
         onTouchStart={prefetchProductDetail}
         className="group flex h-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       >
