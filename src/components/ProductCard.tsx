@@ -48,7 +48,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
         .map((size) => normalizeStoredSizePrice(basePrice, Number(size.price_delta)))
         .filter((price) => Number.isFinite(price) && price >= 0)
     : [];
-  const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : minSizePrice ?? basePrice;
+  const summaryDisplayPrice =
+    minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
+  const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
   const imageUrl = product.images?.[0]?.url || "";
   const hasImage = imageUrl.trim().length > 0;
   const shortText = (product.short_description || product.description || "").trim();
