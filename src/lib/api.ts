@@ -9,9 +9,10 @@ type CacheEntry = { ts: number; data: unknown };
 const getCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<unknown>>();
 const mutationInFlight = new Map<string, Promise<unknown>>();
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-const SESSION_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes across refreshes in the current tab
 const SESSION_CACHE_PREFIX = "reve-public-cache:";
+const PRODUCT_CACHE_TTL_MS = 10 * 1000;
+const CATEGORY_CACHE_TTL_MS = 60 * 1000;
+const DEFAULT_CACHE_TTL_MS = 30 * 1000;
 type ApiGetOptions = {
   noStore?: boolean;
 };
@@ -25,6 +26,16 @@ const isVolatilePath = (path: string) =>
 const getMutationKey = (method: string, path: string, body?: unknown) =>
   `${method}:${path}:${body === undefined ? "" : JSON.stringify(body)}`;
 
+const getCacheTtlMs = (path: string) => {
+  if (path.startsWith("/products/") || path === "/products/" || path.startsWith("/collections/")) {
+    return PRODUCT_CACHE_TTL_MS;
+  }
+  if (path.startsWith("/categories/") || path === "/categories/" || path.startsWith("/subcategories/")) {
+    return CATEGORY_CACHE_TTL_MS;
+  }
+  return DEFAULT_CACHE_TTL_MS;
+};
+
 const cloneData = <T>(data: T): T => {
   try {
     return structuredClone(data);
@@ -33,14 +44,14 @@ const cloneData = <T>(data: T): T => {
   }
 };
 
-const readSessionCache = <T>(cacheKey: string): T | null => {
+const readSessionCache = <T>(cacheKey: string, ttlMs: number): T | null => {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CacheEntry;
     if (!parsed || typeof parsed.ts !== "number") return null;
-    if (Date.now() - parsed.ts >= SESSION_CACHE_TTL_MS) {
+    if (Date.now() - parsed.ts >= ttlMs) {
       window.sessionStorage.removeItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
       return null;
     }
@@ -77,6 +88,7 @@ const buildHeaders = (hasBody: boolean, requiresAuth: boolean = false) => {
 export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Promise<T> => {
   const cacheKey = path;
   const shouldBypassCache = options.noStore === true || isVolatilePath(path);
+  const cacheTtlMs = getCacheTtlMs(path);
 
   if (shouldBypassCache) {
     const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
@@ -91,11 +103,11 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const now = Date.now();
 
   // Serve only fresh cache immediately.
-  if (cached && now - cached.ts < CACHE_TTL_MS) {
+  if (cached && now - cached.ts < cacheTtlMs) {
     return cloneData(cached.data) as T;
   }
 
-  const sessionCached = readSessionCache<T>(cacheKey);
+  const sessionCached = readSessionCache<T>(cacheKey, cacheTtlMs);
   if (sessionCached !== null) {
     return sessionCached;
   }

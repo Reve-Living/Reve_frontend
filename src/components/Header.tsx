@@ -91,18 +91,32 @@ const writeCachedNavLinks = (links: { name: string; href: string; children?: { n
   }
 };
 
-const getCategorySlugFromHref = (href?: string) => {
+const getCategoryPrefetchTargetFromHref = (href?: string) => {
   const value = String(href || '').trim();
-  if (!value.startsWith('/category/')) return '';
-  return value.replace('/category/', '').split('?')[0].trim();
+  if (!value.startsWith('/category/')) return { categorySlug: '', subcategorySlug: '' };
+  const [path, query = ''] = value.replace('/category/', '').split('?');
+  return {
+    categorySlug: path.trim(),
+    subcategorySlug: new URLSearchParams(query).get('sub') || '',
+  };
 };
 
-const prefetchCategoryPayload = (categorySlug?: string) => {
-  const slug = (categorySlug || '').trim();
+const prefetchCategoryPayload = (href?: string) => {
+  const { categorySlug, subcategorySlug } = getCategoryPrefetchTargetFromHref(href);
+  const slug = categorySlug.trim();
+  const subSlug = subcategorySlug.trim();
   if (!slug) return;
 
-  void apiGet<Product[]>(`/products/?category=${slug}&summary=1`).catch(() => []);
-  void apiGet<{ filters: unknown[] }>(`/categories/${slug}/filters/`).catch(() => ({ filters: [] }));
+  if (subSlug) {
+    void apiGet<Product[]>(`/products/?subcategory=${encodeURIComponent(subSlug)}&summary=1`).catch(() => []);
+    void apiGet<{ filters: unknown[] }>(
+      `/categories/${encodeURIComponent(slug)}/filters/?subcategory=${encodeURIComponent(subSlug)}`
+    ).catch(() => ({ filters: [] }));
+    return;
+  }
+
+  void apiGet<Product[]>(`/products/?category=${encodeURIComponent(slug)}&summary=1`).catch(() => []);
+  void apiGet<{ filters: unknown[] }>(`/categories/${encodeURIComponent(slug)}/filters/`).catch(() => ({ filters: [] }));
 };
 
 const Header = () => {
@@ -693,7 +707,7 @@ const Header = () => {
                   key={link.name}
                   className="relative"
                   onMouseEnter={() => {
-                    prefetchCategoryPayload(getCategorySlugFromHref(link.href));
+                    prefetchCategoryPayload(link.href);
                     if (link.children) setActiveDropdown(link.name);
                   }}
                   onMouseLeave={() => setActiveDropdown(null)}
@@ -706,6 +720,8 @@ const Header = () => {
                   ) : (
                     <Link
                       to={link.href}
+                      onPointerDown={() => prefetchCategoryPayload(link.href)}
+                      onFocus={() => prefetchCategoryPayload(link.href)}
                       className="story-link py-2 font-medium text-foreground transition-colors hover:text-primary"
                     >
                       {link.name}
@@ -719,7 +735,9 @@ const Header = () => {
                           <Link
                             key={child.name}
                             to={child.href}
-                            onMouseEnter={() => prefetchCategoryPayload(getCategorySlugFromHref(link.href))}
+                            onMouseEnter={() => prefetchCategoryPayload(child.href)}
+                            onPointerDown={() => prefetchCategoryPayload(child.href)}
+                            onFocus={() => prefetchCategoryPayload(child.href)}
                             className="rounded-md px-3 py-2 text-left font-medium text-foreground transition-colors hover:bg-background hover:text-primary"
                           >
                             {child.name}
@@ -764,6 +782,7 @@ const Header = () => {
                               <Link
                                 key={child.name}
                                 to={child.href}
+                                onPointerDown={() => prefetchCategoryPayload(child.href)}
                                 className="block py-2 text-muted-foreground hover:text-primary"
                               >
                                 {child.name}
@@ -775,6 +794,7 @@ const Header = () => {
                     ) : (
                       <Link
                         to={link.href}
+                        onPointerDown={() => prefetchCategoryPayload(link.href)}
                         className="block py-2 font-medium text-foreground hover:text-primary"
                       >
                         {link.name}

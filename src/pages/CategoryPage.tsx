@@ -190,13 +190,15 @@ const buildCategoryProductsPath = (
   categorySlug: string,
   subSlug: string,
   includeFilters = false,
-  includeSizes = false
+  includeSizes = false,
+  limit?: number
 ): string => {
   const params = new URLSearchParams({ summary: '1' });
   if (subSlug) params.set('subcategory', subSlug);
   else params.set('category', categorySlug);
   if (includeFilters) params.set('include_filters', '1');
   if (includeSizes) params.set('include_sizes', '1');
+  if (limit && limit > 0) params.set('limit', String(limit));
   return `/products/?${params.toString()}`;
 };
 
@@ -338,6 +340,8 @@ const CategoryPage = () => {
   };
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       setIsLoading(true);
       setIsFiltersLoading(true);
@@ -359,10 +363,11 @@ const CategoryPage = () => {
         const initialResolvedSlug = slug;
         const shouldLoadFilterValues = hasRequestedFilterParams;
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
+        const initialLimit = shouldLoadFilterValues ? undefined : PRODUCTS_PER_PAGE;
         setHasFilterProductData(shouldLoadFilterValues);
 
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
-          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues, shouldLoadSizes)
+          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues, shouldLoadSizes, initialLimit)
         );
         const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
           `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
@@ -382,6 +387,8 @@ const CategoryPage = () => {
             null;
         }
 
+        if (cancelled) return;
+
         setCategory(categoryItem);
         const resolvedSubcategories = Array.isArray(categoryItem?.subcategories) ? categoryItem.subcategories : [];
         setSubcategories(resolvedSubcategories);
@@ -392,9 +399,17 @@ const CategoryPage = () => {
 
         const productsRes = await (needsSlugRetry
           ? apiGet<Product[] | { results?: Product[] }>(
-              buildCategoryProductsPath(resolvedSlug, subSlug, shouldLoadFilterValues, shouldRetryWithSizes)
+              buildCategoryProductsPath(
+                resolvedSlug,
+                subSlug,
+                shouldLoadFilterValues,
+                shouldRetryWithSizes,
+                shouldLoadFilterValues ? undefined : PRODUCTS_PER_PAGE
+              )
             )
           : initialProductsPromise);
+
+        if (cancelled) return;
 
         const normalizedProducts = Array.isArray(productsRes)
           ? productsRes
@@ -409,6 +424,24 @@ const CategoryPage = () => {
         }
 
         setIsLoading(false);
+
+        if (!shouldLoadFilterValues) {
+          void apiGet<Product[] | { results?: Product[] }>(
+            buildCategoryProductsPath(resolvedSlug, subSlug, false, shouldRetryWithSizes)
+          )
+            .then((fullProductsRes) => {
+              if (cancelled) return;
+              const fullProducts = Array.isArray(fullProductsRes)
+                ? fullProductsRes
+                : Array.isArray((fullProductsRes as { results?: Product[] })?.results)
+                ? (fullProductsRes as { results: Product[] }).results
+                : [];
+              if (fullProducts.length > normalizedProducts.length) {
+                setAllProducts(orderProducts(fullProducts, resolvedSubcategories));
+              }
+            })
+            .catch(() => undefined);
+        }
 
         void (needsSlugRetry
           ? apiGet<{ filters: FilterType[] }>(
@@ -439,6 +472,9 @@ const CategoryPage = () => {
       }
     };
     load();
+    return () => {
+      cancelled = true;
+    };
   }, [hasRequestedFilterParams, linkedBedSize, slug, subSlug]);
 
   useEffect(() => {
