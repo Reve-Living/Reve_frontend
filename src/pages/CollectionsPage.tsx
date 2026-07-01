@@ -83,23 +83,28 @@ const CollectionsPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [categoriesRes, productsRes] = await Promise.all([
+        const [categoriesRes, subcategoriesRes, productsRes] = await Promise.allSettled([
           apiGet<Category[]>('/categories/'),
+          apiGet<SubCategory[]>('/subcategories/'),
           apiGet<Product[]>('/products/?summary=1'),
         ]);
 
-        const normalizedCategories = Array.isArray(categoriesRes) ? categoriesRes : [];
+        const normalizedCategories =
+          categoriesRes.status === 'fulfilled' && Array.isArray(categoriesRes.value) ? categoriesRes.value : [];
+        const directSubcategories =
+          subcategoriesRes.status === 'fulfilled' && Array.isArray(subcategoriesRes.value) ? subcategoriesRes.value : [];
+        const nestedSubcategories = normalizedCategories.flatMap((category) => category.subcategories || []);
         const uniqueSubcategories = Array.from(
           new Map(
-            normalizedCategories.flatMap((category) =>
-              (category.subcategories || []).map((subcategory) => [subcategory.id, subcategory] as const)
-            )
+            [...nestedSubcategories, ...directSubcategories].map((subcategory) => [subcategory.id, subcategory] as const)
           ).values()
         );
+        const normalizedProducts =
+          productsRes.status === 'fulfilled' && Array.isArray(productsRes.value) ? productsRes.value : [];
 
         setCategories(normalizedCategories);
         setSubcategories(uniqueSubcategories);
-        setProducts(Array.isArray(productsRes) ? productsRes : []);
+        setProducts(normalizedProducts);
       } catch {
         setCategories([]);
         setSubcategories([]);
