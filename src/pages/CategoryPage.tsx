@@ -20,6 +20,8 @@ import { apiGet } from '@/lib/api';
 import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
 const PRODUCTS_PER_PAGE = 18;
+const INITIAL_PRODUCTS_LIMIT = 6;
+const BACKGROUND_PRODUCTS_BATCH_SIZE = 3;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -191,7 +193,8 @@ const buildCategoryProductsPath = (
   subSlug: string,
   includeFilters = false,
   includeSizes = false,
-  limit?: number
+  limit?: number,
+  offset = 0
 ): string => {
   const params = new URLSearchParams({ summary: '1' });
   if (subSlug) params.set('subcategory', subSlug);
@@ -199,6 +202,7 @@ const buildCategoryProductsPath = (
   if (includeFilters) params.set('include_filters', '1');
   if (includeSizes) params.set('include_sizes', '1');
   if (limit && limit > 0) params.set('limit', String(limit));
+  if (offset > 0) params.set('offset', String(offset));
   return `/products/?${params.toString()}`;
 };
 
@@ -363,7 +367,7 @@ const CategoryPage = () => {
         const initialResolvedSlug = slug;
         const shouldLoadFilterValues = hasRequestedFilterParams;
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
-        const initialLimit = shouldLoadFilterValues ? undefined : PRODUCTS_PER_PAGE;
+        const initialLimit = shouldLoadFilterValues ? undefined : INITIAL_PRODUCTS_LIMIT;
         setHasFilterProductData(shouldLoadFilterValues);
 
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
@@ -404,7 +408,7 @@ const CategoryPage = () => {
                 subSlug,
                 shouldLoadFilterValues,
                 shouldRetryWithSizes,
-                shouldLoadFilterValues ? undefined : PRODUCTS_PER_PAGE
+                shouldLoadFilterValues ? undefined : INITIAL_PRODUCTS_LIMIT
               )
             )
           : initialProductsPromise);
@@ -426,21 +430,47 @@ const CategoryPage = () => {
         setIsLoading(false);
 
         if (!shouldLoadFilterValues) {
-          void apiGet<Product[] | { results?: Product[] }>(
-            buildCategoryProductsPath(resolvedSlug, subSlug, false, shouldRetryWithSizes)
-          )
-            .then((fullProductsRes) => {
+          const loadedProductIds = new Set(normalizedProducts.map((product) => product.id));
+          const loadProductBatch = async (offset: number) => {
+            if (cancelled) return;
+            try {
+              const batchRes = await apiGet<Product[] | { results?: Product[] }>(
+                buildCategoryProductsPath(
+                  resolvedSlug,
+                  subSlug,
+                  false,
+                  shouldRetryWithSizes,
+                  BACKGROUND_PRODUCTS_BATCH_SIZE,
+                  offset
+                )
+              );
               if (cancelled) return;
-              const fullProducts = Array.isArray(fullProductsRes)
-                ? fullProductsRes
-                : Array.isArray((fullProductsRes as { results?: Product[] })?.results)
-                ? (fullProductsRes as { results: Product[] }).results
+              const batchProducts = Array.isArray(batchRes)
+                ? batchRes
+                : Array.isArray((batchRes as { results?: Product[] })?.results)
+                ? (batchRes as { results: Product[] }).results
                 : [];
-              if (fullProducts.length > normalizedProducts.length) {
-                setAllProducts(orderProducts(fullProducts, resolvedSubcategories));
+              if (batchProducts.length === 0) return;
+
+              setAllProducts((prevProducts) => {
+                const merged = [...prevProducts];
+                for (const product of batchProducts) {
+                  if (loadedProductIds.has(product.id)) continue;
+                  loadedProductIds.add(product.id);
+                  merged.push(product);
+                }
+                return orderProducts(merged, resolvedSubcategories);
+              });
+
+              if (batchProducts.length === BACKGROUND_PRODUCTS_BATCH_SIZE) {
+                void loadProductBatch(offset + BACKGROUND_PRODUCTS_BATCH_SIZE);
               }
-            })
-            .catch(() => undefined);
+            } catch {
+              // Keep the first visible products; the next navigation/refresh can retry.
+            }
+          };
+
+          void loadProductBatch(INITIAL_PRODUCTS_LIMIT);
         }
 
         void (needsSlugRetry
@@ -924,7 +954,11 @@ const CategoryPage = () => {
             )}
 
             <div className="flex-1">
-              {filteredProducts.length === 0 ? (
+              {isLoading && filteredProducts.length === 0 ? (
+                <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
+                  <div className="text-center text-muted-foreground">Loading products...</div>
+                </div>
+              ) : filteredProducts.length === 0 ? (
                 <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
                   <div className="text-center">
                     <p className="mb-4 text-lg text-muted-foreground">No products match your filters</p>
