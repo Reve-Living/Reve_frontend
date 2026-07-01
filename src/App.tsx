@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,28 +11,30 @@ import ScrollToTopOnNavigate from "@/components/ScrollToTopOnNavigate";
 import ComingSoonGate from "@/components/ComingSoonGate";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import Index from "./pages/Index";
-import CategoryPage from "./pages/CategoryPage";
-import CategorySubcategoriesPage from "./pages/CategorySubcategoriesPage";
-import ProductPage from "./pages/ProductPage";
-import CartPage from "./pages/CartPage";
-import CheckoutPage from "./pages/CheckoutPage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import CategoriesPage from "./pages/CategoriesPage";
-import CollectionsPage from "./pages/CollectionsPage";
-import ComingSoonPage from "./pages/ComingSoonPage";
-import LoginPage from "./pages/LoginPage";
-import SignupPage from "./pages/SignupPage";
-import TermsConditionsPage from "./pages/TermsConditionsPage";
-import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
-import ReturnsRefundsPage from "./pages/ReturnsRefundsPage";
-import DeliveryInformationPage from "./pages/DeliveryInformationPage";
-import FaqPage from "./pages/FaqPage";
-import DivanBedsPage from "./pages/DivanBedsPage";
-import LifestyleArticlePage from "./pages/LifestyleArticlePage";
-import NotFound from "./pages/NotFound";
+
+const CategoryPage = lazy(() => import("./pages/CategoryPage"));
+const CategorySubcategoriesPage = lazy(() => import("./pages/CategorySubcategoriesPage"));
+const ProductPage = lazy(() => import("./pages/ProductPage"));
+const CartPage = lazy(() => import("./pages/CartPage"));
+const CheckoutPage = lazy(() => import("./pages/CheckoutPage"));
+const AboutPage = lazy(() => import("./pages/AboutPage"));
+const ContactPage = lazy(() => import("./pages/ContactPage"));
+const CategoriesPage = lazy(() => import("./pages/CategoriesPage"));
+const CollectionsPage = lazy(() => import("./pages/CollectionsPage"));
+const ComingSoonPage = lazy(() => import("./pages/ComingSoonPage"));
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const SignupPage = lazy(() => import("./pages/SignupPage"));
+const TermsConditionsPage = lazy(() => import("./pages/TermsConditionsPage"));
+const PrivacyPolicyPage = lazy(() => import("./pages/PrivacyPolicyPage"));
+const ReturnsRefundsPage = lazy(() => import("./pages/ReturnsRefundsPage"));
+const DeliveryInformationPage = lazy(() => import("./pages/DeliveryInformationPage"));
+const FaqPage = lazy(() => import("./pages/FaqPage"));
+const DivanBedsPage = lazy(() => import("./pages/DivanBedsPage"));
+const LifestyleArticlePage = lazy(() => import("./pages/LifestyleArticlePage"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
+const routeFallback = <div className="min-h-screen bg-background" />;
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,30 +48,32 @@ const App = () => (
             <ScrollToTop />
             <ScrollToTopOnNavigate />
             <WhatsAppButton />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/category/:slug/subcategories" element={<CategorySubcategoriesPage />} />
-              <Route path="/category/:slug" element={<CategoryPage />} />
-              <Route path="/product/:slug" element={<ProductPage />} />
-              <Route path="/cart" element={<CartPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/about" element={<AboutPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/categories" element={<CategoriesPage />} />
-              <Route path="/collections" element={<CollectionsPage />} />
-              <Route path="/coming-soon/:slug" element={<ComingSoonPage />} />
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/signup" element={<SignupPage />} />
-              <Route path="/terms-conditions" element={<TermsConditionsPage />} />
-              <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-              <Route path="/delivery" element={<DeliveryInformationPage />} />
-              <Route path="/returns-refunds" element={<ReturnsRefundsPage />} />
-              <Route path="/faq" element={<FaqPage />} />
-              <Route path="/divan-beds" element={<DivanBedsPage />} />
-              <Route path="/transform-your-home/:slug" element={<LifestyleArticlePage />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
+            <Suspense fallback={routeFallback}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/category/:slug/subcategories" element={<CategorySubcategoriesPage />} />
+                <Route path="/category/:slug" element={<CategoryPage />} />
+                <Route path="/product/:slug" element={<ProductPage />} />
+                <Route path="/cart" element={<CartPage />} />
+                <Route path="/checkout" element={<CheckoutPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/collections" element={<CollectionsPage />} />
+                <Route path="/coming-soon/:slug" element={<ComingSoonPage />} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/signup" element={<SignupPage />} />
+                <Route path="/terms-conditions" element={<TermsConditionsPage />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+                <Route path="/delivery" element={<DeliveryInformationPage />} />
+                <Route path="/returns-refunds" element={<ReturnsRefundsPage />} />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/divan-beds" element={<DivanBedsPage />} />
+                <Route path="/transform-your-home/:slug" element={<LifestyleArticlePage />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
           </CartProvider>
         </BrowserRouter>
       </TooltipProvider>

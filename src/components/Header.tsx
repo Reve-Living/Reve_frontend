@@ -19,7 +19,7 @@ import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import { formatWholePrice } from '@/lib/pricing';
 import type { Category, Product } from '@/lib/types';
-import logoLettersOnly from '@/assets/Logo letters only.svg';
+import logoLettersOnly from '@/assets/logo-letters-only.png';
 
 const NAV_CACHE_KEY = 'reve-header-nav-v1';
 const STATIC_START_LINKS = [{ name: 'Home', href: '/' }];
@@ -91,6 +91,12 @@ const writeCachedNavLinks = (links: { name: string; href: string; children?: { n
   }
 };
 
+const getCategorySlugFromHref = (href?: string) => {
+  const value = String(href || '').trim();
+  if (!value.startsWith('/category/')) return '';
+  return value.replace('/category/', '').split('?')[0].trim();
+};
+
 const prefetchCategoryPayload = (categorySlug?: string) => {
   const slug = (categorySlug || '').trim();
   if (!slug) return;
@@ -138,27 +144,8 @@ const Header = () => {
     const loadNav = async () => {
       try {
         const categories = await apiGet<Category[]>('/categories/');
-
-        const dynamicLinks = buildDynamicLinks(categories);
         const nextNavLinks = buildNavLinks(categories);
         writeCachedNavLinks(nextNavLinks);
-
-        const warmTopCategories = () => {
-          dynamicLinks.slice(0, 4).forEach((link, index) => {
-            window.setTimeout(() => {
-              const slug = link.href.replace('/category/', '').split('?')[0];
-              prefetchCategoryPayload(slug);
-            }, 250 * (index + 1));
-          });
-        };
-
-        if (typeof window !== 'undefined') {
-          if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(() => warmTopCategories(), { timeout: 1500 });
-          } else {
-            setTimeout(warmTopCategories, 800);
-          }
-        }
 
         setNavLinks(nextNavLinks);
       } catch {
@@ -174,7 +161,7 @@ const Header = () => {
     const loadProducts = async () => {
       try {
         setIsLoadingSearch(true);
-        const products = await apiGet<Product[]>('/products/');
+        const products = await apiGet<Product[]>('/products/?summary=1');
         setAllProducts(products);
       } catch {
         setAllProducts([]);
@@ -706,7 +693,7 @@ const Header = () => {
                   key={link.name}
                   className="relative"
                   onMouseEnter={() => {
-                    prefetchCategoryPayload(link.href.replace('/category/', '').split('?')[0]);
+                    prefetchCategoryPayload(getCategorySlugFromHref(link.href));
                     if (link.children) setActiveDropdown(link.name);
                   }}
                   onMouseLeave={() => setActiveDropdown(null)}
@@ -732,7 +719,7 @@ const Header = () => {
                           <Link
                             key={child.name}
                             to={child.href}
-                            onMouseEnter={() => prefetchCategoryPayload(link.href.replace('/category/', '').split('?')[0])}
+                            onMouseEnter={() => prefetchCategoryPayload(getCategorySlugFromHref(link.href))}
                             className="rounded-md px-3 py-2 text-left font-medium text-foreground transition-colors hover:bg-background hover:text-primary"
                           >
                             {child.name}

@@ -69,9 +69,7 @@ const CategoriesPage = () => {
           : isBestsellerOnly
           ? '/products/?bestseller=1'
           : '/products/';
-        const productsRes = await apiGet<Product[]>(productsPath, {
-          noStore: isNewArrivalsOnly || isBestsellerOnly,
-        });
+        const productsRes = await apiGet<Product[]>(productsPath);
         const orderedProducts = Array.isArray(productsRes)
           ? [...productsRes].sort((a, b) => {
               const aOrder = getDisplayOrder(a.sort_order);

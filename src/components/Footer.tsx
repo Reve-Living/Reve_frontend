@@ -1,8 +1,7 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Phone, Mail, MapPin, Facebook, Instagram } from 'lucide-react';
-import logoLettersOnly from '@/assets/Logo letters only.svg';
-import logoTextOnly from '@/assets/Logo wordmark.svg';
+import logoLettersOnly from '@/assets/logo-letters-only.png';
 import { SUPPORT_EMAIL, SUPPORT_PHONE, SUPPORT_PHONE_DISPLAY } from '@/lib/contact';
 import PaymentBrandMark from '@/components/PaymentBrandMark';
 

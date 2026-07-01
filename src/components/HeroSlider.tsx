@@ -88,9 +88,9 @@ const HeroSlider = () => {
       const loadFromProducts = async () => {
         try {
           const trySources: Array<Promise<Product[]>> = [
-            apiGet<Product[]>('/products/?is_new=1', { noStore: true }),
-            apiGet<Product[]>('/products/?bestseller=1', { noStore: true }),
-            apiGet<Product[]>('/products/', { noStore: true }),
+            apiGet<Product[]>('/products/?is_new=1&summary=1'),
+            apiGet<Product[]>('/products/?bestseller=1&summary=1'),
+            apiGet<Product[]>('/products/?summary=1'),
           ];
 
           let products: Product[] = [];

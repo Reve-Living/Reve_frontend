@@ -1161,7 +1161,7 @@ type MattressDetailView = {
 
           setCategory(categoryRes[0] || null);
 
-          const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}`);
+          const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}&summary=1`);
 
           setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
 

@@ -64,7 +64,7 @@ const CategoryGrid = () => {
         const [categoryData, subcategoryData, productData] = await Promise.all([
           apiGet<Category[]>('/categories/'),
           apiGet<SubCategory[]>('/subcategories/'),
-          apiGet<Product[]>('/products/'),
+          apiGet<Product[]>('/products/?summary=1'),
         ]);
 
         const selectedCategories = categoryData.filter((category) => category.show_in_collections);

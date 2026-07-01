@@ -38,8 +38,8 @@ const sectionCopy: Record<
 };
 
 const sectionPath: Record<SectionMode, string> = {
-  new: '/products/?is_new=1',
-  bestseller: '/products/?bestseller=1',
+  new: '/products/?is_new=1&summary=1',
+  bestseller: '/products/?bestseller=1&summary=1',
 };
 
 const BestsellersSection = ({ mode = 'bestseller' }: BestsellersSectionProps) => {
@@ -49,7 +49,7 @@ const BestsellersSection = ({ mode = 'bestseller' }: BestsellersSectionProps) =>
   useEffect(() => {
     const load = async () => {
       try {
-        const data = await apiGet<Product[]>(sectionPath[mode], { noStore: true });
+        const data = await apiGet<Product[]>(sectionPath[mode]);
         setProducts(Array.isArray(data) ? data.slice(0, 4) : []);
       } catch {
         setProducts([]);
