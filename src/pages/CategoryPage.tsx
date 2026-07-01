@@ -324,7 +324,32 @@ const CategoryPage = () => {
               : []
             : [];
 
+        const loadedSubcategories =
+          subcategoryRes.status === 'fulfilled' && Array.isArray(subcategoryRes.value) ? subcategoryRes.value : [];
+
+        const subcategoryOrderLookup = new Map(
+          loadedSubcategories.map((sub) => [
+            Number(sub.id),
+            {
+              order: getDisplayOrder(sub.sort_order),
+              name: (sub.name || '').toLowerCase(),
+            },
+          ])
+        );
+
         const orderedProducts = [...normalizedProducts].sort((a, b) => {
+          if (!subSlug) {
+            const aSubcategory = subcategoryOrderLookup.get(Number(a.subcategory));
+            const bSubcategory = subcategoryOrderLookup.get(Number(b.subcategory));
+            const aSubcategoryOrder = aSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
+            const bSubcategoryOrder = bSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
+            if (aSubcategoryOrder !== bSubcategoryOrder) return aSubcategoryOrder - bSubcategoryOrder;
+
+            const aSubcategoryName = aSubcategory?.name || (a.subcategory_name || '').toLowerCase();
+            const bSubcategoryName = bSubcategory?.name || (b.subcategory_name || '').toLowerCase();
+            if (aSubcategoryName !== bSubcategoryName) return aSubcategoryName.localeCompare(bSubcategoryName);
+          }
+
           const aOrder = getDisplayOrder(a.sort_order);
           const bOrder = getDisplayOrder(b.sort_order);
           if (aOrder !== bOrder) return aOrder - bOrder;
