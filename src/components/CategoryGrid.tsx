@@ -61,14 +61,20 @@ const CategoryGrid = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [categoryData, subcategoryData, productData] = await Promise.all([
+        const [categoryData, productData] = await Promise.all([
           apiGet<Category[]>('/categories/'),
-          apiGet<SubCategory[]>('/subcategories/'),
           apiGet<Product[]>('/products/?summary=1'),
         ]);
 
+        const uniqueSubcategories = Array.from(
+          new Map(
+            categoryData.flatMap((category) =>
+              (category.subcategories || []).map((subcategory) => [subcategory.id, subcategory] as const)
+            )
+          ).values()
+        );
         const selectedCategories = categoryData.filter((category) => category.show_in_collections);
-        const selectedSubcategories = subcategoryData.filter((subcategory) => subcategory.show_in_collections);
+        const selectedSubcategories = uniqueSubcategories.filter((subcategory) => subcategory.show_in_collections);
 
         const categoryMap = new Map(categoryData.map((category) => [category.id, category]));
         const categorySlugsBySubcategorySlug = new Map<string, string[]>();

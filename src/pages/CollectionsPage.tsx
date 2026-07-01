@@ -83,14 +83,22 @@ const CollectionsPage = () => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [categoriesRes, subcategoriesRes, productsRes] = await Promise.all([
+        const [categoriesRes, productsRes] = await Promise.all([
           apiGet<Category[]>('/categories/'),
-          apiGet<SubCategory[]>('/subcategories/'),
           apiGet<Product[]>('/products/?summary=1'),
         ]);
 
-        setCategories(Array.isArray(categoriesRes) ? categoriesRes : []);
-        setSubcategories(Array.isArray(subcategoriesRes) ? subcategoriesRes : []);
+        const normalizedCategories = Array.isArray(categoriesRes) ? categoriesRes : [];
+        const uniqueSubcategories = Array.from(
+          new Map(
+            normalizedCategories.flatMap((category) =>
+              (category.subcategories || []).map((subcategory) => [subcategory.id, subcategory] as const)
+            )
+          ).values()
+        );
+
+        setCategories(normalizedCategories);
+        setSubcategories(uniqueSubcategories);
         setProducts(Array.isArray(productsRes) ? productsRes : []);
       } catch {
         setCategories([]);
