@@ -305,6 +305,8 @@ export interface Product {
   subcategory_slug?: string;
   price: number;
   original_price?: number | null;
+  min_size_price?: number | string | null;
+  size_count?: number | null;
   discount_percentage?: number;
   stock_status?: ProductStockStatus;
   description: string;

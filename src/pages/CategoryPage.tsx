@@ -181,11 +181,23 @@ const parseFilterParamValues = (params: URLSearchParams, filterSlug: string): st
     new Set(getFilterParamAliases(filterSlug).flatMap((key) => parseMultiValueParam(params, key)))
   );
 
-const buildCategoryProductsPath = (categorySlug: string, subSlug: string, includeFilters = false): string => {
-  const base = subSlug
-    ? `/products/?subcategory=${subSlug}&summary=1`
-    : `/products/?category=${categorySlug}&summary=1`;
-  return includeFilters ? `${base}&include_filters=1` : base;
+const shouldRequestSizesForCategory = (categorySlug: string, linkedSize = ''): boolean => {
+  const normalized = categorySlug.trim().toLowerCase();
+  return normalized === 'beds' || normalized === 'mattress' || normalized === 'mattresses' || Boolean(linkedSize);
+};
+
+const buildCategoryProductsPath = (
+  categorySlug: string,
+  subSlug: string,
+  includeFilters = false,
+  includeSizes = false
+): string => {
+  const params = new URLSearchParams({ summary: '1' });
+  if (subSlug) params.set('subcategory', subSlug);
+  else params.set('category', categorySlug);
+  if (includeFilters) params.set('include_filters', '1');
+  if (includeSizes) params.set('include_sizes', '1');
+  return `/products/?${params.toString()}`;
 };
 
 const CategoryPage = () => {
@@ -303,7 +315,12 @@ const CategoryPage = () => {
     try {
       setIsLoading(true);
       const response = await apiGet<Product[] | { results?: Product[] }>(
-        buildCategoryProductsPath(resolvedCategorySlug, subSlug, true)
+        buildCategoryProductsPath(
+          resolvedCategorySlug,
+          subSlug,
+          true,
+          shouldRequestSizesForCategory(resolvedCategorySlug, linkedBedSize)
+        )
       );
       const normalizedProducts = Array.isArray(response)
         ? response
@@ -341,10 +358,11 @@ const CategoryPage = () => {
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
         const shouldLoadFilterValues = hasRequestedFilterParams;
+        const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
         setHasFilterProductData(shouldLoadFilterValues);
 
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
-          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues)
+          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues, shouldLoadSizes)
         );
         const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
           `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
@@ -370,9 +388,12 @@ const CategoryPage = () => {
 
         const resolvedSlug = categoryItem?.slug || slug;
         const needsSlugRetry = resolvedSlug !== initialResolvedSlug;
+        const shouldRetryWithSizes = shouldRequestSizesForCategory(resolvedSlug, linkedBedSize);
 
         const productsRes = await (needsSlugRetry
-          ? apiGet<Product[] | { results?: Product[] }>(buildCategoryProductsPath(resolvedSlug, subSlug, shouldLoadFilterValues))
+          ? apiGet<Product[] | { results?: Product[] }>(
+              buildCategoryProductsPath(resolvedSlug, subSlug, shouldLoadFilterValues, shouldRetryWithSizes)
+            )
           : initialProductsPromise);
 
         const normalizedProducts = Array.isArray(productsRes)
@@ -418,7 +439,7 @@ const CategoryPage = () => {
       }
     };
     load();
-  }, [hasRequestedFilterParams, slug, subSlug]);
+  }, [hasRequestedFilterParams, linkedBedSize, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {

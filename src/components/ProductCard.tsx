@@ -24,6 +24,11 @@ const normalizeStoredSizePrice = (productBasePrice: number, storedValue?: number
   return raw;
 };
 
+const toFiniteNumber = (value: unknown): number | null => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
 interface ProductCardProps {
   product: Product;
   index?: number;
@@ -35,16 +40,19 @@ interface ProductCardProps {
 const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, returnTo }: ProductCardProps) => {
   // Calculate savings if there's an original price
   const savings = product.original_price ? product.original_price - product.price : 0;
+  const basePrice = toFiniteNumber(product.price) ?? 0;
+  const minSizePrice = toFiniteNumber(product.min_size_price);
+  const summarySizeCount = toFiniteNumber(product.size_count) ?? 0;
   const sizePrices = Array.isArray(product.sizes)
     ? product.sizes
-        .map((size) => normalizeStoredSizePrice(Number(product.price ?? 0), Number(size.price_delta)))
+        .map((size) => normalizeStoredSizePrice(basePrice, Number(size.price_delta)))
         .filter((price) => Number.isFinite(price) && price >= 0)
     : [];
-  const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : product.price;
+  const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : minSizePrice ?? basePrice;
   const imageUrl = product.images?.[0]?.url || "";
   const hasImage = imageUrl.trim().length > 0;
   const shortText = (product.short_description || product.description || "").trim();
-  const hasMultipleSizePrices = Array.isArray(product.sizes) && product.sizes.length > 1;
+  const hasMultipleSizePrices = Array.isArray(product.sizes) ? product.sizes.length > 1 : summarySizeCount > 1;
   // Build the product link - if coming from a bed product, add mattress selection params
   const productLink = fromBedProduct
     ? `/product/${product.slug}?select-for-bed=${encodeURIComponent(fromBedProduct)}${
