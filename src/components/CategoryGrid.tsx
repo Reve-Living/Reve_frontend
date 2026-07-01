@@ -3,7 +3,7 @@ import { ArrowRight } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { apiGet } from '@/lib/api';
-import { Category, SubCategory, Product } from '@/lib/types';
+import { Category, SubCategory } from '@/lib/types';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 import type { EdgeAwareImageStyle } from '@/components/EdgeAwareCoverImage';
 
@@ -39,6 +39,23 @@ const CategoryGrid = () => {
   };
   const [categories, setCategories] = useState<GridItem[]>([]);
 
+  const prefetchCategoryRoute = (categorySlug?: string, subcategorySlug?: string) => {
+    const category = String(categorySlug || '').trim();
+    const subcategory = String(subcategorySlug || '').trim();
+    if (!category) return;
+
+    if (subcategory) {
+      void apiGet(`/products/?subcategory=${encodeURIComponent(subcategory)}&summary=1`).catch(() => []);
+      void apiGet(`/categories/${encodeURIComponent(category)}/filters/?subcategory=${encodeURIComponent(subcategory)}`).catch(
+        () => ({ filters: [] })
+      );
+      return;
+    }
+
+    void apiGet(`/products/?category=${encodeURIComponent(category)}&summary=1`).catch(() => []);
+    void apiGet(`/categories/${encodeURIComponent(category)}/filters/`).catch(() => ({ filters: [] }));
+  };
+
   const resolveImageUrl = useMemo(
     () => (value?: string) => {
       const raw = (value || '').trim();
@@ -61,10 +78,9 @@ const CategoryGrid = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [categoryDataRes, subcategoryDataRes, productDataRes] = await Promise.allSettled([
+        const [categoryDataRes, subcategoryDataRes] = await Promise.allSettled([
           apiGet<Category[]>('/categories/'),
           apiGet<SubCategory[]>('/subcategories/'),
-          apiGet<Product[]>('/products/?summary=1'),
         ]);
 
         const categoryData =
@@ -73,9 +89,6 @@ const CategoryGrid = () => {
           subcategoryDataRes.status === 'fulfilled' && Array.isArray(subcategoryDataRes.value)
             ? subcategoryDataRes.value
             : [];
-        const productData =
-          productDataRes.status === 'fulfilled' && Array.isArray(productDataRes.value) ? productDataRes.value : [];
-
         const uniqueSubcategories = Array.from(
           new Map(
             [...categoryData.flatMap((category) => category.subcategories || []), ...subcategoryData].map(
@@ -87,85 +100,29 @@ const CategoryGrid = () => {
         const selectedSubcategories = uniqueSubcategories.filter((subcategory) => subcategory.show_in_collections);
 
         const categoryMap = new Map(categoryData.map((category) => [category.id, category]));
-        const categorySlugsBySubcategorySlug = new Map<string, string[]>();
-        const firstProductImageByCategory = new Map<string, string>();
-        const firstProductImageBySubcategory = new Map<string, string>();
-
-        for (const category of categoryData) {
-          const categorySlug = (category.slug || '').trim();
-          if (!categorySlug) continue;
-
-          for (const subcategory of category.subcategories || []) {
-            const subcategorySlug = (subcategory.slug || '').trim();
-            if (!subcategorySlug) continue;
-
-            const existing = categorySlugsBySubcategorySlug.get(subcategorySlug) || [];
-            if (!existing.includes(categorySlug)) {
-              categorySlugsBySubcategorySlug.set(subcategorySlug, [...existing, categorySlug]);
-            }
-          }
-        }
-
-        for (const product of productData) {
-          const fallbackImage = resolveImageUrl(product.images?.[0]?.url);
-          if (!fallbackImage) continue;
-
-          if (product.category_slug && !firstProductImageByCategory.has(product.category_slug)) {
-            firstProductImageByCategory.set(product.category_slug, fallbackImage);
-          }
-
-          if (product.subcategory_slug && !firstProductImageBySubcategory.has(product.subcategory_slug)) {
-            firstProductImageBySubcategory.set(product.subcategory_slug, fallbackImage);
-          }
-
-          for (const categorySlug of categorySlugsBySubcategorySlug.get(product.subcategory_slug || '') || []) {
-            if (!firstProductImageByCategory.has(categorySlug)) {
-              firstProductImageByCategory.set(categorySlug, fallbackImage);
-            }
-          }
-        }
-
-        const buildCard = async (
+        const buildCard = (
           item: Category | SubCategory,
           parentSlug?: string,
           index = 0,
           isSubcategory = false
-        ): Promise<GridItem | null> => {
-          let image = resolveImageUrl((item as Category).image || (item as SubCategory).image);
-
-          if (!image) {
-            image = isSubcategory
-              ? firstProductImageBySubcategory.get(item.slug) || ''
-              : firstProductImageByCategory.get(item.slug) || '';
-          }
-
-          if (!image) return null;
-
+        ): GridItem => {
           return {
             id: item.id ?? index,
             name: item.name,
             slug: item.slug,
             description: (item as Category).description || (item as SubCategory).description || '',
-            image,
+            image: resolveImageUrl((item as Category).image || (item as SubCategory).image),
             isSubcategory,
             parentSlug,
           };
         };
 
-        const selectedSubcategoryCards = await Promise.all(
-          selectedSubcategories.map((sub, idx) =>
-            buildCard(sub, categoryMap.get(sub.category)?.slug, idx, true)
-          )
+        const selectedSubcategoryCards = selectedSubcategories.map((sub, idx) =>
+          buildCard(sub, categoryMap.get(sub.category)?.slug, idx, true)
         );
 
-        const selectedCategoryCards = await Promise.all(
-          selectedCategories.map((category, idx) => buildCard(category, undefined, idx))
-        );
-
-        const valid = [...selectedSubcategoryCards, ...selectedCategoryCards].filter(
-          (c): c is GridItem => Boolean(c)
-        );
-        setCategories(valid.slice(0, 4));
+        const selectedCategoryCards = selectedCategories.map((category, idx) => buildCard(category, undefined, idx));
+        setCategories([...selectedSubcategoryCards, ...selectedCategoryCards].slice(0, 4));
       } catch {
         setCategories([]);
       }
@@ -213,16 +170,28 @@ const CategoryGrid = () => {
                     ? `/category/${category.parentSlug}?sub=${category.slug}`
                     : `/category/${category.slug || 'divan-beds'}`
                 }
+                onMouseEnter={() => prefetchCategoryRoute(category.parentSlug || category.slug, category.isSubcategory ? category.slug : undefined)}
+                onFocus={() => prefetchCategoryRoute(category.parentSlug || category.slug, category.isSubcategory ? category.slug : undefined)}
+                onPointerDown={() => prefetchCategoryRoute(category.parentSlug || category.slug, category.isSubcategory ? category.slug : undefined)}
+                onTouchStart={() => prefetchCategoryRoute(category.parentSlug || category.slug, category.isSubcategory ? category.slug : undefined)}
                 className="group flex h-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                  <EdgeAwareCoverImage
-                    src={resolveImageUrl(category.image)}
-                    alt={category.name}
-                    imgClassName="duration-700 ease-out brightness-[1.08] saturate-[1.06]"
-                    defaultStyle={getCollectionImageStyle(category.name)}
-                    containerAspectRatio={4 / 3}
-                  />
+                  {category.image ? (
+                    <EdgeAwareCoverImage
+                      src={resolveImageUrl(category.image)}
+                      alt={category.name}
+                      imgClassName="duration-700 ease-out brightness-[1.08] saturate-[1.06]"
+                      defaultStyle={getCollectionImageStyle(category.name)}
+                      containerAspectRatio={4 / 3}
+                    />
+                  ) : (
+                    <div className="flex h-full items-end bg-[linear-gradient(135deg,#f2ebe2_0%,#ded2c4_100%)] p-5">
+                      <span className="font-serif text-2xl font-semibold text-[#5f4a38]">
+                        {category.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex flex-1 flex-col gap-3 p-4">

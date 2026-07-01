@@ -181,6 +181,13 @@ const parseFilterParamValues = (params: URLSearchParams, filterSlug: string): st
     new Set(getFilterParamAliases(filterSlug).flatMap((key) => parseMultiValueParam(params, key)))
   );
 
+const buildCategoryProductsPath = (categorySlug: string, subSlug: string, includeFilters = false): string => {
+  const base = subSlug
+    ? `/products/?subcategory=${subSlug}&summary=1`
+    : `/products/?category=${categorySlug}&summary=1`;
+  return includeFilters ? `${base}&include_filters=1` : base;
+};
+
 const CategoryPage = () => {
   const getDisplayOrder = (value?: number) => {
     const num = Number(value);
@@ -211,8 +218,13 @@ const CategoryPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [hasFilterProductData, setHasFilterProductData] = useState(false);
 
   const isMattressCategory = (s: string | undefined) => s === 'mattress' || s === 'mattresses';
+  const hasRequestedFilterParams = useMemo(
+    () => Array.from(searchParams.keys()).some((key) => !FILTER_RESERVED_PARAM_KEYS.has(key)),
+    [searchParams, searchParamsKey]
+  );
 
   const showSizeFilter = category?.slug === 'beds';
   const showBedSizeFilter = isMattressCategory(category?.slug) && !!linkedBedSize;
@@ -251,6 +263,63 @@ const CategoryPage = () => {
     return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [allProducts, showSizeFilter]);
 
+  const orderProducts = (products: Product[], loadedSubcategories: SubCategory[]) => {
+    const subcategoryOrderLookup = new Map(
+      loadedSubcategories.map((sub) => [
+        Number(sub.id),
+        {
+          order: getDisplayOrder(sub.sort_order),
+          name: (sub.name || '').toLowerCase(),
+        },
+      ])
+    );
+
+    return [...products].sort((a, b) => {
+      if (!subSlug) {
+        const aSubcategory = subcategoryOrderLookup.get(Number(a.subcategory));
+        const bSubcategory = subcategoryOrderLookup.get(Number(b.subcategory));
+        const aSubcategoryOrder = aSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
+        const bSubcategoryOrder = bSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
+        if (aSubcategoryOrder !== bSubcategoryOrder) return aSubcategoryOrder - bSubcategoryOrder;
+
+        const aSubcategoryName = aSubcategory?.name || (a.subcategory_name || '').toLowerCase();
+        const bSubcategoryName = bSubcategory?.name || (b.subcategory_name || '').toLowerCase();
+        if (aSubcategoryName !== bSubcategoryName) return aSubcategoryName.localeCompare(bSubcategoryName);
+      }
+
+      const aOrder = getDisplayOrder(a.sort_order);
+      const bOrder = getDisplayOrder(b.sort_order);
+      if (aOrder !== bOrder) return aOrder - bOrder;
+      return (b.id || 0) - (a.id || 0);
+    });
+  };
+
+  const ensureFilterProductData = async () => {
+    if (hasFilterProductData) return true;
+
+    const resolvedCategorySlug = (category?.slug || slug || '').trim();
+    if (!resolvedCategorySlug) return false;
+
+    try {
+      setIsLoading(true);
+      const response = await apiGet<Product[] | { results?: Product[] }>(
+        buildCategoryProductsPath(resolvedCategorySlug, subSlug, true)
+      );
+      const normalizedProducts = Array.isArray(response)
+        ? response
+        : Array.isArray((response as { results?: Product[] })?.results)
+        ? (response as { results: Product[] }).results
+        : [];
+      setAllProducts(orderProducts(normalizedProducts, subcategories));
+      setHasFilterProductData(true);
+      return true;
+    } catch {
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
@@ -271,11 +340,11 @@ const CategoryPage = () => {
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
+        const shouldLoadFilterValues = hasRequestedFilterParams;
+        setHasFilterProductData(shouldLoadFilterValues);
 
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
-          subSlug
-            ? `/products/?subcategory=${subSlug}&summary=1&include_filters=1`
-            : `/products/?category=${initialResolvedSlug}&summary=1&include_filters=1`
+          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues)
         );
         const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
           `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
@@ -303,11 +372,7 @@ const CategoryPage = () => {
         const needsSlugRetry = resolvedSlug !== initialResolvedSlug;
 
         const productsRes = await (needsSlugRetry
-          ? apiGet<Product[] | { results?: Product[] }>(
-              subSlug
-                ? `/products/?subcategory=${subSlug}&summary=1&include_filters=1`
-                : `/products/?category=${resolvedSlug}&summary=1&include_filters=1`
-            )
+          ? apiGet<Product[] | { results?: Product[] }>(buildCategoryProductsPath(resolvedSlug, subSlug, shouldLoadFilterValues))
           : initialProductsPromise);
 
         const normalizedProducts = Array.isArray(productsRes)
@@ -315,35 +380,7 @@ const CategoryPage = () => {
           : Array.isArray((productsRes as { results?: Product[] })?.results)
           ? (productsRes as { results: Product[] }).results
           : [];
-
-        const subcategoryOrderLookup = new Map(
-          resolvedSubcategories.map((sub) => [
-            Number(sub.id),
-            {
-              order: getDisplayOrder(sub.sort_order),
-              name: (sub.name || '').toLowerCase(),
-            },
-          ])
-        );
-
-        const orderedProducts = [...normalizedProducts].sort((a, b) => {
-          if (!subSlug) {
-            const aSubcategory = subcategoryOrderLookup.get(Number(a.subcategory));
-            const bSubcategory = subcategoryOrderLookup.get(Number(b.subcategory));
-            const aSubcategoryOrder = aSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
-            const bSubcategoryOrder = bSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
-            if (aSubcategoryOrder !== bSubcategoryOrder) return aSubcategoryOrder - bSubcategoryOrder;
-
-            const aSubcategoryName = aSubcategory?.name || (a.subcategory_name || '').toLowerCase();
-            const bSubcategoryName = bSubcategory?.name || (b.subcategory_name || '').toLowerCase();
-            if (aSubcategoryName !== bSubcategoryName) return aSubcategoryName.localeCompare(bSubcategoryName);
-          }
-
-          const aOrder = getDisplayOrder(a.sort_order);
-          const bOrder = getDisplayOrder(b.sort_order);
-          if (aOrder !== bOrder) return aOrder - bOrder;
-          return (b.id || 0) - (a.id || 0);
-        });
+        const orderedProducts = orderProducts(normalizedProducts, resolvedSubcategories);
         setAllProducts(orderedProducts);
 
         if (!categoryItem && orderedProducts.length === 0) {
@@ -381,7 +418,7 @@ const CategoryPage = () => {
       }
     };
     load();
-  }, [slug, subSlug]);
+  }, [hasRequestedFilterParams, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {
@@ -494,7 +531,10 @@ const CategoryPage = () => {
     }, true);
   };
 
-  const toggleFilterOption = (filterSlug: string, optionSlug: string) => {
+  const toggleFilterOption = async (filterSlug: string, optionSlug: string) => {
+    const ready = await ensureFilterProductData();
+    if (!ready) return;
+
     const current = selectedFilters[filterSlug] || [];
     const next = current.includes(optionSlug)
       ? current.filter((value) => value !== optionSlug)

@@ -10,6 +10,8 @@ const getCache = new Map<string, CacheEntry>();
 const inFlight = new Map<string, Promise<unknown>>();
 const mutationInFlight = new Map<string, Promise<unknown>>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const SESSION_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes across refreshes in the current tab
+const SESSION_CACHE_PREFIX = "reve-public-cache:";
 type ApiGetOptions = {
   noStore?: boolean;
 };
@@ -28,6 +30,33 @@ const cloneData = <T>(data: T): T => {
     return structuredClone(data);
   } catch {
     return JSON.parse(JSON.stringify(data));
+  }
+};
+
+const readSessionCache = <T>(cacheKey: string): T | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CacheEntry;
+    if (!parsed || typeof parsed.ts !== "number") return null;
+    if (Date.now() - parsed.ts >= SESSION_CACHE_TTL_MS) {
+      window.sessionStorage.removeItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
+      return null;
+    }
+    getCache.set(cacheKey, parsed);
+    return cloneData(parsed.data) as T;
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionCache = (cacheKey: string, entry: CacheEntry) => {
+  if (typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(`${SESSION_CACHE_PREFIX}${cacheKey}`, JSON.stringify(entry));
+  } catch {
+    // Ignore storage failures.
   }
 };
 
@@ -66,6 +95,11 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     return cloneData(cached.data) as T;
   }
 
+  const sessionCached = readSessionCache<T>(cacheKey);
+  if (sessionCached !== null) {
+    return sessionCached;
+  }
+
   // Deduplicate concurrent requests
   if (inFlight.has(cacheKey)) {
     return (await inFlight.get(cacheKey)) as T;
@@ -77,7 +111,9 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   }).then(async (res) => {
     if (!res.ok) throw new Error(await res.text());
     const data = (await res.json()) as T;
-    getCache.set(cacheKey, { ts: Date.now(), data });
+    const entry = { ts: Date.now(), data };
+    getCache.set(cacheKey, entry);
+    writeSessionCache(cacheKey, entry);
     inFlight.delete(cacheKey);
     return data;
   }).catch((error) => {

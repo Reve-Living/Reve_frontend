@@ -7,7 +7,7 @@ import Footer from '@/components/Footer';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 import type { EdgeAwareImageStyle } from '@/components/EdgeAwareCoverImage';
 import { apiGet } from '@/lib/api';
-import type { Category, Product, SubCategory } from '@/lib/types';
+import type { Category, SubCategory } from '@/lib/types';
 
 type CollectionTile = {
   id: string;
@@ -39,21 +39,6 @@ const resolveImageUrl = (value?: string): string => {
   return raw;
 };
 
-const productMatchesCategoryTile = (product: Product, category: Category) => {
-  const categorySlug = (category.slug || '').trim().toLowerCase();
-  if (!categorySlug) return false;
-
-  const productCategorySlug = (product.category_slug || '').trim().toLowerCase();
-  if (productCategorySlug === categorySlug) return true;
-
-  const productSubcategorySlug = (product.subcategory_slug || '').trim().toLowerCase();
-  if (!productSubcategorySlug) return false;
-
-  return (category.subcategories || []).some(
-    (subcategory) => (subcategory.slug || '').trim().toLowerCase() === productSubcategorySlug
-  );
-};
-
 const getCollectionImageStyle = (name: string): Partial<EdgeAwareImageStyle> => {
   const normalized = (name || '').toLowerCase();
 
@@ -76,17 +61,35 @@ const getCollectionImageStyle = (name: string): Partial<EdgeAwareImageStyle> => 
 const CollectionsPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  const prefetchCollectionRoute = (href: string) => {
+    const match = href.match(/^\/category\/([^?]+)(?:\?sub=([^&]+))?/);
+    if (!match) return;
+
+    const categorySlug = decodeURIComponent(match[1] || '').trim();
+    const subcategorySlug = decodeURIComponent(match[2] || '').trim();
+    if (!categorySlug) return;
+
+    if (subcategorySlug) {
+      void apiGet(`/products/?subcategory=${encodeURIComponent(subcategorySlug)}&summary=1`).catch(() => []);
+      void apiGet(
+        `/categories/${encodeURIComponent(categorySlug)}/filters/?subcategory=${encodeURIComponent(subcategorySlug)}`
+      ).catch(() => ({ filters: [] }));
+      return;
+    }
+
+    void apiGet(`/products/?category=${encodeURIComponent(categorySlug)}&summary=1`).catch(() => []);
+    void apiGet(`/categories/${encodeURIComponent(categorySlug)}/filters/`).catch(() => ({ filters: [] }));
+  };
 
   useEffect(() => {
     const load = async () => {
       setIsLoading(true);
       try {
-        const [categoriesRes, subcategoriesRes, productsRes] = await Promise.allSettled([
+        const [categoriesRes, subcategoriesRes] = await Promise.allSettled([
           apiGet<Category[]>('/categories/'),
           apiGet<SubCategory[]>('/subcategories/'),
-          apiGet<Product[]>('/products/?summary=1'),
         ]);
 
         const normalizedCategories =
@@ -99,16 +102,12 @@ const CollectionsPage = () => {
             [...nestedSubcategories, ...directSubcategories].map((subcategory) => [subcategory.id, subcategory] as const)
           ).values()
         );
-        const normalizedProducts =
-          productsRes.status === 'fulfilled' && Array.isArray(productsRes.value) ? productsRes.value : [];
 
         setCategories(normalizedCategories);
         setSubcategories(uniqueSubcategories);
-        setProducts(normalizedProducts);
       } catch {
         setCategories([]);
         setSubcategories([]);
-        setProducts([]);
       } finally {
         setIsLoading(false);
       }
@@ -123,17 +122,11 @@ const CollectionsPage = () => {
     const categoryTiles = categories
       .filter((category) => category.show_in_all_collections)
       .map((category) => {
-        const categoryProducts = products.filter((product) => productMatchesCategoryTile(product, category));
-        const image =
-          resolveImageUrl(category.image) ||
-          resolveImageUrl(categoryProducts[0]?.images?.[0]?.url) ||
-          '';
-
         return {
           id: `category-${category.id}`,
           name: category.name,
           description: category.description || '',
-          image,
+          image: resolveImageUrl(category.image),
           href: `/category/${category.slug}`,
           sortOrder: Number(category.sort_order) || 0,
         };
@@ -143,30 +136,23 @@ const CollectionsPage = () => {
       .filter((subcategory) => subcategory.show_in_all_collections)
       .map((subcategory) => {
         const parent = categoryMap.get(subcategory.category);
-        const subcategoryProducts = products.filter((product) => product.subcategory_slug === subcategory.slug);
-        const image =
-          resolveImageUrl(subcategory.image) ||
-          resolveImageUrl(subcategoryProducts[0]?.images?.[0]?.url) ||
-          resolveImageUrl(parent?.image) ||
-          '';
 
         return {
           id: `subcategory-${subcategory.id}`,
           name: subcategory.name,
           description: subcategory.description || '',
-          image,
+          image: resolveImageUrl(subcategory.image) || resolveImageUrl(parent?.image),
           href: parent ? `/category/${parent.slug}?sub=${subcategory.slug}` : `/categories`,
           sortOrder: Number(subcategory.sort_order) || 0,
         };
       });
 
     return [...subcategoryTiles, ...categoryTiles]
-      .filter((tile) => tile.image)
       .sort((a, b) => {
         if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
         return a.name.localeCompare(b.name);
       });
-  }, [categories, products, subcategories]);
+  }, [categories, subcategories]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -213,16 +199,28 @@ const CollectionsPage = () => {
                 >
                   <Link
                     to={tile.href}
+                    onMouseEnter={() => prefetchCollectionRoute(tile.href)}
+                    onFocus={() => prefetchCollectionRoute(tile.href)}
+                    onPointerDown={() => prefetchCollectionRoute(tile.href)}
+                    onTouchStart={() => prefetchCollectionRoute(tile.href)}
                     className="group flex h-full w-full flex-col overflow-hidden rounded-lg bg-card shadow-luxury transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
                   >
                     <div className="relative aspect-[4/3] overflow-hidden bg-muted">
-                      <EdgeAwareCoverImage
-                        src={tile.image}
-                        alt={tile.name}
-                        imgClassName="duration-700 ease-out brightness-[1.08] saturate-[1.06]"
-                        defaultStyle={getCollectionImageStyle(tile.name)}
-                        containerAspectRatio={4 / 3}
-                      />
+                      {tile.image ? (
+                        <EdgeAwareCoverImage
+                          src={tile.image}
+                          alt={tile.name}
+                          imgClassName="duration-700 ease-out brightness-[1.08] saturate-[1.06]"
+                          defaultStyle={getCollectionImageStyle(tile.name)}
+                          containerAspectRatio={4 / 3}
+                        />
+                      ) : (
+                        <div className="flex h-full items-end bg-[linear-gradient(135deg,#f2ebe2_0%,#ded2c4_100%)] p-5">
+                          <span className="font-serif text-3xl font-semibold text-[#5f4a38]">
+                            {tile.name}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="flex flex-1 flex-col gap-3 p-4">

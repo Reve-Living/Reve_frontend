@@ -101,7 +101,7 @@ const prefetchCategoryPayload = (categorySlug?: string) => {
   const slug = (categorySlug || '').trim();
   if (!slug) return;
 
-  void apiGet<Product[]>(`/products/?category=${slug}&summary=1&include_filters=1`).catch(() => []);
+  void apiGet<Product[]>(`/products/?category=${slug}&summary=1`).catch(() => []);
   void apiGet<{ filters: unknown[] }>(`/categories/${slug}/filters/`).catch(() => ({ filters: [] }));
 };
 
