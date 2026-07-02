@@ -66,9 +66,14 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
   const buttonText = isInMattressSelection ? 'Select Mattress' : 'View Options';
   const prefetchProductDetail = () => {
     void preloadProductPage();
+    const productId = Number(product.id);
+    if (Number.isInteger(productId) && productId > 0) {
+      void apiGet(`/products/${productId}/?core=1`).catch(() => undefined);
+      return;
+    }
     const productSlug = String(product.slug || '').trim();
     if (!productSlug) return;
-    void apiGet(`/products/?slug=${encodeURIComponent(productSlug)}`).catch(() => undefined);
+    void apiGet(`/products/?slug=${encodeURIComponent(productSlug)}&core=1`).catch(() => undefined);
   };
 
   return (

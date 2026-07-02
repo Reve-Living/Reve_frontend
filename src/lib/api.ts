@@ -15,6 +15,9 @@ const CATEGORY_CACHE_TTL_MS = 60 * 1000;
 const DEFAULT_CACHE_TTL_MS = 30 * 1000;
 type ApiGetOptions = {
   noStore?: boolean;
+  staleWhileRevalidate?: boolean;
+  maxStaleMs?: number;
+  onUpdate?: (data: unknown) => void;
 };
 
 const isVolatilePath = (path: string) =>
@@ -89,6 +92,24 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const cacheKey = path;
   const shouldBypassCache = options.noStore === true || isVolatilePath(path);
   const cacheTtlMs = getCacheTtlMs(path);
+  const maxStaleMs = options.maxStaleMs ?? cacheTtlMs;
+
+  const fetchAndCache = () =>
+    fetchWithTimeout(`${API_BASE_URL}${path}`, {
+      headers: buildHeaders(false),
+      cache: "no-store",
+    }).then(async (res) => {
+      if (!res.ok) throw new Error(await res.text());
+      const data = (await res.json()) as T;
+      const entry = { ts: Date.now(), data };
+      getCache.set(cacheKey, entry);
+      writeSessionCache(cacheKey, entry);
+      inFlight.delete(cacheKey);
+      return data;
+    }).catch((error) => {
+      inFlight.delete(cacheKey);
+      throw error;
+    });
 
   if (shouldBypassCache) {
     const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
@@ -107,9 +128,30 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     return cloneData(cached.data) as T;
   }
 
+  if (options.staleWhileRevalidate && cached && now - cached.ts < maxStaleMs) {
+    if (!inFlight.has(cacheKey)) {
+      const refreshPromise = fetchAndCache();
+      inFlight.set(cacheKey, refreshPromise);
+      void refreshPromise.then((data) => options.onUpdate?.(cloneData(data))).catch(() => undefined);
+    }
+    return cloneData(cached.data) as T;
+  }
+
   const sessionCached = readSessionCache<T>(cacheKey, cacheTtlMs);
   if (sessionCached !== null) {
     return sessionCached;
+  }
+
+  const staleSessionCached = options.staleWhileRevalidate
+    ? readSessionCache<T>(cacheKey, maxStaleMs)
+    : null;
+  if (staleSessionCached !== null) {
+    if (!inFlight.has(cacheKey)) {
+      const refreshPromise = fetchAndCache();
+      inFlight.set(cacheKey, refreshPromise);
+      void refreshPromise.then((data) => options.onUpdate?.(cloneData(data))).catch(() => undefined);
+    }
+    return staleSessionCached;
   }
 
   // Deduplicate concurrent requests
@@ -117,21 +159,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     return (await inFlight.get(cacheKey)) as T;
   }
 
-  const fetchPromise = fetchWithTimeout(`${API_BASE_URL}${path}`, {
-    headers: buildHeaders(false),
-    cache: "no-store",
-  }).then(async (res) => {
-    if (!res.ok) throw new Error(await res.text());
-    const data = (await res.json()) as T;
-    const entry = { ts: Date.now(), data };
-    getCache.set(cacheKey, entry);
-    writeSessionCache(cacheKey, entry);
-    inFlight.delete(cacheKey);
-    return data;
-  }).catch((error) => {
-    inFlight.delete(cacheKey);
-    throw error;
-  });
+  const fetchPromise = fetchAndCache();
 
   inFlight.set(cacheKey, fetchPromise);
   return (await fetchPromise) as T;

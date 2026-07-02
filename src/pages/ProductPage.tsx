@@ -773,6 +773,7 @@ const REVIEW_SECTION_ID = 'reviews';
 const REVIEW_FORM_ID = 'write-review';
 const REVIEW_MEDIA_ACCEPT = 'image/*,video/*';
 const MAX_REVIEW_MEDIA = 6;
+const PRODUCT_STALE_CACHE_MS = 5 * 60 * 1000;
 
 type SelectedReviewMedia = {
   id: string;
@@ -1097,6 +1098,9 @@ type MattressDetailView = {
       try {
         // Clear previous product to prevent stale options flashing while new product loads
         setProduct(previewProduct);
+        if (previewProduct) {
+          setIsLoading(false);
+        }
         setCategory(null);
         setRelatedProducts([]);
         setSeriesCollection(null);
@@ -1121,29 +1125,36 @@ type MattressDetailView = {
           ? routeProductId
           : 0;
 
-        const productRes = await apiGet<Product[] | { results?: Product[] }>(
-          `/products/?slug=${encodeURIComponent(slug)}`
-        );
+        let fetched: Product | null = null;
 
-        const normalizedProducts = Array.isArray(productRes)
-
-          ? productRes
-
-          : Array.isArray((productRes as unknown as { results?: Product[] })?.results)
-
-          ? (productRes as unknown as { results: Product[] }).results
-
-          : [];
-
-        let fetched = normalizedProducts[0] || null;
-
-        if (!fetched && fallbackProductId) {
-          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/`);
+        if (fallbackProductId) {
+          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/?core=1`, {
+            staleWhileRevalidate: true,
+            maxStaleMs: PRODUCT_STALE_CACHE_MS,
+          });
           fetched = Array.isArray(productDetailRes) ? productDetailRes[0] || null : productDetailRes || null;
         }
 
+        if (!fetched) {
+          const productRes = await apiGet<Product[] | { results?: Product[] }>(
+            `/products/?slug=${encodeURIComponent(slug)}&core=1`,
+            {
+              staleWhileRevalidate: true,
+              maxStaleMs: PRODUCT_STALE_CACHE_MS,
+            }
+          );
+
+          const normalizedProducts = Array.isArray(productRes)
+            ? productRes
+            : Array.isArray((productRes as unknown as { results?: Product[] })?.results)
+            ? (productRes as unknown as { results: Product[] }).results
+            : [];
+
+          fetched = normalizedProducts[0] || null;
+        }
+
         setProduct(fetched);
-        await loadSeriesProducts(fetched);
+        void loadSeriesProducts(fetched);
         setSelectedImage(0);
         setIsGalleryOpen(false);
         setIsZoomed(false);
@@ -1171,25 +1182,55 @@ type MattressDetailView = {
           fetchReviews(fetched.id);
         }
 
+        if (fetched?.slug) {
+          void apiGet<Product[] | { results?: Product[] }>(
+            `/products/?slug=${encodeURIComponent(fetched.slug)}`,
+            {
+              staleWhileRevalidate: true,
+              maxStaleMs: PRODUCT_STALE_CACHE_MS,
+            }
+          )
+            .then((fullRes) => {
+              const fullProducts = Array.isArray(fullRes)
+                ? fullRes
+                : Array.isArray((fullRes as { results?: Product[] })?.results)
+                ? (fullRes as { results: Product[] }).results
+                : [];
+              if (fullProducts[0]?.id === fetched?.id) {
+                setProduct(fullProducts[0]);
+              }
+            })
+            .catch(() => undefined);
+        }
+
         // Don't auto-select mattresses - let the customer choose
 
         if (fetched?.category_slug) {
+          void (async () => {
+            try {
+              const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`, {
+                staleWhileRevalidate: true,
+                maxStaleMs: PRODUCT_STALE_CACHE_MS,
+              });
+              setCategory(categoryRes[0] || null);
 
-          const categoryRes = await apiGet<Category[]>(`/categories/?slug=${fetched.category_slug}`);
-
-          setCategory(categoryRes[0] || null);
-
-          const relatedRes = await apiGet<Product[]>(`/products/?category=${fetched.category_slug}&summary=1`);
-
-          setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
-
+              const relatedRes = await apiGet<Product[]>(
+                `/products/?category=${fetched.category_slug}&summary=1&limit=4`,
+                {
+                  staleWhileRevalidate: true,
+                  maxStaleMs: PRODUCT_STALE_CACHE_MS,
+                }
+              );
+              setRelatedProducts(relatedRes.filter((p) => p.id !== fetched.id).slice(0, 4));
+            } catch {
+              setCategory(null);
+              setRelatedProducts([]);
+            }
+          })();
         } else {
-
           setCategory(null);
-
-        setRelatedProducts([]);
-
-      }
+          setRelatedProducts([]);
+        }
 
       if (fetched?.sizes?.length) {
         const parsedSizes = sortParsedSizeOptions(
@@ -1259,7 +1300,7 @@ type MattressDetailView = {
 
         if (!previewProduct) {
           setProduct(null);
-          await loadSeriesProducts(null);
+          void loadSeriesProducts(null);
         }
 
         setIsLoading(false);

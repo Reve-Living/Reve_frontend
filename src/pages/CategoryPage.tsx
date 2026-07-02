@@ -22,6 +22,7 @@ import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 const PRODUCTS_PER_PAGE = 18;
 const INITIAL_PRODUCTS_LIMIT = 6;
 const BACKGROUND_PRODUCTS_BATCH_SIZE = 3;
+const CATEGORY_STALE_CACHE_MS = 5 * 60 * 1000;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -350,6 +351,9 @@ const CategoryPage = () => {
       setIsLoading(true);
       setIsFiltersLoading(true);
       setLoadError(false);
+      setAllProducts([]);
+      setAvailableFilters([]);
+      setHasFilterProductData(false);
       if (!slug) {
         setCategory(null);
         setSubcategories([]);
@@ -360,8 +364,19 @@ const CategoryPage = () => {
         return;
       }
       try {
+        const findCategoryBySlug = (categories: Category[], candidate: string) =>
+          categories.find((item) => (item.slug || '').trim().toLowerCase() === candidate.trim().toLowerCase()) ||
+          null;
+        const loadCategories = () =>
+          apiGet<Category[]>('/categories/', {
+            staleWhileRevalidate: true,
+            maxStaleMs: CATEGORY_STALE_CACHE_MS,
+          }).catch(() => []);
         const tryFetchBySlug = async (candidate: string) =>
-          apiGet<Category[]>(`/categories/?slug=${candidate}`).catch(() => []);
+          apiGet<Category[]>(`/categories/?slug=${candidate}`, {
+            staleWhileRevalidate: true,
+            maxStaleMs: CATEGORY_STALE_CACHE_MS,
+          }).catch(() => []);
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
@@ -371,24 +386,34 @@ const CategoryPage = () => {
         setHasFilterProductData(shouldLoadFilterValues);
 
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
-          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues, shouldLoadSizes, initialLimit)
+          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues, shouldLoadSizes, initialLimit),
+          {
+            staleWhileRevalidate: true,
+            maxStaleMs: CATEGORY_STALE_CACHE_MS,
+          }
         );
         const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
           `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`
         );
 
-        let categoryRes = await tryFetchBySlug(slug);
-        if ((!categoryRes || categoryRes.length === 0) && aliasSlug) {
-          categoryRes = await tryFetchBySlug(aliasSlug);
+        const allCategories = await loadCategories();
+        let categoryItem = findCategoryBySlug(allCategories, slug);
+        if (!categoryItem && aliasSlug) {
+          categoryItem = findCategoryBySlug(allCategories, aliasSlug);
         }
 
-        let categoryItem = categoryRes?.[0] || null;
-
         if (!categoryItem) {
-          const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
           categoryItem =
             allCategories.find((c) => c.name?.trim().toLowerCase() === slug.replace(/-/g, ' ').toLowerCase()) ||
             null;
+        }
+
+        if (!categoryItem) {
+          let categoryRes = await tryFetchBySlug(slug);
+          if ((!categoryRes || categoryRes.length === 0) && aliasSlug) {
+            categoryRes = await tryFetchBySlug(aliasSlug);
+          }
+          categoryItem = categoryRes?.[0] || null;
         }
 
         if (cancelled) return;
@@ -409,7 +434,11 @@ const CategoryPage = () => {
                 shouldLoadFilterValues,
                 shouldRetryWithSizes,
                 shouldLoadFilterValues ? undefined : INITIAL_PRODUCTS_LIMIT
-              )
+              ),
+              {
+                staleWhileRevalidate: true,
+                maxStaleMs: CATEGORY_STALE_CACHE_MS,
+              }
             )
           : initialProductsPromise);
 
@@ -442,7 +471,11 @@ const CategoryPage = () => {
                   shouldRetryWithSizes,
                   BACKGROUND_PRODUCTS_BATCH_SIZE,
                   offset
-                )
+                ),
+                {
+                  staleWhileRevalidate: true,
+                  maxStaleMs: CATEGORY_STALE_CACHE_MS,
+                }
               );
               if (cancelled) return;
               const batchProducts = Array.isArray(batchRes)
