@@ -44,15 +44,21 @@ const CategoryGrid = () => {
     const subcategory = String(subcategorySlug || '').trim();
     if (!category) return;
 
+    void import('@/pages/CategoryPage');
+    const params = new URLSearchParams({ summary: '1' });
+    if (subcategory) params.set('subcategory', subcategory);
+    else params.set('category', category);
+    if (['beds', 'mattress', 'mattresses'].includes(category.toLowerCase())) params.set('include_sizes', '1');
+    params.set('limit', '6');
+    void apiGet(`/products/?${params.toString()}`).catch(() => []);
+
     if (subcategory) {
-      void apiGet(`/products/?subcategory=${encodeURIComponent(subcategory)}&summary=1`).catch(() => []);
       void apiGet(`/categories/${encodeURIComponent(category)}/filters/?subcategory=${encodeURIComponent(subcategory)}`).catch(
         () => ({ filters: [] })
       );
       return;
     }
 
-    void apiGet(`/products/?category=${encodeURIComponent(category)}&summary=1`).catch(() => []);
     void apiGet(`/categories/${encodeURIComponent(category)}/filters/`).catch(() => ({ filters: [] }));
   };
 

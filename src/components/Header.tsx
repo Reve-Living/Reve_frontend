@@ -107,15 +107,22 @@ const prefetchCategoryPayload = (href?: string) => {
   const subSlug = subcategorySlug.trim();
   if (!slug) return;
 
+  void import('@/pages/CategoryPage');
+  const includeSizes = ['beds', 'mattress', 'mattresses'].includes(slug.toLowerCase());
+  const productParams = new URLSearchParams({ summary: '1' });
+  if (subSlug) productParams.set('subcategory', subSlug);
+  else productParams.set('category', slug);
+  if (includeSizes) productParams.set('include_sizes', '1');
+  productParams.set('limit', '6');
+  void apiGet<Product[]>(`/products/?${productParams.toString()}`).catch(() => []);
+
   if (subSlug) {
-    void apiGet<Product[]>(`/products/?subcategory=${encodeURIComponent(subSlug)}&summary=1`).catch(() => []);
     void apiGet<{ filters: unknown[] }>(
       `/categories/${encodeURIComponent(slug)}/filters/?subcategory=${encodeURIComponent(subSlug)}`
     ).catch(() => ({ filters: [] }));
     return;
   }
 
-  void apiGet<Product[]>(`/products/?category=${encodeURIComponent(slug)}&summary=1`).catch(() => []);
   void apiGet<{ filters: unknown[] }>(`/categories/${encodeURIComponent(slug)}/filters/`).catch(() => ({ filters: [] }));
 };
 

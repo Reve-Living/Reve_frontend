@@ -71,15 +71,21 @@ const CollectionsPage = () => {
     const subcategorySlug = decodeURIComponent(match[2] || '').trim();
     if (!categorySlug) return;
 
+    void import('@/pages/CategoryPage');
+    const params = new URLSearchParams({ summary: '1' });
+    if (subcategorySlug) params.set('subcategory', subcategorySlug);
+    else params.set('category', categorySlug);
+    if (['beds', 'mattress', 'mattresses'].includes(categorySlug.toLowerCase())) params.set('include_sizes', '1');
+    params.set('limit', '6');
+    void apiGet(`/products/?${params.toString()}`).catch(() => []);
+
     if (subcategorySlug) {
-      void apiGet(`/products/?subcategory=${encodeURIComponent(subcategorySlug)}&summary=1`).catch(() => []);
       void apiGet(
         `/categories/${encodeURIComponent(categorySlug)}/filters/?subcategory=${encodeURIComponent(subcategorySlug)}`
       ).catch(() => ({ filters: [] }));
       return;
     }
 
-    void apiGet(`/products/?category=${encodeURIComponent(categorySlug)}&summary=1`).catch(() => []);
     void apiGet(`/categories/${encodeURIComponent(categorySlug)}/filters/`).catch(() => ({ filters: [] }));
   };
 

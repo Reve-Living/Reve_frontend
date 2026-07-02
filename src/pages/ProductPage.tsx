@@ -1080,6 +1080,7 @@ type MattressDetailView = {
   );
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
 
       setIsLoading(true);
@@ -1128,7 +1129,7 @@ type MattressDetailView = {
         let fetched: Product | null = null;
 
         if (fallbackProductId) {
-          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/?core=1`, {
+          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/?quick=1`, {
             staleWhileRevalidate: true,
             maxStaleMs: PRODUCT_STALE_CACHE_MS,
           });
@@ -1137,7 +1138,7 @@ type MattressDetailView = {
 
         if (!fetched) {
           const productRes = await apiGet<Product[] | { results?: Product[] }>(
-            `/products/?slug=${encodeURIComponent(slug)}&core=1`,
+            `/products/?slug=${encodeURIComponent(slug)}&quick=1`,
             {
               staleWhileRevalidate: true,
               maxStaleMs: PRODUCT_STALE_CACHE_MS,
@@ -1153,7 +1154,8 @@ type MattressDetailView = {
           fetched = normalizedProducts[0] || null;
         }
 
-        setProduct(fetched);
+        if (cancelled) return;
+        setProduct((current) => fetched ? { ...(current || {}), ...fetched } as Product : null);
         void loadSeriesProducts(fetched);
         setSelectedImage(0);
         setIsGalleryOpen(false);
@@ -1182,23 +1184,25 @@ type MattressDetailView = {
           fetchReviews(fetched.id);
         }
 
-        if (fetched?.slug) {
-          void apiGet<Product[] | { results?: Product[] }>(
-            `/products/?slug=${encodeURIComponent(fetched.slug)}`,
+        if (fetched?.id) {
+          void apiGet<Product | Product[]>(
+            `/products/${fetched.id}/?core=1`,
             {
               staleWhileRevalidate: true,
               maxStaleMs: PRODUCT_STALE_CACHE_MS,
             }
           )
+            .then((coreRes) => {
+              const coreProduct = Array.isArray(coreRes) ? coreRes[0] : coreRes;
+              if (!cancelled && coreProduct?.id === fetched?.id) setProduct(coreProduct);
+              return apiGet<Product | Product[]>(`/products/${fetched.id}/`, {
+                staleWhileRevalidate: true,
+                maxStaleMs: PRODUCT_STALE_CACHE_MS,
+              });
+            })
             .then((fullRes) => {
-              const fullProducts = Array.isArray(fullRes)
-                ? fullRes
-                : Array.isArray((fullRes as { results?: Product[] })?.results)
-                ? (fullRes as { results: Product[] }).results
-                : [];
-              if (fullProducts[0]?.id === fetched?.id) {
-                setProduct(fullProducts[0]);
-              }
+              const fullProduct = Array.isArray(fullRes) ? fullRes[0] : fullRes;
+              if (!cancelled && fullProduct?.id === fetched?.id) setProduct(fullProduct);
             })
             .catch(() => undefined);
         }
@@ -1310,6 +1314,10 @@ type MattressDetailView = {
     };
 
     load();
+
+    return () => {
+      cancelled = true;
+    };
 
   }, [slug, loadSeriesProducts, previewProduct, previewProductId, linkedBedSize, preSelectedMattressId]);
 

@@ -20,6 +20,15 @@ type ApiGetOptions = {
   onUpdate?: (data: unknown) => void;
 };
 
+const normalizeGetCacheKey = (path: string) => {
+  const [pathname, query = ''] = path.split('?');
+  if (!query) return pathname;
+  const params = new URLSearchParams(query);
+  params.sort();
+  const normalizedQuery = params.toString();
+  return normalizedQuery ? `${pathname}?${normalizedQuery}` : pathname;
+};
+
 const isVolatilePath = (path: string) =>
   path.startsWith("/orders/") ||
   path === "/orders/" ||
@@ -47,7 +56,7 @@ const cloneData = <T>(data: T): T => {
   }
 };
 
-const readSessionCache = <T>(cacheKey: string, ttlMs: number): T | null => {
+const readSessionCache = <T>(cacheKey: string, ttlMs: number, evictExpired = true): T | null => {
   if (typeof window === "undefined") return null;
   try {
     const raw = window.sessionStorage.getItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
@@ -55,7 +64,7 @@ const readSessionCache = <T>(cacheKey: string, ttlMs: number): T | null => {
     const parsed = JSON.parse(raw) as CacheEntry;
     if (!parsed || typeof parsed.ts !== "number") return null;
     if (Date.now() - parsed.ts >= ttlMs) {
-      window.sessionStorage.removeItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
+      if (evictExpired) window.sessionStorage.removeItem(`${SESSION_CACHE_PREFIX}${cacheKey}`);
       return null;
     }
     getCache.set(cacheKey, parsed);
@@ -89,7 +98,7 @@ const buildHeaders = (hasBody: boolean, requiresAuth: boolean = false) => {
 };
 
 export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Promise<T> => {
-  const cacheKey = path;
+  const cacheKey = normalizeGetCacheKey(path);
   const shouldBypassCache = options.noStore === true || isVolatilePath(path);
   const cacheTtlMs = getCacheTtlMs(path);
   const maxStaleMs = options.maxStaleMs ?? cacheTtlMs;
@@ -137,7 +146,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     return cloneData(cached.data) as T;
   }
 
-  const sessionCached = readSessionCache<T>(cacheKey, cacheTtlMs);
+  const sessionCached = readSessionCache<T>(cacheKey, cacheTtlMs, !options.staleWhileRevalidate);
   if (sessionCached !== null) {
     return sessionCached;
   }
