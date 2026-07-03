@@ -461,18 +461,6 @@ const CategoryPage = () => {
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
         const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
 
-        const fastProductsPromise = apiGet<ProductListResponse>(
-          buildCategoryProductsPath(
-            initialResolvedSlug,
-            subSlug,
-            false,
-            shouldLoadSizes,
-            INITIAL_PRODUCTS_LIMIT,
-            initialOffset,
-            serverFilterParams
-          ),
-          apiOptions
-        );
         const initialProductsPromise = apiGet<ProductListResponse>(
           buildCategoryProductsPath(
             initialResolvedSlug,
@@ -491,20 +479,20 @@ const CategoryPage = () => {
           apiOptions
         );
         if (!cachedSnapshot) {
-          void fastProductsPromise
+          void initialProductsPromise
             .then((productsRes) => {
               if (cancelled) return;
               const { products: initialProducts, count: initialCount } = normalizeProductListResponse(productsRes);
               if (initialProducts.length === 0) return;
               const orderedInitialProducts = placeProductsAtOffset([], initialProducts, initialOffset);
-              setTotalProductCount(initialCount ?? initialProducts.length);
+              setTotalProductCount(initialCount ?? null);
               setAllProducts(orderedInitialProducts);
               setIsLoading(false);
               writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
                 category: null,
                 subcategories: [],
                 products: orderedInitialProducts,
-                totalProductCount: initialCount ?? initialProducts.length,
+                totalProductCount: initialCount ?? null,
                 availableFilters: latestFilters,
               });
             })
@@ -868,10 +856,14 @@ const CategoryPage = () => {
     }
   }, [showSizeFilter, selectedSizes.length]);
 
+  const hasPriceFilter = searchParams.has('min-price') || searchParams.has('max-price');
+
   const filteredProducts = useMemo(() => {
     let products = [...allProducts];
 
-    products = products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    if (hasPriceFilter) {
+      products = products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
+    }
 
     if (showSizeFilter && selectedSizes.length > 0) {
       products = products.filter((p) =>
@@ -904,13 +896,15 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
+  }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
 
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
-    (priceRange[0] > priceBounds.min || priceRange[1] < priceBounds.max) ||
+    hasPriceFilter ||
     Boolean(showBedSizeFilter && linkedBedSize);
-  const displayProductCount = hasClientSideFilters ? filteredProducts.length : totalProductCount ?? filteredProducts.length;
+  const displayProductCount = hasClientSideFilters
+    ? filteredProducts.length
+    : totalProductCount ?? Math.max(filteredProducts.length, currentPage * PRODUCTS_PER_PAGE);
   const totalPages = Math.max(1, Math.ceil(displayProductCount / PRODUCTS_PER_PAGE));
   const displayRangeStart = displayProductCount === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
   const displayRangeEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, displayProductCount);
