@@ -929,10 +929,11 @@ const CategoryPage = () => {
 
   useEffect(() => {
     if (isLoading) return;
+    if (!hasClientSideFilters && totalProductCount == null) return;
     if (currentPage > totalPages) {
       goToPage(totalPages, true);
     }
-  }, [currentPage, totalPages, isLoading]);
+  }, [currentPage, totalPages, isLoading, hasClientSideFilters, totalProductCount]);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
