@@ -445,7 +445,7 @@ const CategoryPage = () => {
           buildCategoryProductsPath(
             initialResolvedSlug,
             subSlug,
-            true,
+            false,
             shouldLoadSizes,
             productRequestLimit,
             initialOffset,
@@ -530,7 +530,7 @@ const CategoryPage = () => {
               buildCategoryProductsPath(
                 resolvedSlug,
                 subSlug,
-                true,
+                false,
                 shouldRetryWithSizes,
                 productRequestLimit,
                 initialOffset,
@@ -821,17 +821,6 @@ const CategoryPage = () => {
       );
     }
 
-    const selectedFilterEntries = Object.entries(selectedFilters).filter(([, values]) => values.length > 0);
-    if (selectedFilterEntries.length > 0) {
-      products = products.filter((p) => {
-        const values = p.filter_values || [];
-        if (values.length === 0) return false;
-        return selectedFilterEntries.every(([filterSlug, optionSlugs]) =>
-          values.some((value) => value.filter_type === filterSlug && optionSlugs.includes(value.option))
-        );
-      });
-    }
-
     switch (sortBy) {
       case 'price-low':
         products.sort((a, b) => a.price - b.price);
@@ -848,7 +837,7 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, selectedFilters, sortBy]);
+  }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
 
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
