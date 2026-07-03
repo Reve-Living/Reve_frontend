@@ -852,7 +852,7 @@ type MattressDetailView = {
   title: string;
   description?: string;
   features?: string;
-  images: { url: string; alt: string }[];
+  images: { url: string; alt: string; flip_horizontal?: boolean }[];
   price: number;
   originalPrice?: number;
 };
@@ -1394,6 +1394,7 @@ type MattressDetailView = {
   }, [activeStyleSelections, productImages, selectedColor]);
   const totalImages = displayImages.length;
   const hasDisplayImages = totalImages > 0;
+  const selectedImageFlipped = Boolean(displayImages[selectedImage]?.flip_horizontal);
 
   useEffect(() => {
     if (selectedImage >= totalImages) {
@@ -2113,6 +2114,7 @@ type MattressDetailView = {
           .map((img, idx) => ({
             url: resolveMediaUrl(img.url) || '',
             alt: img.alt_text || `${productData.name || 'Mattress'} ${idx + 1}`,
+            flip_horizontal: img.flip_horizontal,
           }))
           .filter((img) => Boolean(img.url)),
         price: Number(productData.price ?? fallbackDetail.price ?? 0),
@@ -2915,7 +2917,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                   initial={{ opacity: 0 }}
 
-                  animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1 }}
+                  animate={{ opacity: 1, scale: isZoomed ? 1.5 : 1, scaleX: selectedImageFlipped ? -1 : 1 }}
 
                   exit={{ opacity: 0 }}
 
@@ -3041,6 +3043,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       alt={img.alt_text || `${product.name} ${index + 1}`}
 
                       className="absolute inset-0 h-full w-full object-cover"
+                      style={{ transform: img.flip_horizontal ? 'scaleX(-1)' : undefined }}
 
                     />
 
@@ -3988,6 +3991,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               src={displayImages[selectedImage]?.url}
               alt={displayImages[selectedImage]?.alt_text || `${product.name} large view`}
               className="h-full w-full max-h-[80vh] rounded-lg bg-black/20 object-contain"
+              style={{ transform: selectedImageFlipped ? 'scaleX(-1)' : undefined }}
             />
             {totalImages > 1 && (
               <>
@@ -4047,6 +4051,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             src={img.url}
                             alt={img.alt_text || `${product.name} thumb ${idx + 1}`}
                             className="h-full w-full object-cover"
+                            style={{ transform: img.flip_horizontal ? 'scaleX(-1)' : undefined }}
                           />
                         </button>
                       ))}
@@ -4548,6 +4553,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         src={mattressDetail.images[activeMattressDetailImage]?.url}
                         alt={mattressDetail.images[activeMattressDetailImage]?.alt || mattressDetail.title}
                         className="h-[260px] w-full object-cover md:h-[420px]"
+                        style={{
+                          transform: mattressDetail.images[activeMattressDetailImage]?.flip_horizontal
+                            ? 'scaleX(-1)'
+                            : undefined,
+                        }}
                       />
                       {mattressDetail.images.length > 1 && (
                         <>

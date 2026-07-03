@@ -20,6 +20,7 @@ type EdgeAwareCoverImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'class
   containerAspectRatio?: number;
   objectFit?: 'cover' | 'contain';
   enableScale?: boolean;
+  flipHorizontal?: boolean;
   onContentInsetsChange?: (insets: EdgeAwareImageContentInsets | null) => void;
 };
 
@@ -309,6 +310,7 @@ const EdgeAwareCoverImage = ({
   containerAspectRatio = 4 / 3,
   objectFit = 'cover',
   enableScale = true,
+  flipHorizontal = false,
   onContentInsetsChange,
   onLoad,
   ...rest
@@ -346,13 +348,18 @@ const EdgeAwareCoverImage = ({
       }}
       className={cn(
         enableScale
-          ? `absolute inset-0 h-full w-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} transition-transform duration-700 [transform:scale(var(--cover-image-scale,1.08))] group-hover:[transform:scale(var(--cover-image-hover-scale,1.14))]`
+          ? `absolute inset-0 h-full w-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'} transition-transform duration-700`
           : `absolute inset-0 h-full w-full ${objectFit === 'contain' ? 'object-contain' : 'object-cover'}`,
         imgClassName
       )}
       style={
         {
           objectPosition: imageStyle.objectPosition,
+          transform: enableScale
+            ? `scaleX(${flipHorizontal ? -1 : 1}) scale(var(--cover-image-scale,1.08))`
+            : flipHorizontal
+            ? 'scaleX(-1)'
+            : undefined,
           ...(enableScale
             ? {
                 ['--cover-image-scale' as string]: String(imageStyle.baseScale),

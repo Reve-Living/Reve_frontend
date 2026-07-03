@@ -20,8 +20,8 @@ import { apiGet } from '@/lib/api';
 import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
 const PRODUCTS_PER_PAGE = 18;
-const INITIAL_PRODUCTS_LIMIT = 6;
-const BACKGROUND_PRODUCTS_BATCH_SIZE = 3;
+const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
+const BACKGROUND_PRODUCTS_BATCH_SIZE = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 5 * 60 * 1000;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
@@ -195,16 +195,32 @@ const buildCategoryProductsPath = (
   includeFilters = false,
   includeSizes = false,
   limit?: number,
-  offset = 0
+  offset = 0,
+  extraParams?: URLSearchParams,
+  includeTotal = false
 ): string => {
   const params = new URLSearchParams({ summary: '1' });
   if (subSlug) params.set('subcategory', subSlug);
   else params.set('category', categorySlug);
   if (includeFilters) params.set('include_filters', '1');
   if (includeSizes) params.set('include_sizes', '1');
+  if (includeTotal) params.set('include_total', '1');
+  extraParams?.forEach((value, key) => {
+    if (!params.has(key)) params.set(key, value);
+  });
   if (limit && limit > 0) params.set('limit', String(limit));
   if (offset > 0) params.set('offset', String(offset));
   return `/products/?${params.toString()}`;
+};
+
+type ProductListResponse = Product[] | { count?: number; results?: Product[] };
+
+const normalizeProductListResponse = (response: ProductListResponse): { products: Product[]; count?: number } => {
+  if (Array.isArray(response)) return { products: response };
+  return {
+    products: Array.isArray(response?.results) ? response.results : [],
+    count: typeof response?.count === 'number' ? response.count : undefined,
+  };
 };
 
 const CategoryPage = () => {
@@ -226,6 +242,7 @@ const CategoryPage = () => {
   const [category, setCategory] = useState<Category | null>(null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [totalProductCount, setTotalProductCount] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isFiltersLoading, setIsFiltersLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -237,26 +254,23 @@ const CategoryPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>([]);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
-  const [hasFilterProductData, setHasFilterProductData] = useState(false);
 
   const isMattressCategory = (s: string | undefined) => s === 'mattress' || s === 'mattresses';
-  const hasRequestedFilterParams = useMemo(
-    () => Array.from(searchParams.keys()).some((key) => !FILTER_RESERVED_PARAM_KEYS.has(key)),
-    [searchParams, searchParamsKey]
-  );
+  const serverFilterParams = useMemo(() => {
+    const params = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (key.startsWith(FILTER_PARAM_PREFIX)) {
+        params.append(key.slice(FILTER_PARAM_PREFIX.length), value);
+        return;
+      }
+      if (!FILTER_RESERVED_PARAM_KEYS.has(key)) params.append(key, value);
+    });
+    return params;
+  }, [searchParams, searchParamsKey]);
+  const serverFilterParamsKey = serverFilterParams.toString();
 
   const showSizeFilter = category?.slug === 'beds';
   const showBedSizeFilter = isMattressCategory(category?.slug) && !!linkedBedSize;
-
-  const activeOptionSlugs = useMemo(() => {
-    const present = new Set<string>();
-    allProducts.forEach((p) =>
-      (p.filter_values || []).forEach((fv) => {
-        if (fv.option) present.add(fv.option);
-      })
-    );
-    return present;
-  }, [allProducts]);
 
   const priceBounds = useMemo(() => {
     const prices = allProducts.map((p) => Number(p.price)).filter((v) => !Number.isNaN(v));
@@ -313,37 +327,6 @@ const CategoryPage = () => {
     });
   };
 
-  const ensureFilterProductData = async () => {
-    if (hasFilterProductData) return true;
-
-    const resolvedCategorySlug = (category?.slug || slug || '').trim();
-    if (!resolvedCategorySlug) return false;
-
-    try {
-      setIsLoading(true);
-      const response = await apiGet<Product[] | { results?: Product[] }>(
-        buildCategoryProductsPath(
-          resolvedCategorySlug,
-          subSlug,
-          true,
-          shouldRequestSizesForCategory(resolvedCategorySlug, linkedBedSize)
-        )
-      );
-      const normalizedProducts = Array.isArray(response)
-        ? response
-        : Array.isArray((response as { results?: Product[] })?.results)
-        ? (response as { results: Product[] }).results
-        : [];
-      setAllProducts(orderProducts(normalizedProducts, subcategories));
-      setHasFilterProductData(true);
-      return true;
-    } catch {
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
     let cancelled = false;
 
@@ -352,12 +335,13 @@ const CategoryPage = () => {
       setIsFiltersLoading(true);
       setLoadError(false);
       setAllProducts([]);
+      setTotalProductCount(null);
       setAvailableFilters([]);
-      setHasFilterProductData(false);
       if (!slug) {
         setCategory(null);
         setSubcategories([]);
         setAllProducts([]);
+        setTotalProductCount(null);
         setAvailableFilters([]);
         setIsLoading(false);
         setIsFiltersLoading(false);
@@ -380,13 +364,19 @@ const CategoryPage = () => {
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
-        const shouldLoadFilterValues = hasRequestedFilterParams;
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
-        const initialLimit = shouldLoadFilterValues ? undefined : INITIAL_PRODUCTS_LIMIT;
-        setHasFilterProductData(shouldLoadFilterValues);
 
-        const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
-          buildCategoryProductsPath(initialResolvedSlug, subSlug, shouldLoadFilterValues, shouldLoadSizes, initialLimit),
+        const initialProductsPromise = apiGet<ProductListResponse>(
+          buildCategoryProductsPath(
+            initialResolvedSlug,
+            subSlug,
+            false,
+            shouldLoadSizes,
+            INITIAL_PRODUCTS_LIMIT,
+            0,
+            serverFilterParams,
+            true
+          ),
           {
             staleWhileRevalidate: true,
             maxStaleMs: CATEGORY_STALE_CACHE_MS,
@@ -427,13 +417,16 @@ const CategoryPage = () => {
         const shouldRetryWithSizes = shouldRequestSizesForCategory(resolvedSlug, linkedBedSize);
 
         const productsRes = await (needsSlugRetry
-          ? apiGet<Product[] | { results?: Product[] }>(
+          ? apiGet<ProductListResponse>(
               buildCategoryProductsPath(
                 resolvedSlug,
                 subSlug,
-                shouldLoadFilterValues,
+                false,
                 shouldRetryWithSizes,
-                shouldLoadFilterValues ? undefined : INITIAL_PRODUCTS_LIMIT
+                INITIAL_PRODUCTS_LIMIT,
+                0,
+                serverFilterParams,
+                true
               ),
               {
                 staleWhileRevalidate: true,
@@ -444,11 +437,8 @@ const CategoryPage = () => {
 
         if (cancelled) return;
 
-        const normalizedProducts = Array.isArray(productsRes)
-          ? productsRes
-          : Array.isArray((productsRes as { results?: Product[] })?.results)
-          ? (productsRes as { results: Product[] }).results
-          : [];
+        const { products: normalizedProducts, count } = normalizeProductListResponse(productsRes);
+        setTotalProductCount(count ?? normalizedProducts.length);
         const orderedProducts = orderProducts(normalizedProducts, resolvedSubcategories);
         setAllProducts(orderedProducts);
 
@@ -458,19 +448,22 @@ const CategoryPage = () => {
 
         setIsLoading(false);
 
-        if (!shouldLoadFilterValues) {
+        {
           const loadedProductIds = new Set(normalizedProducts.map((product) => product.id));
+          const expectedTotal = count ?? Number.MAX_SAFE_INTEGER;
           const loadProductBatch = async (offset: number) => {
             if (cancelled) return;
+            if (loadedProductIds.size >= expectedTotal) return;
             try {
-              const batchRes = await apiGet<Product[] | { results?: Product[] }>(
+              const batchRes = await apiGet<ProductListResponse>(
                 buildCategoryProductsPath(
                   resolvedSlug,
                   subSlug,
                   false,
                   shouldRetryWithSizes,
                   BACKGROUND_PRODUCTS_BATCH_SIZE,
-                  offset
+                  offset,
+                  serverFilterParams
                 ),
                 {
                   staleWhileRevalidate: true,
@@ -478,11 +471,7 @@ const CategoryPage = () => {
                 }
               );
               if (cancelled) return;
-              const batchProducts = Array.isArray(batchRes)
-                ? batchRes
-                : Array.isArray((batchRes as { results?: Product[] })?.results)
-                ? (batchRes as { results: Product[] }).results
-                : [];
+              const { products: batchProducts } = normalizeProductListResponse(batchRes);
               if (batchProducts.length === 0) return;
 
               setAllProducts((prevProducts) => {
@@ -528,6 +517,7 @@ const CategoryPage = () => {
         setCategory(null);
         setSubcategories([]);
         setAllProducts([]);
+        setTotalProductCount(null);
         setAvailableFilters([]);
         setLoadError(true);
         setIsLoading(false);
@@ -538,7 +528,7 @@ const CategoryPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [hasRequestedFilterParams, linkedBedSize, slug, subSlug]);
+  }, [linkedBedSize, serverFilterParamsKey, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {
@@ -652,9 +642,6 @@ const CategoryPage = () => {
   };
 
   const toggleFilterOption = async (filterSlug: string, optionSlug: string) => {
-    const ready = await ensureFilterProductData();
-    if (!ready) return;
-
     const current = selectedFilters[filterSlug] || [];
     const next = current.includes(optionSlug)
       ? current.filter((value) => value !== optionSlug)
@@ -754,14 +741,6 @@ const CategoryPage = () => {
       );
     }
 
-    Object.entries(selectedFilters).forEach(([filterSlug, optionSlugs]) => {
-      if (!optionSlugs.length) return;
-      products = products.filter((p) => {
-        const values = p.filter_values || [];
-        return optionSlugs.every((opt) => values.some((v) => v.filter_type === filterSlug && v.option === opt));
-      });
-    });
-
     switch (sortBy) {
       case 'price-low':
         products.sort((a, b) => a.price - b.price);
@@ -778,9 +757,16 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, priceRange, selectedSizes, selectedFilters, sortBy]);
+  }, [allProducts, priceRange, selectedSizes, sortBy]);
 
   const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
+  const hasClientSideFilters =
+    selectedSizes.length > 0 ||
+    (priceRange[0] > priceBounds.min || priceRange[1] < priceBounds.max) ||
+    Boolean(showBedSizeFilter && linkedBedSize);
+  const displayProductCount = hasClientSideFilters ? filteredProducts.length : totalProductCount ?? filteredProducts.length;
+  const displayRangeStart = displayProductCount === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
+  const displayRangeEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, displayProductCount);
 
   const paginatedProducts = useMemo(() => {
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
@@ -917,9 +903,9 @@ const CategoryPage = () => {
 
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/60 pb-4">
               <p className="text-muted-foreground">
-                Showing {filteredProducts.length === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1}
+                Showing {displayRangeStart}
                 {' '}-{' '}
-                {Math.min(currentPage * PRODUCTS_PER_PAGE, filteredProducts.length)} of {filteredProducts.length} products
+                {displayRangeEnd} of {displayProductCount} products
               </p>
 
               <div className="flex flex-wrap items-center gap-4">

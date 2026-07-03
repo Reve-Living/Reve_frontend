@@ -52,6 +52,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
     minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
   const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
   const imageUrl = product.images?.[0]?.url || "";
+  const imageFlipHorizontal = Boolean(product.images?.[0]?.flip_horizontal);
   const hasImage = imageUrl.trim().length > 0;
   const shortText = (product.short_description || product.description || "").trim();
   const hasMultipleSizePrices = Array.isArray(product.sizes) ? product.sizes.length > 1 : summarySizeCount > 1;
@@ -97,6 +98,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
               containerAspectRatio={4 / 3}
               objectFit="contain"
               enableScale={false}
+              flipHorizontal={imageFlipHorizontal}
               imgClassName="bg-[#f7f3ef]"
               defaultStyle={{ objectPosition: '50% 0%' }}
             />
