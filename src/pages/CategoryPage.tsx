@@ -406,12 +406,14 @@ const CategoryPage = () => {
           currentCategorySlug === requestedSlug ||
           (requestedSlug === 'mattress' && currentCategorySlug === 'mattresses') ||
           (requestedSlug === 'mattresses' && currentCategorySlug === 'mattress');
-        setIsLoading(true);
         setIsFiltersLoading(availableFilters.length === 0);
         if (!isSameCategory) {
+          setIsLoading(true);
           setAllProducts([]);
           setTotalProductCount(null);
           setAvailableFilters([]);
+        } else {
+          setIsLoading(false);
         }
       }
 
@@ -434,7 +436,10 @@ const CategoryPage = () => {
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
-        const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
+        const hasServerFilters = serverFilterParamsKey.length > 0;
+        const productRequestLimit = hasServerFilters ? 100 : INITIAL_PRODUCTS_LIMIT;
+        const initialOffset = hasServerFilters ? 0 : (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
+        const shouldIncludeTotal = !hasServerFilters;
 
         const initialProductsPromise = apiGet<ProductListResponse>(
           buildCategoryProductsPath(
@@ -442,10 +447,10 @@ const CategoryPage = () => {
             subSlug,
             false,
             shouldLoadSizes,
-            INITIAL_PRODUCTS_LIMIT,
+            productRequestLimit,
             initialOffset,
             serverFilterParams,
-            true
+            shouldIncludeTotal
           ),
           apiOptions
         );
@@ -511,10 +516,10 @@ const CategoryPage = () => {
                 subSlug,
                 false,
                 shouldRetryWithSizes,
-                INITIAL_PRODUCTS_LIMIT,
+                productRequestLimit,
                 initialOffset,
                 serverFilterParams,
-                true
+                shouldIncludeTotal
               ),
               apiOptions
             )
@@ -821,6 +826,7 @@ const CategoryPage = () => {
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
     hasPriceFilter ||
+    serverFilterParamsKey.length > 0 ||
     Boolean(showBedSizeFilter && linkedBedSize);
   const displayProductCount = hasClientSideFilters
     ? filteredProducts.length
