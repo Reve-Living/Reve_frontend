@@ -75,18 +75,20 @@ const CollectionsPage = () => {
     const params = new URLSearchParams({ summary: '1' });
     if (subcategorySlug) params.set('subcategory', subcategorySlug);
     else params.set('category', categorySlug);
+    params.set('include_filters', '1');
     if (['beds', 'mattress', 'mattresses'].includes(categorySlug.toLowerCase())) params.set('include_sizes', '1');
-    params.set('limit', '6');
+    params.set('include_total', '1');
+    params.set('limit', '18');
     void apiGet(`/products/?${params.toString()}`).catch(() => []);
 
     if (subcategorySlug) {
       void apiGet(
-        `/categories/${encodeURIComponent(categorySlug)}/filters/?subcategory=${encodeURIComponent(subcategorySlug)}`
+        `/products/filters/?subcategory=${encodeURIComponent(subcategorySlug)}`
       ).catch(() => ({ filters: [] }));
       return;
     }
 
-    void apiGet(`/categories/${encodeURIComponent(categorySlug)}/filters/`).catch(() => ({ filters: [] }));
+    void apiGet(`/products/filters/?category=${encodeURIComponent(categorySlug)}`).catch(() => ({ filters: [] }));
   };
 
   useEffect(() => {

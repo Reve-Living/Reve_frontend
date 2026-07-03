@@ -48,18 +48,20 @@ const CategoryGrid = () => {
     const params = new URLSearchParams({ summary: '1' });
     if (subcategory) params.set('subcategory', subcategory);
     else params.set('category', category);
+    params.set('include_filters', '1');
     if (['beds', 'mattress', 'mattresses'].includes(category.toLowerCase())) params.set('include_sizes', '1');
-    params.set('limit', '6');
+    params.set('include_total', '1');
+    params.set('limit', '18');
     void apiGet(`/products/?${params.toString()}`).catch(() => []);
 
     if (subcategory) {
-      void apiGet(`/categories/${encodeURIComponent(category)}/filters/?subcategory=${encodeURIComponent(subcategory)}`).catch(
+      void apiGet(`/products/filters/?subcategory=${encodeURIComponent(subcategory)}`).catch(
         () => ({ filters: [] })
       );
       return;
     }
 
-    void apiGet(`/categories/${encodeURIComponent(category)}/filters/`).catch(() => ({ filters: [] }));
+    void apiGet(`/products/filters/?category=${encodeURIComponent(category)}`).catch(() => ({ filters: [] }));
   };
 
   const resolveImageUrl = useMemo(

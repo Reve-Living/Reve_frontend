@@ -112,18 +112,20 @@ const prefetchCategoryPayload = (href?: string) => {
   const productParams = new URLSearchParams({ summary: '1' });
   if (subSlug) productParams.set('subcategory', subSlug);
   else productParams.set('category', slug);
+  productParams.set('include_filters', '1');
   if (includeSizes) productParams.set('include_sizes', '1');
+  productParams.set('include_total', '1');
   productParams.set('limit', '18');
   void apiGet<Product[]>(`/products/?${productParams.toString()}`).catch(() => []);
 
   if (subSlug) {
     void apiGet<{ filters: unknown[] }>(
-      `/categories/${encodeURIComponent(slug)}/filters/?subcategory=${encodeURIComponent(subSlug)}`
+      `/products/filters/?subcategory=${encodeURIComponent(subSlug)}`
     ).catch(() => ({ filters: [] }));
     return;
   }
 
-  void apiGet<{ filters: unknown[] }>(`/categories/${encodeURIComponent(slug)}/filters/`).catch(() => ({ filters: [] }));
+  void apiGet<{ filters: unknown[] }>(`/products/filters/?category=${encodeURIComponent(slug)}`).catch(() => ({ filters: [] }));
 };
 
 const Header = () => {
