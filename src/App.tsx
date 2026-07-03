@@ -1,9 +1,9 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, matchPath, useLocation } from "react-router-dom";
 import { CartProvider } from "@/context/CartContext";
 import CartDrawer from "@/components/CartDrawer";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -35,6 +35,67 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 const routeFallback = <div className="min-h-screen bg-background" />;
+const SITE_URL = "https://www.reveliving.co.uk";
+const INDEXABLE_ROUTES = [
+  "/",
+  "/category/:slug/subcategories",
+  "/category/:slug",
+  "/product/:slug",
+  "/about",
+  "/contact",
+  "/categories",
+  "/collections",
+  "/terms-conditions",
+  "/privacy-policy",
+  "/delivery",
+  "/returns-refunds",
+  "/faq",
+  "/divan-beds",
+  "/transform-your-home/:slug",
+];
+const NOINDEX_ROUTES = ["/cart", "/checkout", "/login", "/signup", "/coming-soon/:slug"];
+
+const getCanonicalPath = (pathname: string, search: string) => {
+  const normalizedPath = pathname !== "/" ? pathname.replace(/\/+$/, "") : "/";
+  const params = new URLSearchParams(search);
+  const subcategory = params.get("sub");
+
+  if (subcategory && matchPath({ path: "/category/:slug", end: true }, normalizedPath)) {
+    return `${normalizedPath}?sub=${encodeURIComponent(subcategory)}`;
+  }
+
+  return normalizedPath;
+};
+
+const SeoMeta = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    const canonicalPath = getCanonicalPath(location.pathname, location.search);
+    const canonicalHref = `${SITE_URL}${canonicalPath}`;
+    const isIndexable = INDEXABLE_ROUTES.some((path) => matchPath({ path, end: true }, location.pathname));
+    const isNoindex = NOINDEX_ROUTES.some((path) => matchPath({ path, end: true }, location.pathname));
+    const robotsContent = !isIndexable || isNoindex ? "noindex, follow" : "index, follow";
+
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement("link");
+      canonical.setAttribute("rel", "canonical");
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute("href", canonicalHref);
+
+    let robots = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!robots) {
+      robots = document.createElement("meta");
+      robots.setAttribute("name", "robots");
+      document.head.appendChild(robots);
+    }
+    robots.setAttribute("content", robotsContent);
+  }, [location.pathname, location.search]);
+
+  return null;
+};
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -45,6 +106,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <CartDrawer />
+            <SeoMeta />
             <ScrollToTop />
             <ScrollToTopOnNavigate />
             <WhatsAppButton />

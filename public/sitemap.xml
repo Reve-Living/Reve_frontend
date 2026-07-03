@@ -13,13 +13,48 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/services</loc>
+    <loc>https://www.reveliving.co.uk/contact</loc>
     <priority>0.8</priority>
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/contact</loc>
+    <loc>https://www.reveliving.co.uk/categories</loc>
     <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/collections</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/divan-beds</loc>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/delivery</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/returns-refunds</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/faq</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/terms-conditions</loc>
+    <priority>0.4</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/privacy-policy</loc>
+    <priority>0.4</priority>
   </url>
 
 </urlset>
