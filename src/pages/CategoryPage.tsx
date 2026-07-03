@@ -21,10 +21,9 @@ import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
 const PRODUCTS_PER_PAGE = 18;
 const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
-const BACKGROUND_PRODUCTS_BATCH_SIZE = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 5 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 60 * 1000;
-const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:';
+const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v2:';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -298,11 +297,6 @@ const writeCategoryPageSnapshot = (
 };
 
 const CategoryPage = () => {
-  const getDisplayOrder = (value?: number) => {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : 0;
-  };
-
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -373,37 +367,6 @@ const CategoryPage = () => {
     );
     return Array.from(map.values()).sort((a, b) => a.localeCompare(b));
   }, [allProducts, showSizeFilter]);
-
-  const orderProducts = (products: Product[], loadedSubcategories: SubCategory[]) => {
-    const subcategoryOrderLookup = new Map(
-      loadedSubcategories.map((sub) => [
-        Number(sub.id),
-        {
-          order: getDisplayOrder(sub.sort_order),
-          name: (sub.name || '').toLowerCase(),
-        },
-      ])
-    );
-
-    return [...products].sort((a, b) => {
-      if (!subSlug) {
-        const aSubcategory = subcategoryOrderLookup.get(Number(a.subcategory));
-        const bSubcategory = subcategoryOrderLookup.get(Number(b.subcategory));
-        const aSubcategoryOrder = aSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
-        const bSubcategoryOrder = bSubcategory?.order ?? Number.MAX_SAFE_INTEGER;
-        if (aSubcategoryOrder !== bSubcategoryOrder) return aSubcategoryOrder - bSubcategoryOrder;
-
-        const aSubcategoryName = aSubcategory?.name || (a.subcategory_name || '').toLowerCase();
-        const bSubcategoryName = bSubcategory?.name || (b.subcategory_name || '').toLowerCase();
-        if (aSubcategoryName !== bSubcategoryName) return aSubcategoryName.localeCompare(bSubcategoryName);
-      }
-
-      const aOrder = getDisplayOrder(a.sort_order);
-      const bOrder = getDisplayOrder(b.sort_order);
-      if (aOrder !== bOrder) return aOrder - bOrder;
-      return (b.id || 0) - (a.id || 0);
-    });
-  };
 
   useEffect(() => {
     let cancelled = false;
@@ -564,61 +527,6 @@ const CategoryPage = () => {
         }
 
         setIsLoading(false);
-
-        {
-          const loadedProductIds = new Set(normalizedProducts.map((product) => product.id));
-          const expectedTotal = count ?? Number.MAX_SAFE_INTEGER;
-          const loadProductBatch = async (offset: number) => {
-            if (cancelled) return;
-            if (offset === initialOffset) {
-              void loadProductBatch(offset + BACKGROUND_PRODUCTS_BATCH_SIZE);
-              return;
-            }
-            if (loadedProductIds.size >= expectedTotal) return;
-            try {
-              const batchRes = await apiGet<ProductListResponse>(
-                buildCategoryProductsPath(
-                  resolvedSlug,
-                  subSlug,
-                  false,
-                  shouldRetryWithSizes,
-                  BACKGROUND_PRODUCTS_BATCH_SIZE,
-                  offset,
-                  serverFilterParams
-                ),
-                apiOptions
-              );
-              if (cancelled) return;
-              const { products: batchProducts } = normalizeProductListResponse(batchRes);
-              if (batchProducts.length === 0) return;
-
-              setAllProducts((prevProducts) => {
-                const freshBatchProducts = batchProducts.filter((product) => {
-                  if (loadedProductIds.has(product.id)) return false;
-                  loadedProductIds.add(product.id);
-                  return true;
-                });
-                const orderedMerged = placeProductsAtOffset(prevProducts, freshBatchProducts, offset);
-                writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
-                  category: categoryItem,
-                  subcategories: resolvedSubcategories,
-                  products: orderedMerged,
-                  totalProductCount: count ?? orderedMerged.length,
-                  availableFilters: latestFilters,
-                });
-                return orderedMerged;
-              });
-
-              if (batchProducts.length === BACKGROUND_PRODUCTS_BATCH_SIZE) {
-                void loadProductBatch(offset + BACKGROUND_PRODUCTS_BATCH_SIZE);
-              }
-            } catch {
-              // Keep the first visible products; the next navigation/refresh can retry.
-            }
-          };
-
-          void loadProductBatch(0);
-        }
 
         void (needsSlugRetry
           ? apiGet<{ filters: FilterType[] }>(
