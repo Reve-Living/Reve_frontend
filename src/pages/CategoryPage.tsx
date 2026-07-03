@@ -215,6 +215,14 @@ const buildCategoryProductsPath = (
   return `/products/?${params.toString()}`;
 };
 
+const buildProductFiltersPath = (categorySlug: string, subSlug: string): string => {
+  const params = new URLSearchParams();
+  if (subSlug) params.set('subcategory', subSlug);
+  else if (categorySlug) params.set('category', categorySlug);
+  const query = params.toString();
+  return `/products/filters/${query ? `?${query}` : ''}`;
+};
+
 type ProductListResponse = Product[] | { count?: number; results?: Product[] };
 
 const normalizeProductListResponse = (response: ProductListResponse): { products: Product[]; count?: number } => {
@@ -326,7 +334,17 @@ const CategoryPage = () => {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
   const isMattressCategory = (s: string | undefined) => s === 'mattress' || s === 'mattresses';
-  const serverFilterParams = useMemo(() => new URLSearchParams(), []);
+  const serverFilterParams = useMemo(() => {
+    const params = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (key.startsWith(FILTER_PARAM_PREFIX)) {
+        params.append(key.slice(FILTER_PARAM_PREFIX.length), value);
+        return;
+      }
+      if (!FILTER_RESERVED_PARAM_KEYS.has(key)) params.append(key, value);
+    });
+    return params;
+  }, [searchParams, searchParamsKey]);
   const serverFilterParamsKey = serverFilterParams.toString();
 
   const showSizeFilter = category?.slug === 'beds';
@@ -450,7 +468,8 @@ const CategoryPage = () => {
             false,
             shouldLoadSizes,
             INITIAL_PRODUCTS_LIMIT,
-            initialOffset
+            initialOffset,
+            serverFilterParams
           ),
           apiOptions
         );
@@ -458,7 +477,7 @@ const CategoryPage = () => {
           buildCategoryProductsPath(
             initialResolvedSlug,
             subSlug,
-            true,
+            false,
             shouldLoadSizes,
             INITIAL_PRODUCTS_LIMIT,
             initialOffset,
@@ -468,7 +487,7 @@ const CategoryPage = () => {
           apiOptions
         );
         const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
-          `/categories/${initialResolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`,
+          buildProductFiltersPath(initialResolvedSlug, subSlug),
           apiOptions
         );
         if (!cachedSnapshot) {
@@ -527,7 +546,7 @@ const CategoryPage = () => {
               buildCategoryProductsPath(
                 resolvedSlug,
                 subSlug,
-                true,
+                false,
                 shouldRetryWithSizes,
                 INITIAL_PRODUCTS_LIMIT,
                 initialOffset,
@@ -573,7 +592,7 @@ const CategoryPage = () => {
                 buildCategoryProductsPath(
                   resolvedSlug,
                   subSlug,
-                  true,
+                  false,
                   shouldRetryWithSizes,
                   BACKGROUND_PRODUCTS_BATCH_SIZE,
                   offset,
@@ -615,7 +634,7 @@ const CategoryPage = () => {
 
         void (needsSlugRetry
           ? apiGet<{ filters: FilterType[] }>(
-              `/categories/${resolvedSlug}/filters/${subSlug ? `?subcategory=${subSlug}` : ''}`,
+              buildProductFiltersPath(resolvedSlug, subSlug),
               apiOptions
             )
           : initialFiltersPromise)
@@ -854,20 +873,6 @@ const CategoryPage = () => {
 
     products = products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
 
-    const activeFilterEntries = Object.entries(selectedFilters).filter(([, values]) => values.length > 0);
-    if (activeFilterEntries.length > 0) {
-      products = products.filter((product) => {
-        const productFilterValues = product.filter_values || [];
-        return activeFilterEntries.every(([filterSlug, selectedOptionSlugs]) =>
-          selectedOptionSlugs.some((optionSlug) =>
-            productFilterValues.some(
-              (value) => value.filter_type === filterSlug && value.option === optionSlug
-            )
-          )
-        );
-      });
-    }
-
     if (showSizeFilter && selectedSizes.length > 0) {
       products = products.filter((p) =>
         (p.sizes || []).some((size) => {
@@ -899,13 +904,12 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, priceRange, selectedFilters, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
+  }, [allProducts, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
 
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
     (priceRange[0] > priceBounds.min || priceRange[1] < priceBounds.max) ||
-    Boolean(showBedSizeFilter && linkedBedSize) ||
-    Object.values(selectedFilters).some((values) => values.length > 0);
+    Boolean(showBedSizeFilter && linkedBedSize);
   const displayProductCount = hasClientSideFilters ? filteredProducts.length : totalProductCount ?? filteredProducts.length;
   const totalPages = Math.max(1, Math.ceil(displayProductCount / PRODUCTS_PER_PAGE));
   const displayRangeStart = displayProductCount === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
