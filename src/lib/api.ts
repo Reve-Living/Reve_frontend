@@ -39,6 +39,9 @@ const getMutationKey = (method: string, path: string, body?: unknown) =>
   `${method}:${path}:${body === undefined ? "" : JSON.stringify(body)}`;
 
 const getCacheTtlMs = (path: string) => {
+  if (path.startsWith("/products/filters/")) {
+    return CATEGORY_CACHE_TTL_MS;
+  }
   if (path.startsWith("/products/") || path === "/products/" || path.startsWith("/collections/")) {
     return PRODUCT_CACHE_TTL_MS;
   }

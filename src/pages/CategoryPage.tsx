@@ -459,6 +459,22 @@ const CategoryPage = () => {
           apiOptions
         );
         if (!cachedSnapshot) {
+          void initialFiltersPromise
+            .then((filtersRes) => {
+              if (cancelled) return;
+              const filters = Array.isArray(filtersRes?.filters) ? filtersRes.filters : [];
+              latestFilters = filters;
+              setAvailableFilters(filters);
+            })
+            .catch(() => {
+              if (cancelled) return;
+              setAvailableFilters([]);
+            })
+            .finally(() => {
+              if (!cancelled) setIsFiltersLoading(false);
+            });
+        }
+        if (!cachedSnapshot) {
           void initialProductsPromise
             .then((productsRes) => {
               if (cancelled) return;
