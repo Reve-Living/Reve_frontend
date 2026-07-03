@@ -18,34 +18,6 @@ type Slide = {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
-// Visual fallback to avoid a blank first paint while backend content loads.
-const initialSlides: Slide[] = [
-  {
-    id: 'default-1',
-    image: 'https://images.unsplash.com/photo-1631679706909-1844bbd07221?w=1920&h=1080&fit=crop',
-    title: 'Luxury Beds',
-    subtitle: 'UK Handcrafted Bed Collection',
-    cta: 'Shop Collection',
-    link: '/category/beds',
-  },
-  {
-    id: 'default-2',
-    image: 'https://images.unsplash.com/photo-1588046130717-0eb0c9a3ba15?w=1920&h=1080&fit=crop',
-    title: 'Ottoman Beds',
-    subtitle: 'Maximise Your Space with Style',
-    cta: 'Shop Collection',
-    link: '/category/ottoman-beds',
-  },
-  {
-    id: 'default-3',
-    image: 'https://images.unsplash.com/photo-1540518614846-7eded433c457?w=1920&h=1080&fit=crop',
-    title: 'Premium Mattresses',
-    subtitle: 'Sleep in Ultimate Comfort',
-    cta: 'Shop Collection',
-    link: '/category/mattresses',
-  },
-];
-
 const resolveImageUrl = (value?: string): string => {
   const raw = (value || '').trim();
   if (!raw) return '';
@@ -65,7 +37,7 @@ const resolveImageUrl = (value?: string): string => {
 };
 
 const HeroSlider = () => {
-  const [slides, setSlides] = useState<Slide[]>(initialSlides);
+  const [slides, setSlides] = useState<Slide[]>([]);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -129,10 +101,10 @@ const HeroSlider = () => {
           });
 
           const hydratedSlides = normalizedSlides.filter((slide) => slide.image);
-          setSlides(hydratedSlides.length > 0 ? hydratedSlides : initialSlides);
+          setSlides(hydratedSlides);
         } catch (err) {
           console.error('Failed to load hero content from products', err);
-          setSlides(initialSlides);
+          setSlides([]);
         }
       };
 
@@ -179,7 +151,7 @@ const HeroSlider = () => {
 
   return (
     <section
-      className="relative h-[60vh] min-h-[400px] overflow-hidden md:h-[70vh] md:max-h-[700px]"
+      className="relative h-[60vh] min-h-[400px] overflow-hidden bg-[#f7f3ef] md:h-[70vh] md:max-h-[700px]"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >

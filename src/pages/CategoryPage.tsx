@@ -210,6 +210,7 @@ const buildCategoryProductsPath = (
   extraParams?.forEach((value, key) => {
     if (!params.has(key)) params.set(key, value);
   });
+  if (!includeFilters && !includeTotal) params.set('card', '1');
   if (limit && limit > 0) params.set('limit', String(limit));
   if (offset > 0) params.set('offset', String(offset));
   return `/products/?${params.toString()}`;
@@ -225,6 +226,18 @@ const normalizeProductListResponse = (response: ProductListResponse): { products
   };
 };
 
+const placeProductsAtOffset = (current: Product[], incoming: Product[], offset: number): Product[] => {
+  if (current.length === 0) return incoming;
+  const seen = new Set(current.map((product) => Number(product.id)));
+  const next = offset <= 0 ? [...incoming] : [...current];
+  incoming.forEach((product) => {
+    if (seen.has(Number(product.id))) return;
+    seen.add(Number(product.id));
+    next.push(product);
+  });
+  return next;
+};
+
 type CategoryPageSnapshot = {
   ts: number;
   category: Category | null;
@@ -234,22 +247,23 @@ type CategoryPageSnapshot = {
   availableFilters: FilterType[];
 };
 
-const getCategoryPageSnapshotKey = (slug = '', subSlug = '', linkedBedSize = '') =>
-  `${CATEGORY_PAGE_SNAPSHOT_PREFIX}${slug}|${subSlug}|${linkedBedSize}`;
+const getCategoryPageSnapshotKey = (slug = '', subSlug = '', linkedBedSize = '', page = 1) =>
+  `${CATEGORY_PAGE_SNAPSHOT_PREFIX}${slug}|${subSlug}|${linkedBedSize}|${page}`;
 
 const readCategoryPageSnapshot = (
   slug?: string,
   subSlug = '',
-  linkedBedSize = ''
+  linkedBedSize = '',
+  page = 1
 ): CategoryPageSnapshot | null => {
   if (typeof window === 'undefined' || !slug) return null;
   try {
-    const raw = window.sessionStorage.getItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize));
+    const raw = window.sessionStorage.getItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page));
     if (!raw) return null;
     const snapshot = JSON.parse(raw) as CategoryPageSnapshot;
     if (!snapshot || typeof snapshot.ts !== 'number') return null;
     if (Date.now() - snapshot.ts > CATEGORY_PAGE_SNAPSHOT_MS) {
-      window.sessionStorage.removeItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize));
+      window.sessionStorage.removeItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page));
       return null;
     }
     return snapshot;
@@ -262,12 +276,13 @@ const writeCategoryPageSnapshot = (
   slug: string | undefined,
   subSlug: string,
   linkedBedSize: string,
+  page: number,
   snapshot: Omit<CategoryPageSnapshot, 'ts'>
 ) => {
   if (typeof window === 'undefined' || !slug) return;
   try {
     window.sessionStorage.setItem(
-      getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize),
+      getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page),
       JSON.stringify({ ...snapshot, ts: Date.now() })
     );
   } catch {
@@ -292,8 +307,8 @@ const CategoryPage = () => {
   const pageFromQuery = parsePageParam(searchParams.get('page'));
   const returnTo = `${location.pathname}${location.search}`;
   const initialSnapshot = useMemo(
-    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize),
-    [linkedBedSize, slug, subSlug]
+    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery),
+    [linkedBedSize, pageFromQuery, slug, subSlug]
   );
   const [category, setCategory] = useState<Category | null>(initialSnapshot?.category ?? null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>(initialSnapshot?.subcategories ?? []);
@@ -377,7 +392,7 @@ const CategoryPage = () => {
     let cancelled = false;
 
     const load = async () => {
-      const cachedSnapshot = readCategoryPageSnapshot(slug, subSlug, linkedBedSize);
+      const cachedSnapshot = readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery);
       let latestFilters = cachedSnapshot?.availableFilters ?? [];
 
       setLoadError(false);
@@ -427,7 +442,19 @@ const CategoryPage = () => {
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
+        const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
 
+        const fastProductsPromise = apiGet<ProductListResponse>(
+          buildCategoryProductsPath(
+            initialResolvedSlug,
+            subSlug,
+            false,
+            shouldLoadSizes,
+            INITIAL_PRODUCTS_LIMIT,
+            initialOffset
+          ),
+          apiOptions
+        );
         const initialProductsPromise = apiGet<ProductListResponse>(
           buildCategoryProductsPath(
             initialResolvedSlug,
@@ -435,7 +462,7 @@ const CategoryPage = () => {
             true,
             shouldLoadSizes,
             INITIAL_PRODUCTS_LIMIT,
-            0,
+            initialOffset,
             serverFilterParams,
             true
           ),
@@ -446,16 +473,16 @@ const CategoryPage = () => {
           apiOptions
         );
         if (!cachedSnapshot) {
-          void initialProductsPromise
+          void fastProductsPromise
             .then((productsRes) => {
               if (cancelled) return;
               const { products: initialProducts, count: initialCount } = normalizeProductListResponse(productsRes);
               if (initialProducts.length === 0) return;
-              const orderedInitialProducts = orderProducts(initialProducts, []);
+              const orderedInitialProducts = placeProductsAtOffset([], initialProducts, initialOffset);
               setTotalProductCount(initialCount ?? initialProducts.length);
               setAllProducts(orderedInitialProducts);
               setIsLoading(false);
-              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, {
+              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
                 category: null,
                 subcategories: [],
                 products: orderedInitialProducts,
@@ -504,7 +531,7 @@ const CategoryPage = () => {
                 true,
                 shouldRetryWithSizes,
                 INITIAL_PRODUCTS_LIMIT,
-                0,
+                initialOffset,
                 serverFilterParams,
                 true
               ),
@@ -516,9 +543,9 @@ const CategoryPage = () => {
 
         const { products: normalizedProducts, count } = normalizeProductListResponse(productsRes);
         setTotalProductCount(count ?? normalizedProducts.length);
-        const orderedProducts = orderProducts(normalizedProducts, resolvedSubcategories);
+        const orderedProducts = placeProductsAtOffset([], normalizedProducts, initialOffset);
         setAllProducts(orderedProducts);
-        writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, {
+        writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
           category: categoryItem,
           subcategories: resolvedSubcategories,
           products: orderedProducts,
@@ -537,6 +564,10 @@ const CategoryPage = () => {
           const expectedTotal = count ?? Number.MAX_SAFE_INTEGER;
           const loadProductBatch = async (offset: number) => {
             if (cancelled) return;
+            if (offset === initialOffset) {
+              void loadProductBatch(offset + BACKGROUND_PRODUCTS_BATCH_SIZE);
+              return;
+            }
             if (loadedProductIds.size >= expectedTotal) return;
             try {
               const batchRes = await apiGet<ProductListResponse>(
@@ -556,14 +587,13 @@ const CategoryPage = () => {
               if (batchProducts.length === 0) return;
 
               setAllProducts((prevProducts) => {
-                const merged = [...prevProducts];
-                for (const product of batchProducts) {
-                  if (loadedProductIds.has(product.id)) continue;
+                const freshBatchProducts = batchProducts.filter((product) => {
+                  if (loadedProductIds.has(product.id)) return false;
                   loadedProductIds.add(product.id);
-                  merged.push(product);
-                }
-                const orderedMerged = orderProducts(merged, resolvedSubcategories);
-                writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, {
+                  return true;
+                });
+                const orderedMerged = placeProductsAtOffset(prevProducts, freshBatchProducts, offset);
+                writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
                   category: categoryItem,
                   subcategories: resolvedSubcategories,
                   products: orderedMerged,
@@ -581,7 +611,7 @@ const CategoryPage = () => {
             }
           };
 
-          void loadProductBatch(INITIAL_PRODUCTS_LIMIT);
+          void loadProductBatch(0);
         }
 
         void (needsSlugRetry
@@ -598,7 +628,7 @@ const CategoryPage = () => {
             } else {
               setAvailableFilters([]);
             }
-            writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, {
+            writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
               category: categoryItem,
               subcategories: resolvedSubcategories,
               products: orderedProducts,
@@ -627,7 +657,7 @@ const CategoryPage = () => {
     return () => {
       cancelled = true;
     };
-  }, [linkedBedSize, serverFilterParamsKey, slug, subSlug]);
+  }, [linkedBedSize, pageFromQuery, serverFilterParamsKey, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {
@@ -872,20 +902,23 @@ const CategoryPage = () => {
     return products;
   }, [allProducts, priceRange, selectedFilters, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE));
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
     (priceRange[0] > priceBounds.min || priceRange[1] < priceBounds.max) ||
     Boolean(showBedSizeFilter && linkedBedSize) ||
     Object.values(selectedFilters).some((values) => values.length > 0);
   const displayProductCount = hasClientSideFilters ? filteredProducts.length : totalProductCount ?? filteredProducts.length;
+  const totalPages = Math.max(1, Math.ceil(displayProductCount / PRODUCTS_PER_PAGE));
   const displayRangeStart = displayProductCount === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
   const displayRangeEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, displayProductCount);
 
   const paginatedProducts = useMemo(() => {
+    if (!hasClientSideFilters) {
+      return filteredProducts.slice(0, PRODUCTS_PER_PAGE);
+    }
     const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
     return filteredProducts.slice(start, start + PRODUCTS_PER_PAGE);
-  }, [currentPage, filteredProducts]);
+  }, [currentPage, filteredProducts, hasClientSideFilters]);
 
   useEffect(() => {
     setCurrentPage((prev) => (prev === pageFromQuery ? prev : pageFromQuery));
