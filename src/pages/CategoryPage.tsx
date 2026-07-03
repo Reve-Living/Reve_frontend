@@ -222,6 +222,18 @@ const buildProductFiltersPath = (categorySlug: string, subSlug: string): string 
   return `/products/filters/${query ? `?${query}` : ''}`;
 };
 
+const buildServerFilterParams = (searchParams: URLSearchParams): URLSearchParams => {
+  const params = new URLSearchParams();
+  searchParams.forEach((value, key) => {
+    if (key.startsWith(FILTER_PARAM_PREFIX)) {
+      params.append(key.slice(FILTER_PARAM_PREFIX.length), value);
+      return;
+    }
+    if (!FILTER_RESERVED_PARAM_KEYS.has(key)) params.append(key, value);
+  });
+  return params;
+};
+
 type ProductListResponse = Product[] | { count?: number; results?: Product[] };
 
 const normalizeProductListResponse = (response: ProductListResponse): { products: Product[]; count?: number } => {
@@ -253,23 +265,24 @@ type CategoryPageSnapshot = {
   availableFilters: FilterType[];
 };
 
-const getCategoryPageSnapshotKey = (slug = '', subSlug = '', linkedBedSize = '', page = 1) =>
-  `${CATEGORY_PAGE_SNAPSHOT_PREFIX}${slug}|${subSlug}|${linkedBedSize}|${page}`;
+const getCategoryPageSnapshotKey = (slug = '', subSlug = '', linkedBedSize = '', page = 1, productKey = '') =>
+  `${CATEGORY_PAGE_SNAPSHOT_PREFIX}${slug}|${subSlug}|${linkedBedSize}|${page}|${productKey}`;
 
 const readCategoryPageSnapshot = (
   slug?: string,
   subSlug = '',
   linkedBedSize = '',
-  page = 1
+  page = 1,
+  productKey = ''
 ): CategoryPageSnapshot | null => {
   if (typeof window === 'undefined' || !slug) return null;
   try {
-    const raw = window.sessionStorage.getItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page));
+    const raw = window.sessionStorage.getItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey));
     if (!raw) return null;
     const snapshot = JSON.parse(raw) as CategoryPageSnapshot;
     if (!snapshot || typeof snapshot.ts !== 'number') return null;
     if (Date.now() - snapshot.ts > CATEGORY_PAGE_SNAPSHOT_MS) {
-      window.sessionStorage.removeItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page));
+      window.sessionStorage.removeItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey));
       return null;
     }
     return snapshot;
@@ -283,12 +296,13 @@ const writeCategoryPageSnapshot = (
   subSlug: string,
   linkedBedSize: string,
   page: number,
+  productKey: string,
   snapshot: Omit<CategoryPageSnapshot, 'ts'>
 ) => {
   if (typeof window === 'undefined' || !slug) return;
   try {
     window.sessionStorage.setItem(
-      getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page),
+      getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey),
       JSON.stringify({ ...snapshot, ts: Date.now() })
     );
   } catch {
@@ -307,9 +321,11 @@ const CategoryPage = () => {
   const sortFromQuery = normalizeSortParam(searchParams.get('sort'));
   const pageFromQuery = parsePageParam(searchParams.get('page'));
   const returnTo = `${location.pathname}${location.search}`;
+  const serverFilterParams = useMemo(() => buildServerFilterParams(searchParams), [searchParams, searchParamsKey]);
+  const serverFilterParamsKey = serverFilterParams.toString();
   const initialSnapshot = useMemo(
-    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery),
-    [linkedBedSize, pageFromQuery, slug, subSlug]
+    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey),
+    [linkedBedSize, pageFromQuery, serverFilterParamsKey, slug, subSlug]
   );
   const [category, setCategory] = useState<Category | null>(initialSnapshot?.category ?? null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>(initialSnapshot?.subcategories ?? []);
@@ -328,18 +344,6 @@ const CategoryPage = () => {
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
 
   const isMattressCategory = (s: string | undefined) => s === 'mattress' || s === 'mattresses';
-  const serverFilterParams = useMemo(() => {
-    const params = new URLSearchParams();
-    searchParams.forEach((value, key) => {
-      if (key.startsWith(FILTER_PARAM_PREFIX)) {
-        params.append(key.slice(FILTER_PARAM_PREFIX.length), value);
-        return;
-      }
-      if (!FILTER_RESERVED_PARAM_KEYS.has(key)) params.append(key, value);
-    });
-    return params;
-  }, [searchParams, searchParamsKey]);
-  const serverFilterParamsKey = serverFilterParams.toString();
 
   const showSizeFilter = category?.slug === 'beds';
   const showBedSizeFilter = isMattressCategory(category?.slug) && !!linkedBedSize;
@@ -372,7 +376,7 @@ const CategoryPage = () => {
     let cancelled = false;
 
     const load = async () => {
-      const cachedSnapshot = readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery);
+      const cachedSnapshot = readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey);
       let latestFilters = cachedSnapshot?.availableFilters ?? [];
 
       setLoadError(false);
@@ -396,11 +400,19 @@ const CategoryPage = () => {
         setIsLoading(false);
         setIsFiltersLoading(false);
       } else {
+        const currentCategorySlug = (category?.slug || '').trim().toLowerCase();
+        const requestedSlug = (slug || '').trim().toLowerCase();
+        const isSameCategory =
+          currentCategorySlug === requestedSlug ||
+          (requestedSlug === 'mattress' && currentCategorySlug === 'mattresses') ||
+          (requestedSlug === 'mattresses' && currentCategorySlug === 'mattress');
         setIsLoading(true);
-        setIsFiltersLoading(true);
-        setAllProducts([]);
-        setTotalProductCount(null);
-        setAvailableFilters([]);
+        setIsFiltersLoading(availableFilters.length === 0);
+        if (!isSameCategory) {
+          setAllProducts([]);
+          setTotalProductCount(null);
+          setAvailableFilters([]);
+        }
       }
 
       const apiOptions = cachedSnapshot
@@ -451,7 +463,7 @@ const CategoryPage = () => {
               setTotalProductCount(initialCount ?? null);
               setAllProducts(orderedInitialProducts);
               setIsLoading(false);
-              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
+              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey, {
                 category: null,
                 subcategories: [],
                 products: orderedInitialProducts,
@@ -514,7 +526,7 @@ const CategoryPage = () => {
         setTotalProductCount(count ?? normalizedProducts.length);
         const orderedProducts = placeProductsAtOffset([], normalizedProducts, initialOffset);
         setAllProducts(orderedProducts);
-        writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
+        writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey, {
           category: categoryItem,
           subcategories: resolvedSubcategories,
           products: orderedProducts,
@@ -542,7 +554,7 @@ const CategoryPage = () => {
             } else {
               setAvailableFilters([]);
             }
-            writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, {
+            writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey, {
               category: categoryItem,
               subcategories: resolvedSubcategories,
               products: orderedProducts,
