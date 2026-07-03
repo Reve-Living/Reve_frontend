@@ -48,7 +48,6 @@ const CategoryGrid = () => {
     const params = new URLSearchParams({ summary: '1' });
     if (subcategory) params.set('subcategory', subcategory);
     else params.set('category', category);
-    params.set('include_filters', '1');
     if (['beds', 'mattress', 'mattresses'].includes(category.toLowerCase())) params.set('include_sizes', '1');
     params.set('include_total', '1');
     params.set('limit', '18');

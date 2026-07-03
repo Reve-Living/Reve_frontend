@@ -18,6 +18,7 @@ type ApiGetOptions = {
   staleWhileRevalidate?: boolean;
   maxStaleMs?: number;
   onUpdate?: (data: unknown) => void;
+  signal?: AbortSignal;
 };
 
 const normalizeGetCacheKey = (path: string) => {
@@ -103,6 +104,7 @@ const buildHeaders = (hasBody: boolean, requiresAuth: boolean = false) => {
 export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Promise<T> => {
   const cacheKey = normalizeGetCacheKey(path);
   const shouldBypassCache = options.noStore === true || isVolatilePath(path);
+  const canDeduplicate = true;
   const cacheTtlMs = getCacheTtlMs(path);
   const maxStaleMs = options.maxStaleMs ?? cacheTtlMs;
 
@@ -110,6 +112,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     fetchWithTimeout(`${API_BASE_URL}${path}`, {
       headers: buildHeaders(false),
       cache: "no-store",
+      signal: options.signal,
     }).then(async (res) => {
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as T;
@@ -141,7 +144,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   }
 
   if (options.staleWhileRevalidate && cached && now - cached.ts < maxStaleMs) {
-    if (!inFlight.has(cacheKey)) {
+    if (canDeduplicate && !inFlight.has(cacheKey)) {
       const refreshPromise = fetchAndCache();
       inFlight.set(cacheKey, refreshPromise);
       void refreshPromise.then((data) => options.onUpdate?.(cloneData(data))).catch(() => undefined);
@@ -158,7 +161,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     ? readSessionCache<T>(cacheKey, maxStaleMs)
     : null;
   if (staleSessionCached !== null) {
-    if (!inFlight.has(cacheKey)) {
+    if (canDeduplicate && !inFlight.has(cacheKey)) {
       const refreshPromise = fetchAndCache();
       inFlight.set(cacheKey, refreshPromise);
       void refreshPromise.then((data) => options.onUpdate?.(cloneData(data))).catch(() => undefined);
@@ -167,20 +170,31 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   }
 
   // Deduplicate concurrent requests
-  if (inFlight.has(cacheKey)) {
+  if (canDeduplicate && inFlight.has(cacheKey)) {
     return (await inFlight.get(cacheKey)) as T;
   }
 
   const fetchPromise = fetchAndCache();
 
-  inFlight.set(cacheKey, fetchPromise);
+  if (canDeduplicate) {
+    inFlight.set(cacheKey, fetchPromise);
+  }
   return (await fetchPromise) as T;
 };
 
 const fetchWithTimeout = (url: string, options: RequestInit, timeoutMs = 12000) => {
   const controller = new AbortController();
+  const externalSignal = options.signal;
+  const abortFromExternal = () => controller.abort();
+  if (externalSignal) {
+    if (externalSignal.aborted) controller.abort();
+    else externalSignal.addEventListener("abort", abortFromExternal, { once: true });
+  }
   const id = setTimeout(() => controller.abort(), timeoutMs);
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id));
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => {
+    clearTimeout(id);
+    externalSignal?.removeEventListener("abort", abortFromExternal);
+  });
 };
 
 const runMutation = async <T>(

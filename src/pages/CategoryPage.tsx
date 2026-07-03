@@ -24,6 +24,7 @@ const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 5 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v3:';
+const FILTER_PREFETCH_LIMIT = 36;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -146,6 +147,11 @@ const recordsEqual = (
 
 const rangesEqual = (left: number[], right: number[]): boolean =>
   left.length === right.length && left.every((value, index) => value === right[index]);
+
+const isAbortError = (error: unknown): boolean =>
+  error instanceof DOMException
+    ? error.name === 'AbortError'
+    : error instanceof Error && error.name === 'AbortError';
 
 const toQuerySlug = (value?: string): string =>
   String(value || '')
@@ -310,6 +316,23 @@ const writeCategoryPageSnapshot = (
   }
 };
 
+const ProductGridSkeleton = ({ count = 6 }: { count?: number }) => (
+  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+    {Array.from({ length: count }, (_, index) => (
+      <div key={index} className="overflow-hidden rounded-2xl border border-border/60 bg-card">
+        <div className="aspect-[4/3] animate-pulse bg-muted/70" />
+        <div className="space-y-4 p-5">
+          <div className="h-4 w-2/3 animate-pulse rounded bg-muted/70" />
+          <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
+          <div className="h-3 w-4/5 animate-pulse rounded bg-muted/60" />
+          <div className="h-5 w-24 animate-pulse rounded bg-muted/70" />
+          <div className="h-10 w-full animate-pulse rounded bg-muted/60" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const CategoryPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const location = useLocation();
@@ -323,9 +346,14 @@ const CategoryPage = () => {
   const returnTo = `${location.pathname}${location.search}`;
   const serverFilterParams = useMemo(() => buildServerFilterParams(searchParams), [searchParams, searchParamsKey]);
   const serverFilterParamsKey = serverFilterParams.toString();
+  const [debouncedServerFilterParamsKey, setDebouncedServerFilterParamsKey] = useState(serverFilterParamsKey);
+  const debouncedServerFilterParams = useMemo(
+    () => new URLSearchParams(debouncedServerFilterParamsKey),
+    [debouncedServerFilterParamsKey]
+  );
   const initialSnapshot = useMemo(
-    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey),
-    [linkedBedSize, pageFromQuery, serverFilterParamsKey, slug, subSlug]
+    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey),
+    [debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, slug, subSlug]
   );
   const [category, setCategory] = useState<Category | null>(initialSnapshot?.category ?? null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>(initialSnapshot?.subcategories ?? []);
@@ -373,10 +401,25 @@ const CategoryPage = () => {
   }, [allProducts, showSizeFilter]);
 
   useEffect(() => {
+    const delay = serverFilterParamsKey ? 80 : 0;
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedServerFilterParamsKey(serverFilterParamsKey);
+    }, delay);
+    return () => window.clearTimeout(timeoutId);
+  }, [serverFilterParamsKey]);
+
+  useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     const load = async () => {
-      const cachedSnapshot = readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey);
+      const cachedSnapshot = readCategoryPageSnapshot(
+        slug,
+        subSlug,
+        linkedBedSize,
+        pageFromQuery,
+        debouncedServerFilterParamsKey
+      );
       let latestFilters = cachedSnapshot?.availableFilters ?? [];
 
       setLoadError(false);
@@ -391,6 +434,13 @@ const CategoryPage = () => {
         return;
       }
 
+      const currentCategorySlug = (category?.slug || '').trim().toLowerCase();
+      const requestedSlug = (slug || '').trim().toLowerCase();
+      const isSameCategory =
+        currentCategorySlug === requestedSlug ||
+        (requestedSlug === 'mattress' && currentCategorySlug === 'mattresses') ||
+        (requestedSlug === 'mattresses' && currentCategorySlug === 'mattress');
+
       if (cachedSnapshot) {
         setCategory(cachedSnapshot.category);
         setSubcategories(cachedSnapshot.subcategories);
@@ -400,12 +450,6 @@ const CategoryPage = () => {
         setIsLoading(false);
         setIsFiltersLoading(false);
       } else {
-        const currentCategorySlug = (category?.slug || '').trim().toLowerCase();
-        const requestedSlug = (slug || '').trim().toLowerCase();
-        const isSameCategory =
-          currentCategorySlug === requestedSlug ||
-          (requestedSlug === 'mattress' && currentCategorySlug === 'mattresses') ||
-          (requestedSlug === 'mattresses' && currentCategorySlug === 'mattress');
         setIsFiltersLoading(availableFilters.length === 0);
         if (!isSameCategory) {
           setIsLoading(true);
@@ -413,16 +457,15 @@ const CategoryPage = () => {
           setTotalProductCount(null);
           setAvailableFilters([]);
         } else {
-          setIsLoading(false);
+          setIsLoading(true);
         }
       }
 
-      const apiOptions = cachedSnapshot
-        ? { noStore: true }
-        : {
-            staleWhileRevalidate: true,
-            maxStaleMs: CATEGORY_STALE_CACHE_MS,
-          };
+      const apiOptions = {
+        staleWhileRevalidate: true,
+        maxStaleMs: CATEGORY_STALE_CACHE_MS,
+        signal: controller.signal,
+      };
 
       try {
         const findCategoryBySlug = (categories: Category[], candidate: string) =>
@@ -436,10 +479,9 @@ const CategoryPage = () => {
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
-        const hasServerFilters = serverFilterParamsKey.length > 0;
-        const productRequestLimit = hasServerFilters ? 100 : INITIAL_PRODUCTS_LIMIT;
-        const initialOffset = hasServerFilters ? 0 : (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
-        const shouldIncludeTotal = !hasServerFilters;
+        const productRequestLimit = INITIAL_PRODUCTS_LIMIT;
+        const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
+        const shouldIncludeTotal = true;
 
         const initialProductsPromise = apiGet<ProductListResponse>(
           buildCategoryProductsPath(
@@ -449,16 +491,19 @@ const CategoryPage = () => {
             shouldLoadSizes,
             productRequestLimit,
             initialOffset,
-            serverFilterParams,
+            debouncedServerFilterParams,
             shouldIncludeTotal
           ),
           apiOptions
         );
-        const initialFiltersPromise = apiGet<{ filters: FilterType[] }>(
-          buildProductFiltersPath(initialResolvedSlug, subSlug),
-          apiOptions
-        );
-        if (!cachedSnapshot) {
+        const shouldRequestFilterDefinitions = !cachedSnapshot && (!isSameCategory || availableFilters.length === 0);
+        const initialFiltersPromise = shouldRequestFilterDefinitions
+          ? apiGet<{ filters: FilterType[] }>(
+              buildProductFiltersPath(initialResolvedSlug, subSlug),
+              apiOptions
+            )
+          : Promise.resolve({ filters: latestFilters });
+        if (shouldRequestFilterDefinitions) {
           void initialFiltersPromise
             .then((filtersRes) => {
               if (cancelled) return;
@@ -484,7 +529,7 @@ const CategoryPage = () => {
               setTotalProductCount(initialCount ?? null);
               setAllProducts(orderedInitialProducts);
               setIsLoading(false);
-              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey, {
+              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
                 category: null,
                 subcategories: [],
                 products: orderedInitialProducts,
@@ -534,7 +579,7 @@ const CategoryPage = () => {
                 shouldRetryWithSizes,
                 productRequestLimit,
                 initialOffset,
-                serverFilterParams,
+                debouncedServerFilterParams,
                 shouldIncludeTotal
               ),
               apiOptions
@@ -547,7 +592,7 @@ const CategoryPage = () => {
         setTotalProductCount(count ?? normalizedProducts.length);
         const orderedProducts = placeProductsAtOffset([], normalizedProducts, initialOffset);
         setAllProducts(orderedProducts);
-        writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey, {
+        writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
           category: categoryItem,
           subcategories: resolvedSubcategories,
           products: orderedProducts,
@@ -560,6 +605,11 @@ const CategoryPage = () => {
         }
 
         setIsLoading(false);
+
+        if (!shouldRequestFilterDefinitions) {
+          setIsFiltersLoading(false);
+          return;
+        }
 
         void (needsSlugRetry
           ? apiGet<{ filters: FilterType[] }>(
@@ -575,7 +625,7 @@ const CategoryPage = () => {
             } else {
               setAvailableFilters([]);
             }
-            writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, serverFilterParamsKey, {
+            writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
               category: categoryItem,
               subcategories: resolvedSubcategories,
               products: orderedProducts,
@@ -589,11 +639,14 @@ const CategoryPage = () => {
           .finally(() => {
             setIsFiltersLoading(false);
           });
-      } catch {
+      } catch (error) {
+        if (cancelled || isAbortError(error)) return;
         setCategory(null);
         setSubcategories([]);
-        setAllProducts([]);
-        setTotalProductCount(null);
+        if (!isSameCategory) {
+          setAllProducts([]);
+          setTotalProductCount(null);
+        }
         setAvailableFilters([]);
         setLoadError(true);
         setIsLoading(false);
@@ -603,8 +656,62 @@ const CategoryPage = () => {
     load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, [linkedBedSize, pageFromQuery, serverFilterParamsKey, slug, subSlug]);
+  }, [debouncedServerFilterParams, debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, slug, subSlug]);
+
+  useEffect(() => {
+    if (!slug || availableFilters.length === 0) return;
+    const categorySlug = category?.slug || slug;
+    const includeSizes = shouldRequestSizesForCategory(categorySlug, linkedBedSize);
+    const prefetchTargets = availableFilters
+      .flatMap((filter) =>
+        (filter.options || [])
+          .filter((option) => (option.product_count ?? 1) > 0)
+          .map((option) => ({ filterSlug: filter.slug, optionSlug: option.slug }))
+      )
+      .slice(0, FILTER_PREFETCH_LIMIT);
+
+    if (prefetchTargets.length === 0) return;
+
+    let cancelled = false;
+    const warmFilterResults = async () => {
+      for (let index = 0; index < prefetchTargets.length && !cancelled; index += 4) {
+        const batch = prefetchTargets.slice(index, index + 4);
+        await Promise.allSettled(
+          batch.map(({ filterSlug, optionSlug }) => {
+            const params = new URLSearchParams();
+            params.set(filterSlug, optionSlug);
+            return apiGet<ProductListResponse>(
+              buildCategoryProductsPath(
+                categorySlug,
+                subSlug,
+                false,
+                includeSizes,
+                INITIAL_PRODUCTS_LIMIT,
+                0,
+                params,
+                true
+              ),
+              {
+                staleWhileRevalidate: true,
+                maxStaleMs: CATEGORY_STALE_CACHE_MS,
+              }
+            );
+          })
+        );
+      }
+    };
+
+    const timeoutId = window.setTimeout(() => {
+      void warmFilterResults();
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [availableFilters, category?.slug, linkedBedSize, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {
@@ -672,6 +779,7 @@ const CategoryPage = () => {
     const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
     setCurrentPage(clampedPage);
     updatePageInSearch(clampedPage, replace);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSortChange = (value: string) => {
@@ -842,7 +950,6 @@ const CategoryPage = () => {
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
     hasPriceFilter ||
-    serverFilterParamsKey.length > 0 ||
     Boolean(showBedSizeFilter && linkedBedSize);
   const displayProductCount = hasClientSideFilters
     ? filteredProducts.length
@@ -870,10 +977,6 @@ const CategoryPage = () => {
       goToPage(totalPages, true);
     }
   }, [currentPage, totalPages, isLoading, hasClientSideFilters, totalProductCount]);
-
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [currentPage]);
 
   const hasData = Boolean(category) || allProducts.length > 0;
 
@@ -1061,9 +1164,7 @@ const CategoryPage = () => {
 
             <div className="flex-1">
               {isLoading && filteredProducts.length === 0 ? (
-                <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
-                  <div className="text-center text-muted-foreground">Loading products...</div>
-                </div>
+                <ProductGridSkeleton />
               ) : filteredProducts.length === 0 ? (
                 <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
                   <div className="text-center">
@@ -1087,6 +1188,7 @@ const CategoryPage = () => {
                     />
                   ))}
                   </div>
+                  {isLoading && <div className="mt-6"><ProductGridSkeleton count={3} /></div>}
 
                   {totalPages > 1 && (
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-3">

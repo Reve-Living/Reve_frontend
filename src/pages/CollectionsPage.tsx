@@ -75,7 +75,6 @@ const CollectionsPage = () => {
     const params = new URLSearchParams({ summary: '1' });
     if (subcategorySlug) params.set('subcategory', subcategorySlug);
     else params.set('category', categorySlug);
-    params.set('include_filters', '1');
     if (['beds', 'mattress', 'mattresses'].includes(categorySlug.toLowerCase())) params.set('include_sizes', '1');
     params.set('include_total', '1');
     params.set('limit', '18');
