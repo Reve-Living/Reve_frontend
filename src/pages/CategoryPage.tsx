@@ -23,7 +23,7 @@ const PRODUCTS_PER_PAGE = 18;
 const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 5 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 60 * 1000;
-const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v2:';
+const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v3:';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -445,7 +445,7 @@ const CategoryPage = () => {
           buildCategoryProductsPath(
             initialResolvedSlug,
             subSlug,
-            false,
+            true,
             shouldLoadSizes,
             productRequestLimit,
             initialOffset,
@@ -530,7 +530,7 @@ const CategoryPage = () => {
               buildCategoryProductsPath(
                 resolvedSlug,
                 subSlug,
-                false,
+                true,
                 shouldRetryWithSizes,
                 productRequestLimit,
                 initialOffset,
@@ -821,6 +821,17 @@ const CategoryPage = () => {
       );
     }
 
+    const selectedFilterEntries = Object.entries(selectedFilters).filter(([, values]) => values.length > 0);
+    if (selectedFilterEntries.length > 0) {
+      products = products.filter((p) => {
+        const values = p.filter_values || [];
+        if (values.length === 0) return false;
+        return selectedFilterEntries.every(([filterSlug, optionSlugs]) =>
+          values.some((value) => value.filter_type === filterSlug && optionSlugs.includes(value.option))
+        );
+      });
+    }
+
     switch (sortBy) {
       case 'price-low':
         products.sort((a, b) => a.price - b.price);
@@ -837,7 +848,7 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
+  }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, selectedFilters, sortBy]);
 
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
