@@ -210,7 +210,6 @@ const buildCategoryProductsPath = (
   extraParams?.forEach((value, key) => {
     if (!params.has(key)) params.set(key, value);
   });
-  if (!includeFilters && !includeTotal) params.set('card', '1');
   if (limit && limit > 0) params.set('limit', String(limit));
   if (offset > 0) params.set('offset', String(offset));
   return `/products/?${params.toString()}`;
