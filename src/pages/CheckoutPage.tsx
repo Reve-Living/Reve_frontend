@@ -33,6 +33,7 @@ type ReferenceImageUpload = {
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
 const REFERENCE_IMAGE_ACCEPT = 'image/webp,image/*';
+const GOOGLE_ADS_PURCHASE_SEND_TO = 'AW-18061556705/LvLrCJuqkJccEOH3taRD';
 
 const splitFullName = (fullName: string) => {
   const parts = fullName
@@ -295,6 +296,41 @@ const formatOrderDateTime = (value?: string | null) => {
   });
 };
 
+const buildGoogleUserData = (
+  order: Order | null,
+  fallback: {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    postcode: string;
+  }
+) => {
+  const splitName = splitFullName(fallback.fullName);
+  const firstName = (order?.first_name || splitName.firstName || '').trim();
+  const lastName = (order?.last_name || splitName.lastName || '').trim();
+  const email = (order?.email || fallback.email || localStorage.getItem('last_order_email') || '').trim();
+  const phone = (order?.phone || fallback.phone || '').trim();
+  const address = (order?.address || fallback.address || '').trim();
+  const city = (order?.city || fallback.city || '').trim();
+  const postalCode = (order?.postal_code || fallback.postcode || '').trim();
+  const userData: Record<string, unknown> = {};
+  const addressData: Record<string, string> = {};
+
+  if (email) userData.email = email;
+  if (phone) userData.phone_number = phone;
+  if (firstName) addressData.first_name = firstName;
+  if (lastName) addressData.last_name = lastName;
+  if (address) addressData.street = address;
+  if (city) addressData.city = city;
+  if (postalCode) addressData.postal_code = postalCode;
+  addressData.country = 'GB';
+  if (Object.keys(addressData).length > 1) userData.address = addressData;
+
+  return userData;
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const {
@@ -470,9 +506,13 @@ const CheckoutPage = () => {
     // Convert values to numbers
     const totalValue = Number(lastOrderTotal.toFixed(2));
     const shippingValue = Number(lastDeliveryFee.toFixed(2));
+    const userData = buildGoogleUserData(confirmedOrder, formData);
     
     // 🔥 USE gtag() DIRECTLY - THIS GOES STRAIGHT TO GA4
     if (typeof gtag !== 'undefined') {
+      if (Object.keys(userData).length > 0) {
+        gtag('set', 'user_data', userData);
+      }
       gtag('event', 'purchase', {
         transaction_id: String(lastOrderId || ""),
         affiliation: "Reve Living",
@@ -495,6 +535,12 @@ const CheckoutPage = () => {
         currency: "GBP",
         items_count: lastOrderItems.length
       });
+      gtag('event', 'conversion', {
+        send_to: GOOGLE_ADS_PURCHASE_SEND_TO,
+        value: totalValue,
+        currency: "GBP",
+        transaction_id: String(lastOrderId || "")
+      });
     } else {
       console.error('🚨 gtag not available');
     }
@@ -503,6 +549,7 @@ const CheckoutPage = () => {
     const purchaseEvent = {
       event: "purchase",
       transaction_id: String(lastOrderId || ""),
+      user_data: userData,
       value: totalValue,
       currency: "GBP",
       ecommerce: {
@@ -529,7 +576,7 @@ const CheckoutPage = () => {
     localStorage.removeItem('last_order_total');
     localStorage.removeItem('last_delivery_fee');
   }
-}, [confirmationEmailSent, step]);
+}, [confirmationEmailSent, confirmedOrder, formData, step]);
   useEffect(() => {
     setPromoCode(state.appliedPromo?.code || '');
   }, [state.appliedPromo?.code]);
