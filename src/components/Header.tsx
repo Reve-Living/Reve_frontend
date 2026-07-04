@@ -35,6 +35,16 @@ const TRUST_BADGES = [
 ] as const;
 const SEARCH_ROOT_SELECTOR = '[data-header-search]';
 
+type ProductListResponse = Product[] | { results?: Product[] };
+
+const normalizeProductResults = (response: ProductListResponse): Product[] =>
+  Array.isArray(response) ? response : Array.isArray(response?.results) ? response.results : [];
+
+const isAbortError = (error: unknown): boolean =>
+  error instanceof DOMException
+    ? error.name === 'AbortError'
+    : error instanceof Error && error.name === 'AbortError';
+
 const getSortOrder = (value?: number) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 
 const buildDynamicLinks = (categories: Category[]) => {
@@ -132,7 +142,6 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [navLinks, setNavLinks] = useState<
@@ -178,45 +187,40 @@ const Header = () => {
   }, []);
 
   useEffect(() => {
-    if (!isSearchOpen || allProducts.length > 0 || isLoadingSearch) return;
-
-    const loadProducts = async () => {
-      try {
-        setIsLoadingSearch(true);
-        const products = await apiGet<Product[]>('/products/?summary=1');
-        setAllProducts(products);
-      } catch {
-        setAllProducts([]);
-      } finally {
-        setIsLoadingSearch(false);
-      }
-    };
-
-    void loadProducts();
-  }, [allProducts.length, isLoadingSearch, isSearchOpen]);
-
-  useEffect(() => {
-    if (!normalizedSearch) {
+    if (!isSearchOpen || !normalizedSearch) {
       setSearchResults([]);
+      setIsLoadingSearch(false);
       return;
     }
 
-    const results = allProducts.filter((product) => {
-      const haystack = [
-        product.name,
-        product.category_name,
-        product.subcategory_name,
-        product.short_description,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => {
+      const params = new URLSearchParams({
+        summary: '1',
+        search: normalizedSearch,
+        limit: '12',
+      });
 
-      return haystack.includes(normalizedSearch);
-    });
+      setIsLoadingSearch(true);
+      void apiGet<ProductListResponse>(`/products/?${params.toString()}`, {
+        staleWhileRevalidate: true,
+        maxStaleMs: 5 * 60 * 1000,
+        signal: controller.signal,
+      })
+        .then((response) => setSearchResults(normalizeProductResults(response)))
+        .catch((error) => {
+          if (!isAbortError(error)) setSearchResults([]);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsLoadingSearch(false);
+        });
+    }, 180);
 
-    setSearchResults(results);
-  }, [allProducts, normalizedSearch]);
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [isSearchOpen, normalizedSearch]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
