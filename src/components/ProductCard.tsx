@@ -40,6 +40,13 @@ interface ProductCardProps {
 const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, returnTo }: ProductCardProps) => {
   // Calculate savings if there's an original price
   const savings = product.original_price ? product.original_price - product.price : 0;
+  const adminDiscountPercentage = Number(product.discount_percentage ?? 0);
+  const salePercentage =
+    adminDiscountPercentage > 0
+      ? Math.round(adminDiscountPercentage)
+      : product.original_price && savings > 0
+        ? Math.round((savings / product.original_price) * 100)
+        : 0;
   const basePrice = toFiniteNumber(product.price) ?? 0;
   const minSizePrice = toFiniteNumber(product.min_size_price);
   const summarySizeCount = toFiniteNumber(product.size_count) ?? 0;
@@ -105,9 +112,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
 
             {/* Badges */}
             <div className="absolute right-3 top-3 flex flex-col items-end gap-2">
-              {savings > 0 && product.original_price && (
+              {salePercentage > 0 && (
                 <Badge className="bg-white text-card-foreground shadow font-semibold">
-                  Sale {Math.round((savings / product.original_price) * 100)}%
+                  Sale {salePercentage}%
                 </Badge>
               )}
               {product.is_bestseller && (
@@ -128,9 +135,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
         <div className="flex flex-1 flex-col p-4 gap-3">
           {!hasImage && (
             <div className="flex flex-wrap gap-2">
-              {savings > 0 && product.original_price && (
+              {salePercentage > 0 && (
                 <Badge className="bg-white text-card-foreground shadow font-semibold">
-                  Sale {Math.round((savings / product.original_price) * 100)}%
+                  Sale {salePercentage}%
                 </Badge>
               )}
               {product.is_bestseller && (

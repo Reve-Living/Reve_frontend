@@ -8,6 +8,8 @@ export interface Category {
   show_in_collections?: boolean;
   show_in_all_collections?: boolean;
   sort_order?: number;
+  discount_override_enabled?: boolean;
+  discount_percentage?: number;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
@@ -28,6 +30,8 @@ export interface SubCategory {
   show_in_collections?: boolean;
   show_in_all_collections?: boolean;
   sort_order?: number;
+  discount_override_enabled?: boolean;
+  discount_percentage?: number;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
