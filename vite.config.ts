@@ -18,6 +18,10 @@ type ProductSeoRecord = {
   images?: { url?: string }[];
 };
 
+type ProductSeoResponse =
+  | ProductSeoRecord[]
+  | { results?: ProductSeoRecord[] };
+
 const SITE_URL = "https://www.reveliving.co.uk";
 
 const escapeHtml = (value: string) =>
@@ -26,22 +30,41 @@ const escapeHtml = (value: string) =>
 const plainText = (value = "") =>
   value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
+const sleep = (milliseconds: number) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+const loadProductSeoRecords = async (apiBaseUrl: string) => {
+  const seoUrl = `${apiBaseUrl}/products/seo/`;
+
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const response = await fetch(seoUrl, { signal: AbortSignal.timeout(60_000) });
+    if (response.ok) {
+      const payload = await response.json() as ProductSeoResponse;
+      const products = Array.isArray(payload) ? payload : payload.results;
+      if (Array.isArray(products)) return products;
+      throw new Error("Product SEO endpoint returned an unexpected response shape");
+    }
+
+    // Backend and frontend deploys can briefly overlap. Give the new SEO action
+    // time to become available instead of leaving production on an older build.
+    if (response.status !== 404 || attempt === 3) {
+      throw new Error(`Unable to load product SEO data (${response.status})`);
+    }
+    await sleep(5_000);
+  }
+
+  return [];
+};
+
 const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
   name: "product-seo-html",
   apply: "build",
   async closeBundle() {
     const normalizedApiUrl = apiBaseUrl.replace(/\/$/, "");
-    let response = await fetch(`${normalizedApiUrl}/products/seo/`, { signal: AbortSignal.timeout(60_000) });
-    // Allows the frontend's first deployment to succeed while the backend SEO endpoint is deploying.
-    if (response.status === 404) {
-      response = await fetch(`${normalizedApiUrl}/products/`, { signal: AbortSignal.timeout(60_000) });
-    }
-    if (!response.ok) {
-      throw new Error(`Unable to load product SEO data (${response.status})`);
-    }
-
-    const products = await response.json() as ProductSeoRecord[];
+    const products = await loadProductSeoRecords(normalizedApiUrl);
     const template = await fs.readFile(path.resolve(__dirname, "dist/index.html"), "utf8");
+    const outputDirectory = path.resolve(__dirname, "dist/product");
+    await fs.mkdir(outputDirectory, { recursive: true });
 
     await Promise.all(products.map(async (product) => {
       if (!/^[a-z0-9_-]+$/i.test(product.slug)) return;
@@ -90,10 +113,10 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
       ].filter(Boolean).join("\n    ");
       html = html.replace("</head>", `    ${extraHead}\n  </head>`);
 
-      const outputDirectory = path.resolve(__dirname, "dist/product");
-      await fs.mkdir(outputDirectory, { recursive: true });
       await fs.writeFile(path.join(outputDirectory, `${product.slug}.html`), html, "utf8");
     }));
+
+    console.info(`Generated crawlable HTML for ${products.length} product pages.`);
   },
 });
 
