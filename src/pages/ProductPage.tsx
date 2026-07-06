@@ -874,6 +874,20 @@ type MattressDetailView = {
       product?.short_description ||
       'Explore handcrafted furniture and made-to-order pieces from Reve Living.';
 
+    const plainDescription = seoDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    const canonicalUrl = `https://www.reveliving.co.uk/product/${encodeURIComponent(product?.slug || slug || '')}`;
+    const imageUrl = product?.images?.[0]?.url ? resolveMediaUrl(product.images[0].url) : '';
+
+    const setPropertyMeta = (property: string, content: string) => {
+      let meta = document.querySelector<HTMLMetaElement>(`meta[property="${property}"]`);
+      if (!meta) {
+        meta = document.createElement('meta');
+        meta.setAttribute('property', property);
+        document.head.appendChild(meta);
+      }
+      meta.setAttribute('content', content);
+    };
+
     document.title = seoTitle;
     let meta = document.querySelector('meta[name="description"]');
     if (!meta) {
@@ -881,8 +895,53 @@ type MattressDetailView = {
       meta.setAttribute('name', 'description');
       document.head.appendChild(meta);
     }
-    meta.setAttribute('content', seoDescription);
-  }, [product?.meta_description, product?.meta_title, product?.name, product?.short_description]);
+    meta.setAttribute('content', plainDescription);
+
+    if (!product) return;
+
+    setPropertyMeta('og:title', seoTitle);
+    setPropertyMeta('og:description', plainDescription);
+    setPropertyMeta('og:type', 'product');
+    setPropertyMeta('og:url', canonicalUrl);
+    if (imageUrl) setPropertyMeta('og:image', imageUrl);
+    setPropertyMeta('product:price:amount', String(product.price));
+    setPropertyMeta('product:price:currency', 'GBP');
+
+    let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+    if (!canonical) {
+      canonical = document.createElement('link');
+      canonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(canonical);
+    }
+    canonical.setAttribute('href', canonicalUrl);
+
+    const schemaId = 'product-json-ld';
+    let schema = document.getElementById(schemaId) as HTMLScriptElement | null;
+    if (!schema) {
+      schema = document.createElement('script');
+      schema.id = schemaId;
+      schema.type = 'application/ld+json';
+      document.head.appendChild(schema);
+    }
+    schema.textContent = JSON.stringify({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: product.name,
+      image: imageUrl ? [imageUrl] : undefined,
+      description: plainDescription,
+      url: canonicalUrl,
+      brand: { '@type': 'Brand', name: 'Reve Living' },
+      offers: {
+        '@type': 'Offer',
+        url: canonicalUrl,
+        priceCurrency: 'GBP',
+        price: String(product.price),
+        availability: product.in_stock === false || product.stock_status === 'out_of_stock'
+          ? 'https://schema.org/OutOfStock'
+          : 'https://schema.org/InStock',
+      },
+    });
+  }, [product, slug]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(true);
   const [selectedFabric, setSelectedFabric] = useState('');
