@@ -38,13 +38,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, returnTo }: ProductCardProps) => {
-  const adminDiscountPercentage = Number(product.discount_percentage ?? 0);
-  const salePercentage =
-    adminDiscountPercentage > 0
-      ? Math.round(adminDiscountPercentage)
-      : product.original_price && product.original_price > product.price
-        ? Math.round(((product.original_price - product.price) / product.original_price) * 100)
-        : 0;
+  const salePercentage = 30;
   const basePrice = toFiniteNumber(product.price) ?? 0;
   const minSizePrice = toFiniteNumber(product.min_size_price);
   const summarySizeCount = toFiniteNumber(product.size_count) ?? 0;
@@ -56,6 +50,8 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
   const summaryDisplayPrice =
     minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
   const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
+  const displaySourcePrice = toFiniteNumber(product.original_price) ?? displayBasePrice;
+  const discountedDisplayPrice = displaySourcePrice * 0.7;
   const imageUrl = product.images?.[0]?.url || "";
   const imageFlipHorizontal = Boolean(product.images?.[0]?.flip_horizontal);
   const hasImage = imageUrl.trim().length > 0;
@@ -184,9 +180,9 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              {hasMultipleSizePrices ? `From ${formatWholePrice(displayBasePrice)}` : formatWholePrice(displayBasePrice)}
+              {hasMultipleSizePrices ? `From ${formatWholePrice(discountedDisplayPrice)}` : formatWholePrice(discountedDisplayPrice)}
             </p>
-            {product.original_price && product.original_price > displayBasePrice && (
+            {product.original_price && Number(product.original_price) > 0 && (
               <p className="text-sm text-muted-foreground line-through">
                 {formatWholePrice(product.original_price)}
               </p>

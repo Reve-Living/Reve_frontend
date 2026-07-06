@@ -2267,15 +2267,10 @@ type MattressDetailView = {
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";
 
-  const adminDiscountPercentage = Number(product?.discount_percentage ?? 0);
-  const baseDiscountPercentage =
-    baseOriginalPrice && baseOriginalPrice > basePrice
-      ? Math.round((baseSavings / baseOriginalPrice) * 100)
-      : 0;
-  const discountPercentage =
-    adminDiscountPercentage > 0
-      ? Math.round(adminDiscountPercentage)
-      : baseDiscountPercentage;
+  const discountPercentage = 30;
+  const discountedUnitPrice = unitOriginalPrice !== undefined
+    ? unitOriginalPrice * 0.7
+    : unitPrice * 0.7;
 
   const bunkMattressRulesEnabled = useMemo(
     () => !kidsMattressTabsEnabled && mattresses.some((m) => m.enable_bunk_positions),
@@ -3199,7 +3194,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
                 )}
 
-                <span className="text-3xl font-bold text-primary">{formatProductTotalPrice(unitPrice)}</span>
+                <span className="text-3xl font-bold text-primary">{formatProductTotalPrice(discountedUnitPrice)}</span>
 
                 {discountPercentage > 0 && (
                   <div className="ml-8 sm:ml-12">
