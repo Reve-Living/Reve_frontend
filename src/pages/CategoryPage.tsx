@@ -23,7 +23,7 @@ const PRODUCTS_PER_PAGE = 18;
 const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 1 * 60 * 1000; // 1 minute instead of 5 minutes for fresher discount data
 const CATEGORY_PAGE_SNAPSHOT_MS = 60 * 1000;
-const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v3:';
+const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v4:';
 const FILTER_PREFETCH_SINGLE_LIMIT = 8;
 const FILTER_PREFETCH_PAIR_LIMIT = 12;
 
