@@ -204,7 +204,7 @@ const Header = () => {
       setIsLoadingSearch(true);
       void apiGet<ProductListResponse>(`/products/?${params.toString()}`, {
         staleWhileRevalidate: true,
-        maxStaleMs: 5 * 60 * 1000,
+        maxStaleMs: 1 * 60 * 1000, // 1 minute for fresher discount data
         signal: controller.signal,
       })
         .then((response) => setSearchResults(normalizeProductResults(response)))

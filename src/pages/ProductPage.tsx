@@ -773,7 +773,7 @@ const REVIEW_SECTION_ID = 'reviews';
 const REVIEW_FORM_ID = 'write-review';
 const REVIEW_MEDIA_ACCEPT = 'image/*,video/*';
 const MAX_REVIEW_MEDIA = 6;
-const PRODUCT_STALE_CACHE_MS = 5 * 60 * 1000;
+const PRODUCT_STALE_CACHE_MS = 1 * 60 * 1000; // 1 minute instead of 5 minutes to ensure fresh discount data
 
 type SelectedReviewMedia = {
   id: string;
