@@ -922,6 +922,18 @@ const CategoryPage = () => {
     );
   }, [category, subSlug, subcategories]);
 
+  const resolvePageDiscountPercentage = (product: Product): number => {
+    const categoryDiscount = category?.discount_override_enabled ? Number(category.discount_percentage ?? 0) : null;
+    const subcategoryDiscount = selectedSubcategory?.discount_override_enabled
+      ? Number(selectedSubcategory.discount_percentage ?? 0)
+      : null;
+    const productDiscount = Number(product.effective_discount_percentage ?? product.discount_percentage ?? 0);
+
+    if (categoryDiscount !== null) return categoryDiscount;
+    if (subcategoryDiscount !== null) return subcategoryDiscount;
+    return Number.isFinite(productDiscount) ? productDiscount : 0;
+  };
+
   const heroName = selectedSubcategory?.name || category?.name || '';
   const heroDescription = selectedSubcategory?.description || category?.description || '';
   const fallbackProductImage = allProducts[0]?.images?.[0]?.url || '';
@@ -1233,7 +1245,11 @@ const CategoryPage = () => {
                   {paginatedProducts.map((product, index) => (
                     <ProductCard
                       key={product.id}
-                      product={product}
+                      product={{
+                        ...product,
+                        effective_discount_percentage: resolvePageDiscountPercentage(product),
+                        discount_percentage: resolvePageDiscountPercentage(product),
+                      }}
                       index={(currentPage - 1) * PRODUCTS_PER_PAGE + index}
                       fromBedProduct={linkedBedProduct}
                       selectedBedSize={linkedBedSize}
