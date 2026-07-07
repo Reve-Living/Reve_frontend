@@ -313,6 +313,7 @@ export interface Product {
   min_size_price?: number | string | null;
   size_count?: number | null;
   discount_percentage?: number;
+  effective_discount_percentage?: number;
   stock_status?: ProductStockStatus;
   description: string;
   short_description?: string;

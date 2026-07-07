@@ -38,7 +38,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, returnTo }: ProductCardProps) => {
-  const salePercentage = toFiniteNumber(product.discount_percentage) ?? 0;
+  const salePercentage = toFiniteNumber(product.effective_discount_percentage) ?? toFiniteNumber(product.discount_percentage) ?? 0;
   const basePrice = toFiniteNumber(product.price) ?? 0;
   const minSizePrice = toFiniteNumber(product.min_size_price);
   const summarySizeCount = toFiniteNumber(product.size_count) ?? 0;
