@@ -2267,10 +2267,11 @@ type MattressDetailView = {
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";
 
-  const discountPercentage = 30;
-  const discountedUnitPrice = unitOriginalPrice !== undefined
-    ? unitOriginalPrice * 0.7
-    : unitPrice * 0.7;
+  const discountPercentage = Number(product?.discount_percentage ?? 0);
+  const discountFactor = discountPercentage > 0 ? 1 - discountPercentage / 100 : 1;
+  const discountedUnitPrice = discountPercentage > 0
+    ? (unitOriginalPrice !== undefined ? unitOriginalPrice : unitPrice) * discountFactor
+    : unitPrice;
 
   const bunkMattressRulesEnabled = useMemo(
     () => !kidsMattressTabsEnabled && mattresses.some((m) => m.enable_bunk_positions),
