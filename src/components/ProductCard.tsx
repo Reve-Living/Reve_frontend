@@ -50,10 +50,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
   const summaryDisplayPrice =
     minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
   const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
-  const displaySourcePrice = toFiniteNumber(product.original_price) ?? displayBasePrice;
-  const discountedDisplayPrice = salePercentage > 0
-    ? displaySourcePrice * (1 - salePercentage / 100)
-    : displaySourcePrice;
+  const displayOriginalPrice = toFiniteNumber(product.original_price);
   const imageUrl = product.images?.[0]?.url || "";
   const imageFlipHorizontal = Boolean(product.images?.[0]?.flip_horizontal);
   const hasImage = imageUrl.trim().length > 0;
@@ -104,6 +101,8 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
               flipHorizontal={imageFlipHorizontal}
               imgClassName="bg-[#f7f3ef]"
               defaultStyle={{ objectPosition: '50% 0%' }}
+              loading={index < 6 ? 'eager' : 'lazy'}
+              decoding={index < 6 ? 'sync' : 'async'}
             />
 
             {/* Badges */}
@@ -182,11 +181,11 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              {hasMultipleSizePrices ? `From ${formatWholePrice(discountedDisplayPrice)}` : formatWholePrice(discountedDisplayPrice)}
+              {hasMultipleSizePrices ? `From ${formatWholePrice(displayBasePrice)}` : formatWholePrice(displayBasePrice)}
             </p>
-            {product.original_price && Number(product.original_price) > 0 && (
+            {displayOriginalPrice !== null && displayOriginalPrice > displayBasePrice && (
               <p className="text-sm text-muted-foreground line-through">
-                {formatWholePrice(product.original_price)}
+                {formatWholePrice(displayOriginalPrice)}
               </p>
             )}
           </div>

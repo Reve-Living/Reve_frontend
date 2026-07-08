@@ -923,14 +923,8 @@ const CategoryPage = () => {
   }, [category, subSlug, subcategories]);
 
   const resolvePageDiscountPercentage = (product: Product): number => {
-    const categoryDiscount = category?.discount_override_enabled ? Number(category.discount_percentage ?? 0) : null;
-    const subcategoryDiscount = selectedSubcategory?.discount_override_enabled
-      ? Number(selectedSubcategory.discount_percentage ?? 0)
-      : null;
     const productDiscount = Number(product.effective_discount_percentage ?? product.discount_percentage ?? 0);
 
-    if (categoryDiscount !== null) return categoryDiscount;
-    if (subcategoryDiscount !== null) return subcategoryDiscount;
     return Number.isFinite(productDiscount) ? productDiscount : 0;
   };
 

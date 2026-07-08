@@ -2260,18 +2260,14 @@ type MattressDetailView = {
       ? selectedSizeOriginalPriceBase + stylePriceDelta + totalMattressPrice
       : undefined;
 
-  const totalPrice = unitPrice * quantity;
   const useExactKidsMattressPricing = kidsMattressTabsEnabled && chargeableMattressDetails.length > 0;
   const formatProductTotalPrice = useExactKidsMattressPricing ? formatExactPrice : formatPrice;
   const formatMattressChoicePrice = kidsMattressTabsEnabled ? formatExactPrice : formatPrice;
+  const discountPercentage = Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0);
+  const discountedUnitPrice = unitPrice;
+  const totalPrice = discountedUnitPrice * quantity;
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";
-
-  const discountPercentage = Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0);
-  const discountFactor = discountPercentage > 0 ? 1 - discountPercentage / 100 : 1;
-  const discountedUnitPrice = discountPercentage > 0
-    ? (unitOriginalPrice !== undefined ? unitOriginalPrice : unitPrice) * discountFactor
-    : unitPrice;
 
   const bunkMattressRulesEnabled = useMemo(
     () => !kidsMattressTabsEnabled && mattresses.some((m) => m.enable_bunk_positions),
@@ -2690,7 +2686,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
           {
             item_id: String(product?.id || ""),
             item_name: product?.name || "Product",
-            price: unitPrice,
+            price: discountedUnitPrice,
             quantity: quantity,
             item_category: product?.category_name || "Uncategorized",
             item_variant: Object.entries(
@@ -2750,7 +2746,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       assembly_service_selected: assemblyServiceSelected,
       assembly_service_price: assemblyServiceSelected ? assemblyServicePrice : 0,
       extras_total: extrasTotal,
-      unit_price: unitPrice,
+      unit_price: discountedUnitPrice,
     });
 
     toast.success(`${product.name} added to cart`);
