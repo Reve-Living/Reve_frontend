@@ -2606,6 +2606,48 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       .filter((faq) => faq.question && faq.answer);
   }, [product?.faqs, returnsInfoAnswer]);
 
+  const infoTabs = useMemo(
+    () =>
+      [
+        { key: 'description', label: 'Description', show: Boolean(fullDescription) },
+        { key: 'features', label: 'Features', show: featureList.length > 0 },
+        { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 || !!dimensionParagraph },
+        { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery Information', show: Boolean(product?.delivery_info) },
+        { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
+        { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
+        ...(Array.isArray(product?.custom_info_sections)
+          ? product.custom_info_sections.map((section, idx) => ({
+              key: `info-${idx}`,
+              label: (section?.title || '').trim() || `Info ${idx + 1}`,
+              show: Boolean((section?.title || section?.content || '').trim()),
+            }))
+          : []),
+      ].filter((tab) => tab.show),
+    [
+      adjustedDimensionTableRows.length,
+      dimensionParagraph,
+      faqEntries.length,
+      featureList.length,
+      fullDescription,
+      product?.custom_info_sections,
+      product?.delivery_info,
+      product?.delivery_title,
+      product?.returns_guarantee,
+      product?.returns_title,
+    ]
+  );
+
+  useEffect(() => {
+    if (infoTabs.length === 0) {
+      setActiveInfoTab(null);
+      return;
+    }
+
+    setActiveInfoTab((current) =>
+      current && infoTabs.some((tab) => tab.key === current) ? current : infoTabs[0].key
+    );
+  }, [infoTabs]);
+
 
 
   const activeVariantGroup =
@@ -3689,26 +3731,10 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
         </div>
 
-        {/* Info tabs full-width below purchase panel */}
+          {/* Info tabs full-width below purchase panel */}
         <div className="mt-10 space-y-4">
           <div className="flex flex-nowrap gap-3 overflow-x-auto px-1" role="tablist">
-            {[
-              { key: 'description', label: 'Description', show: Boolean(fullDescription) },
-              { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 || !!dimensionParagraph },
-              { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery Information', show: Boolean(product?.delivery_info) },
-              { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
-              { key: 'faqs', label: 'FAQs', show: faqEntries.length > 0 },
-              ...(Array.isArray(product?.custom_info_sections)
-                ? product.custom_info_sections
-                    .map((section, idx) => ({
-                      key: `info-${idx}`,
-                      label: (section?.title || '').trim() || `Info ${idx + 1}`,
-                      show: Boolean((section?.title || section?.content || '').trim()),
-                    }))
-                : []),
-            ]
-              .filter((t) => t.show)
-              .map((tab) => (
+            {infoTabs.map((tab) => (
                 <button
                   key={tab.key}
                   type="button"
@@ -3729,6 +3755,17 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <div className="text-muted-foreground leading-relaxed space-y-4">
                 {renderMultilineParagraphs(fullDescription, false)}
               </div>
+            )}
+
+            {activeInfoTab === 'features' && featureList.length > 0 && (
+              <ul className="grid gap-3 text-muted-foreground sm:grid-cols-2">
+                {featureList.map((feature, index) => (
+                  <li key={`${feature}-${index}`} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
+                    <span>{feature}</span>
+                  </li>
+                ))}
+              </ul>
             )}
 
             {activeInfoTab === 'dimensions' && (
