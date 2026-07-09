@@ -7,6 +7,8 @@ import { Category, SubCategory } from '@/lib/types';
 import EdgeAwareCoverImage from '@/components/EdgeAwareCoverImage';
 import type { EdgeAwareImageStyle } from '@/components/EdgeAwareCoverImage';
 
+const CATEGORY_PREFETCH_STALE_MS = 10 * 60 * 1000;
+
 const getCollectionImageStyle = (name: string): Partial<EdgeAwareImageStyle> => {
   const normalized = (name || '').toLowerCase();
 
@@ -51,16 +53,20 @@ const CategoryGrid = () => {
     if (['beds', 'mattress', 'mattresses'].includes(category.toLowerCase())) params.set('include_sizes', '1');
     params.set('include_total', '1');
     params.set('limit', '18');
-    void apiGet(`/products/?${params.toString()}`).catch(() => []);
+    const apiOptions = {
+      staleWhileRevalidate: true,
+      maxStaleMs: CATEGORY_PREFETCH_STALE_MS,
+    };
+    void apiGet(`/products/?${params.toString()}`, apiOptions).catch(() => []);
 
     if (subcategory) {
-      void apiGet(`/products/filters/?subcategory=${encodeURIComponent(subcategory)}`).catch(
+      void apiGet(`/products/filters/?subcategory=${encodeURIComponent(subcategory)}`, apiOptions).catch(
         () => ({ filters: [] })
       );
       return;
     }
 
-    void apiGet(`/products/filters/?category=${encodeURIComponent(category)}`).catch(() => ({ filters: [] }));
+    void apiGet(`/products/filters/?category=${encodeURIComponent(category)}`, apiOptions).catch(() => ({ filters: [] }));
   };
 
   const resolveImageUrl = useMemo(

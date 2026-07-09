@@ -21,8 +21,8 @@ import { Category, Product, SubCategory, FilterType } from '@/lib/types';
 
 const PRODUCTS_PER_PAGE = 18;
 const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
-const CATEGORY_STALE_CACHE_MS = 1 * 60 * 1000; // 1 minute instead of 5 minutes for fresher discount data
-const CATEGORY_PAGE_SNAPSHOT_MS = 60 * 1000;
+const CATEGORY_STALE_CACHE_MS = 10 * 60 * 1000;
+const CATEGORY_PAGE_SNAPSHOT_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v4:';
 const FILTER_PREFETCH_SINGLE_LIMIT = 8;
 const FILTER_PREFETCH_PAIR_LIMIT = 12;
@@ -317,7 +317,7 @@ const writeCategoryPageSnapshot = (
   }
 };
 
-const ProductGridSkeleton = ({ count = 6 }: { count?: number }) => (
+const ProductGridSkeleton = ({ count = 3 }: { count?: number }) => (
   <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
     {Array.from({ length: count }, (_, index) => (
       <div key={index} className="overflow-hidden rounded-2xl border border-border/60 bg-card">
@@ -363,13 +363,11 @@ const CategoryPage = () => {
     pageFromQuery,
     debouncedServerFilterParamsKey
   );
-  const requestedPageKey = getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, pageFromQuery, '');
   const [category, setCategory] = useState<Category | null>(initialSnapshot?.category ?? null);
   const [subcategories, setSubcategories] = useState<SubCategory[]>(initialSnapshot?.subcategories ?? []);
   const [allProducts, setAllProducts] = useState<Product[]>(initialSnapshot?.products ?? []);
   const [totalProductCount, setTotalProductCount] = useState<number | null>(initialSnapshot?.totalProductCount ?? null);
   const [loadedProductKey, setLoadedProductKey] = useState(initialSnapshot ? requestedProductKey : '');
-  const [loadedPageKey, setLoadedPageKey] = useState(initialSnapshot ? requestedPageKey : '');
   const [isLoading, setIsLoading] = useState(!initialSnapshot);
   const [isFiltersLoading, setIsFiltersLoading] = useState(!initialSnapshot);
   const [loadError, setLoadError] = useState(false);
@@ -461,7 +459,6 @@ const CategoryPage = () => {
         setAllProducts(cachedSnapshot.products);
         setTotalProductCount(cachedSnapshot.totalProductCount);
         setLoadedProductKey(requestedProductKey);
-        setLoadedPageKey(requestedPageKey);
         setAvailableFilters(latestFilters);
         setIsLoading(false);
         setIsFiltersLoading(false);
@@ -545,7 +542,6 @@ const CategoryPage = () => {
               setTotalProductCount(initialCount ?? null);
               setAllProducts(orderedInitialProducts);
               setLoadedProductKey(requestedProductKey);
-              setLoadedPageKey(requestedPageKey);
               setIsLoading(false);
               writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
                 category: null,
@@ -611,7 +607,6 @@ const CategoryPage = () => {
         const orderedProducts = placeProductsAtOffset([], normalizedProducts, initialOffset);
         setAllProducts(orderedProducts);
         setLoadedProductKey(requestedProductKey);
-        setLoadedPageKey(requestedPageKey);
         writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
           category: categoryItem,
           subcategories: resolvedSubcategories,
@@ -678,7 +673,7 @@ const CategoryPage = () => {
       cancelled = true;
       controller.abort();
     };
-  }, [debouncedServerFilterParams, debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, requestedPageKey, requestedProductKey, slug, subSlug]);
+  }, [debouncedServerFilterParams, debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, requestedProductKey, slug, subSlug]);
 
   useEffect(() => {
     if (serverFilterParamsKey) return;
@@ -1003,9 +998,8 @@ const CategoryPage = () => {
   }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
 
   const isShowingStaleProducts = loadedProductKey !== requestedProductKey;
-  const isShowingStalePageProducts = loadedPageKey !== requestedPageKey;
   const isProductTransitionPending = isLoading || isShowingStaleProducts;
-  const visibleProducts = isShowingStalePageProducts ? [] : filteredProducts;
+  const visibleProducts = filteredProducts;
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
     hasPriceFilter ||
@@ -1251,8 +1245,6 @@ const CategoryPage = () => {
                     />
                   ))}
                   </div>
-                  {isLoading && <div className="mt-6"><ProductGridSkeleton count={3} /></div>}
-
                   {totalPages > 1 && (
                     <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                       {Array.from({ length: totalPages }, (_, index) => {

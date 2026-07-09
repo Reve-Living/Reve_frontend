@@ -22,6 +22,7 @@ import type { Category, Product } from '@/lib/types';
 import logoLettersOnly from '@/assets/logo-letters-only.png';
 
 const NAV_CACHE_KEY = 'reve-header-nav-v1';
+const CATEGORY_PREFETCH_STALE_MS = 10 * 60 * 1000;
 const STATIC_START_LINKS = [{ name: 'Home', href: '/' }];
 const STATIC_END_LINKS = [
   { name: 'About Us', href: '/about' },
@@ -111,11 +112,16 @@ const getCategoryPrefetchTargetFromHref = (href?: string) => {
   };
 };
 
+const prefetchedCategoryHrefs = new Set<string>();
+
 const prefetchCategoryPayload = (href?: string) => {
+  const normalizedHref = String(href || '').trim();
+  if (normalizedHref && prefetchedCategoryHrefs.has(normalizedHref)) return;
   const { categorySlug, subcategorySlug } = getCategoryPrefetchTargetFromHref(href);
   const slug = categorySlug.trim();
   const subSlug = subcategorySlug.trim();
   if (!slug) return;
+  if (normalizedHref) prefetchedCategoryHrefs.add(normalizedHref);
 
   void import('@/pages/CategoryPage');
   const includeSizes = ['beds', 'mattress', 'mattresses'].includes(slug.toLowerCase());
@@ -125,16 +131,24 @@ const prefetchCategoryPayload = (href?: string) => {
   if (includeSizes) productParams.set('include_sizes', '1');
   productParams.set('include_total', '1');
   productParams.set('limit', '18');
-  void apiGet<Product[]>(`/products/?${productParams.toString()}`).catch(() => []);
+  const apiOptions = {
+    staleWhileRevalidate: true,
+    maxStaleMs: CATEGORY_PREFETCH_STALE_MS,
+  };
+  void apiGet<ProductListResponse>(`/products/?${productParams.toString()}`, apiOptions).catch(() => []);
 
   if (subSlug) {
     void apiGet<{ filters: unknown[] }>(
-      `/products/filters/?subcategory=${encodeURIComponent(subSlug)}`
+      `/products/filters/?subcategory=${encodeURIComponent(subSlug)}`,
+      apiOptions
     ).catch(() => ({ filters: [] }));
     return;
   }
 
-  void apiGet<{ filters: unknown[] }>(`/products/filters/?category=${encodeURIComponent(slug)}`).catch(() => ({ filters: [] }));
+  void apiGet<{ filters: unknown[] }>(
+    `/products/filters/?category=${encodeURIComponent(slug)}`,
+    apiOptions
+  ).catch(() => ({ filters: [] }));
 };
 
 const Header = () => {
@@ -179,6 +193,15 @@ const Header = () => {
         writeCachedNavLinks(nextNavLinks);
 
         setNavLinks(nextNavLinks);
+        const warmHrefs = nextNavLinks
+          .filter((link) => link.href.startsWith('/category/'))
+          .slice(0, 8)
+          .map((link) => link.href);
+        window.setTimeout(() => {
+          warmHrefs.forEach((href, index) => {
+            window.setTimeout(() => prefetchCategoryPayload(href), index * 250);
+          });
+        }, 900);
       } catch {
         // leave default links on failure
       }
