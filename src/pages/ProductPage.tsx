@@ -1189,8 +1189,7 @@ type MattressDetailView = {
 
         if (fallbackProductId) {
           const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/?quick=1`, {
-            staleWhileRevalidate: true,
-            maxStaleMs: PRODUCT_STALE_CACHE_MS,
+            noStore: true,
           });
           fetched = Array.isArray(productDetailRes) ? productDetailRes[0] || null : productDetailRes || null;
         }
@@ -1199,8 +1198,7 @@ type MattressDetailView = {
           const productRes = await apiGet<Product[] | { results?: Product[] }>(
             `/products/?slug=${encodeURIComponent(slug)}&quick=1`,
             {
-              staleWhileRevalidate: true,
-              maxStaleMs: PRODUCT_STALE_CACHE_MS,
+              noStore: true,
             }
           );
 
@@ -1247,16 +1245,14 @@ type MattressDetailView = {
           void apiGet<Product | Product[]>(
             `/products/${fetched.id}/?core=1`,
             {
-              staleWhileRevalidate: true,
-              maxStaleMs: PRODUCT_STALE_CACHE_MS,
+              noStore: true,
             }
           )
             .then((coreRes) => {
               const coreProduct = Array.isArray(coreRes) ? coreRes[0] : coreRes;
               if (!cancelled && coreProduct?.id === fetched?.id) setProduct(coreProduct);
               return apiGet<Product | Product[]>(`/products/${fetched.id}/`, {
-                staleWhileRevalidate: true,
-                maxStaleMs: PRODUCT_STALE_CACHE_MS,
+                noStore: true,
               });
             })
             .then((fullRes) => {
