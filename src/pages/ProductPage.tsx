@@ -2606,7 +2606,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
     () =>
       [
         { key: 'description', label: 'Description', show: Boolean(fullDescription) },
-        { key: 'features', label: 'Features', show: featureList.length > 0 },
         { key: 'dimensions', label: 'Dimensions', show: adjustedDimensionTableRows.length > 0 || !!dimensionParagraph },
         { key: 'delivery', label: product?.delivery_title?.trim() || 'Delivery Information', show: Boolean(product?.delivery_info) },
         { key: 'returns', label: product?.returns_title?.trim() || 'Returns & Guarantee', show: Boolean(product?.returns_guarantee) },
@@ -2623,7 +2622,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       adjustedDimensionTableRows.length,
       dimensionParagraph,
       faqEntries.length,
-      featureList.length,
       fullDescription,
       product?.custom_info_sections,
       product?.delivery_info,
@@ -3751,17 +3749,6 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
               <div className="text-muted-foreground leading-relaxed space-y-4">
                 {renderMultilineParagraphs(fullDescription, false)}
               </div>
-            )}
-
-            {activeInfoTab === 'features' && featureList.length > 0 && (
-              <ul className="grid gap-3 text-muted-foreground sm:grid-cols-2">
-                {featureList.map((feature, index) => (
-                  <li key={`${feature}-${index}`} className="flex gap-2">
-                    <span className="mt-2 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
-                    <span>{feature}</span>
-                  </li>
-                ))}
-              </ul>
             )}
 
             {activeInfoTab === 'dimensions' && (
