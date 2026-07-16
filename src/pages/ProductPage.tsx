@@ -1186,29 +1186,35 @@ type MattressDetailView = {
           : 0;
 
         let fetched: Product | null = null;
+        const productRequestOptions = {
+          staleWhileRevalidate: true,
+          maxStaleMs: PRODUCT_STALE_CACHE_MS,
+        };
+        const normalizeProductResponse = (response: Product | Product[] | { results?: Product[] } | null | undefined) => {
+          if (!response) return null;
+          if (Array.isArray(response)) return response[0] || null;
+          if (Array.isArray((response as { results?: Product[] }).results)) {
+            return (response as { results: Product[] }).results[0] || null;
+          }
+          return response as Product;
+        };
 
-        if (fallbackProductId) {
-          const productDetailRes = await apiGet<Product | Product[]>(`/products/${fallbackProductId}/?quick=1`, {
-            noStore: true,
-          });
-          fetched = Array.isArray(productDetailRes) ? productDetailRes[0] || null : productDetailRes || null;
-        }
+        const quickProductPromise = fallbackProductId
+          ? apiGet<Product | Product[]>(`/products/${fallbackProductId}/?quick=1`, productRequestOptions)
+          : apiGet<Product[] | { results?: Product[] }>(
+              `/products/?slug=${encodeURIComponent(slug)}&quick=1`,
+              productRequestOptions
+            );
+        const coreProductPromise = fallbackProductId
+          ? apiGet<Product | Product[]>(`/products/${fallbackProductId}/?core=1`, productRequestOptions)
+          : apiGet<Product[] | { results?: Product[] }>(
+              `/products/?slug=${encodeURIComponent(slug)}&core=1`,
+              productRequestOptions
+            );
 
+        fetched = normalizeProductResponse(await quickProductPromise.catch(() => coreProductPromise));
         if (!fetched) {
-          const productRes = await apiGet<Product[] | { results?: Product[] }>(
-            `/products/?slug=${encodeURIComponent(slug)}&quick=1`,
-            {
-              noStore: true,
-            }
-          );
-
-          const normalizedProducts = Array.isArray(productRes)
-            ? productRes
-            : Array.isArray((productRes as unknown as { results?: Product[] })?.results)
-            ? (productRes as unknown as { results: Product[] }).results
-            : [];
-
-          fetched = normalizedProducts[0] || null;
+          fetched = normalizeProductResponse(await coreProductPromise);
         }
 
         if (cancelled) return;
@@ -1242,22 +1248,19 @@ type MattressDetailView = {
         }
 
         if (fetched?.id) {
-          void apiGet<Product | Product[]>(
-            `/products/${fetched.id}/?core=1`,
-            {
-              noStore: true,
-            }
-          )
+          void coreProductPromise
             .then((coreRes) => {
-              const coreProduct = Array.isArray(coreRes) ? coreRes[0] : coreRes;
-              if (!cancelled && coreProduct?.id === fetched?.id) setProduct(coreProduct);
-              return apiGet<Product | Product[]>(`/products/${fetched.id}/`, {
-                noStore: true,
-              });
+              const coreProduct = normalizeProductResponse(coreRes);
+              if (!cancelled && coreProduct?.id === fetched?.id) {
+                setProduct((current) => ({ ...(current || {}), ...coreProduct }) as Product);
+              }
+              return apiGet<Product | Product[]>(`/products/${fetched.id}/`, productRequestOptions);
             })
             .then((fullRes) => {
-              const fullProduct = Array.isArray(fullRes) ? fullRes[0] : fullRes;
-              if (!cancelled && fullProduct?.id === fetched?.id) setProduct(fullProduct);
+              const fullProduct = normalizeProductResponse(fullRes);
+              if (!cancelled && fullProduct?.id === fetched?.id) {
+                setProduct((current) => ({ ...(current || {}), ...fullProduct }) as Product);
+              }
             })
             .catch(() => undefined);
         }
