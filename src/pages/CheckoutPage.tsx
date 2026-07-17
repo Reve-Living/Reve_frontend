@@ -331,6 +331,32 @@ const buildGoogleUserData = (
   return userData;
 };
 
+const buildEnhancedConversionData = (
+  order: Order | null,
+  fallback: {
+    fullName: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    postcode: string;
+  }
+) => {
+  const splitName = splitFullName(fallback.fullName);
+
+  return {
+    email: (order?.email || fallback.email || localStorage.getItem('last_order_email') || '').trim(),
+    phone_number: (order?.phone || fallback.phone || '').trim(),
+    first_name: (order?.first_name || splitName.firstName || '').trim(),
+    last_name: (order?.last_name || splitName.lastName || '').trim(),
+    street: (order?.address || fallback.address || '').trim(),
+    city: (order?.city || fallback.city || '').trim(),
+    region: '',
+    postal_code: (order?.postal_code || fallback.postcode || '').trim(),
+    country: 'GB',
+  };
+};
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const {
@@ -507,6 +533,7 @@ const CheckoutPage = () => {
     const totalValue = Number(lastOrderTotal.toFixed(2));
     const shippingValue = Number(lastDeliveryFee.toFixed(2));
     const userData = buildGoogleUserData(confirmedOrder, formData);
+    const enhancedConversionData = buildEnhancedConversionData(confirmedOrder, formData);
     
     // 🔥 USE gtag() DIRECTLY - THIS GOES STRAIGHT TO GA4
     if (typeof gtag !== 'undefined') {
@@ -548,6 +575,7 @@ const CheckoutPage = () => {
     // Also push to dataLayer for GTM
     const purchaseEvent = {
       event: "purchase",
+      enhanced_conversion_data: enhancedConversionData,
       transaction_id: String(lastOrderId || ""),
       user_data: userData,
       value: totalValue,
