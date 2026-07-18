@@ -24,6 +24,7 @@ const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v5:';
+const CATEGORY_PAGE_PERSISTED_SNAPSHOT_MS = 24 * 60 * 60 * 1000;
 const FILTER_PREFETCH_SINGLE_LIMIT = 8;
 const FILTER_PREFETCH_PAIR_LIMIT = 12;
 
@@ -294,16 +295,28 @@ const readCategoryPageSnapshot = (
   productKey = ''
 ): CategoryPageSnapshot | null => {
   if (typeof window === 'undefined' || !slug) return null;
-  try {
-    const raw = window.sessionStorage.getItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey));
+  const key = getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey);
+  const readStoredSnapshot = (storage: Storage, maxAgeMs: number, evictExpired: boolean): CategoryPageSnapshot | null => {
+    const raw = storage.getItem(key);
     if (!raw) return null;
     const snapshot = JSON.parse(raw) as CategoryPageSnapshot;
     if (!snapshot || typeof snapshot.ts !== 'number') return null;
-    if (Date.now() - snapshot.ts > CATEGORY_PAGE_SNAPSHOT_MS) {
-      window.sessionStorage.removeItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey));
+    if (Date.now() - snapshot.ts > maxAgeMs) {
+      if (evictExpired) storage.removeItem(key);
       return null;
     }
     return snapshot;
+  };
+
+  try {
+    const sessionSnapshot = readStoredSnapshot(window.sessionStorage, CATEGORY_PAGE_SNAPSHOT_MS, true);
+    if (sessionSnapshot) return sessionSnapshot;
+  } catch {
+    // Fall through to the persisted last-good snapshot.
+  }
+
+  try {
+    return readStoredSnapshot(window.localStorage, CATEGORY_PAGE_PERSISTED_SNAPSHOT_MS, true);
   } catch {
     return null;
   }
@@ -319,10 +332,12 @@ const writeCategoryPageSnapshot = (
 ) => {
   if (typeof window === 'undefined' || !slug) return;
   try {
+    const value = JSON.stringify({ ...snapshot, ts: Date.now() });
     window.sessionStorage.setItem(
       getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey),
-      JSON.stringify({ ...snapshot, ts: Date.now() })
+      value
     );
+    window.localStorage.setItem(getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, page, productKey), value);
   } catch {
     // Ignore storage limits; the live API load still works.
   }
