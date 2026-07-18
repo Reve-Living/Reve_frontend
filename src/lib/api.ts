@@ -16,15 +16,10 @@ const DEFAULT_CACHE_TTL_MS = 30 * 1000;
 type ApiGetOptions = {
   noStore?: boolean;
   staleWhileRevalidate?: boolean;
+  refreshOnCacheHit?: boolean;
   maxStaleMs?: number;
   onUpdate?: (data: unknown) => void;
   signal?: AbortSignal;
-};
-
-const isDocumentReload = () => {
-  if (typeof window === "undefined") return false;
-  const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-  return navigation?.type === "reload" || performance.navigation?.type === 1;
 };
 
 const normalizeGetCacheKey = (path: string) => {
@@ -113,7 +108,6 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const canDeduplicate = true;
   const cacheTtlMs = getCacheTtlMs(path);
   const maxStaleMs = options.maxStaleMs ?? cacheTtlMs;
-  const shouldRevalidateFreshCache = options.staleWhileRevalidate === true && isDocumentReload();
 
   const fetchAndCache = () =>
     fetchWithTimeout(`${API_BASE_URL}${path}`, {
@@ -133,6 +127,13 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
       throw error;
     });
 
+  const refreshCachedData = () => {
+    if (!options.refreshOnCacheHit || !canDeduplicate || inFlight.has(cacheKey)) return;
+    const refreshPromise = fetchAndCache();
+    inFlight.set(cacheKey, refreshPromise);
+    void refreshPromise.then((data) => options.onUpdate?.(cloneData(data))).catch(() => undefined);
+  };
+
   if (shouldBypassCache) {
     const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
       headers: buildHeaders(false),
@@ -146,11 +147,12 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const now = Date.now();
 
   // Serve only fresh cache immediately.
-  if (!shouldRevalidateFreshCache && cached && now - cached.ts < cacheTtlMs) {
+  if (cached && now - cached.ts < cacheTtlMs) {
+    refreshCachedData();
     return cloneData(cached.data) as T;
   }
 
-  if (!shouldRevalidateFreshCache && options.staleWhileRevalidate && cached && now - cached.ts < maxStaleMs) {
+  if (options.staleWhileRevalidate && cached && now - cached.ts < maxStaleMs) {
     if (canDeduplicate && !inFlight.has(cacheKey)) {
       const refreshPromise = fetchAndCache();
       inFlight.set(cacheKey, refreshPromise);
@@ -160,14 +162,15 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   }
 
   const sessionCached = readSessionCache<T>(cacheKey, cacheTtlMs, !options.staleWhileRevalidate);
-  if (!shouldRevalidateFreshCache && sessionCached !== null) {
+  if (sessionCached !== null) {
+    refreshCachedData();
     return sessionCached;
   }
 
   const staleSessionCached = options.staleWhileRevalidate
     ? readSessionCache<T>(cacheKey, maxStaleMs)
     : null;
-  if (!shouldRevalidateFreshCache && staleSessionCached !== null) {
+  if (staleSessionCached !== null) {
     if (canDeduplicate && !inFlight.has(cacheKey)) {
       const refreshPromise = fetchAndCache();
       inFlight.set(cacheKey, refreshPromise);

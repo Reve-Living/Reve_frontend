@@ -508,6 +508,34 @@ const CategoryPage = () => {
         const productRequestLimit = INITIAL_PRODUCTS_LIMIT;
         const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
         const shouldIncludeTotal = true;
+        const applyProductsResponse = (
+          productsRes: ProductListResponse,
+          snapshotCategory: Category | null = cachedSnapshot?.category ?? category,
+          snapshotSubcategories: SubCategory[] = cachedSnapshot?.subcategories ?? subcategories
+        ) => {
+          const { products: nextProducts, count: nextCount } = normalizeProductListResponse(productsRes);
+          const orderedProducts = placeProductsAtOffset([], nextProducts, initialOffset);
+          setTotalProductCount(nextCount ?? nextProducts.length);
+          setAllProducts(orderedProducts);
+          setLoadedProductKey(requestedProductKey);
+          setIsLoading(false);
+          writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
+            category: snapshotCategory,
+            subcategories: snapshotSubcategories,
+            products: orderedProducts,
+            totalProductCount: nextCount ?? nextProducts.length,
+            availableFilters: latestFilters,
+          });
+          return { orderedProducts, count: nextCount, normalizedProducts: nextProducts };
+        };
+        const productApiOptions = {
+          ...apiOptions,
+          refreshOnCacheHit: true,
+          onUpdate: (data: unknown) => {
+            if (cancelled) return;
+            applyProductsResponse(data as ProductListResponse);
+          },
+        };
 
         const initialProductsPromise = apiGet<ProductListResponse>(
           buildCategoryProductsPath(
@@ -520,7 +548,7 @@ const CategoryPage = () => {
             debouncedServerFilterParams,
             shouldIncludeTotal
           ),
-          apiOptions
+          productApiOptions
         );
         const shouldRequestFilterDefinitions = needsFilterDefinitions;
         const initialFiltersPromise = shouldRequestFilterDefinitions
@@ -550,20 +578,8 @@ const CategoryPage = () => {
           void initialProductsPromise
             .then((productsRes) => {
               if (cancelled) return;
-              const { products: initialProducts, count: initialCount } = normalizeProductListResponse(productsRes);
-              if (initialProducts.length === 0) return;
-              const orderedInitialProducts = placeProductsAtOffset([], initialProducts, initialOffset);
-              setTotalProductCount(initialCount ?? null);
-              setAllProducts(orderedInitialProducts);
-              setLoadedProductKey(requestedProductKey);
-              setIsLoading(false);
-              writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
-                category: null,
-                subcategories: [],
-                products: orderedInitialProducts,
-                totalProductCount: initialCount ?? null,
-                availableFilters: latestFilters,
-              });
+              const { normalizedProducts } = applyProductsResponse(productsRes, null, []);
+              if (normalizedProducts.length === 0) return;
             })
             .catch(() => undefined);
         }
@@ -610,17 +626,17 @@ const CategoryPage = () => {
                 debouncedServerFilterParams,
                 shouldIncludeTotal
               ),
-              apiOptions
+              productApiOptions
             )
           : initialProductsPromise);
 
         if (cancelled) return;
 
-        const { products: normalizedProducts, count } = normalizeProductListResponse(productsRes);
-        setTotalProductCount(count ?? normalizedProducts.length);
-        const orderedProducts = placeProductsAtOffset([], normalizedProducts, initialOffset);
-        setAllProducts(orderedProducts);
-        setLoadedProductKey(requestedProductKey);
+        const { orderedProducts, count, normalizedProducts } = applyProductsResponse(
+          productsRes,
+          categoryItem,
+          resolvedSubcategories
+        );
         writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
           category: categoryItem,
           subcategories: resolvedSubcategories,
