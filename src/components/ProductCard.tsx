@@ -102,7 +102,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
               imgClassName="bg-[#f7f3ef]"
               defaultStyle={{ objectPosition: '50% 0%' }}
               loading={index < 6 ? 'eager' : 'lazy'}
-              decoding={index < 6 ? 'sync' : 'async'}
+              decoding="async"
               fetchPriority={index < 6 ? 'high' : 'auto'}
               sizes="(min-width: 1280px) 30vw, (min-width: 640px) 45vw, 90vw"
             />

@@ -263,6 +263,17 @@ const placeProductsAtOffset = (current: Product[], incoming: Product[], offset: 
   return next;
 };
 
+const warmProductImages = (products: Product[], count = 6) => {
+  if (typeof window === 'undefined') return;
+  products.slice(0, count).forEach((product) => {
+    const src = product.images?.[0]?.url;
+    if (!src) return;
+    const img = new Image();
+    img.decoding = 'async';
+    img.src = src;
+  });
+};
+
 type CategoryPageSnapshot = {
   ts: number;
   category: Category | null;
@@ -317,20 +328,9 @@ const writeCategoryPageSnapshot = (
   }
 };
 
-const ProductGridSkeleton = ({ count = 3 }: { count?: number }) => (
-  <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
-    {Array.from({ length: count }, (_, index) => (
-      <div key={index} className="overflow-hidden rounded-2xl border border-border/60 bg-card">
-        <div className="aspect-[4/3] animate-pulse bg-muted/70" />
-        <div className="space-y-4 p-5">
-          <div className="h-4 w-2/3 animate-pulse rounded bg-muted/70" />
-          <div className="h-3 w-full animate-pulse rounded bg-muted/60" />
-          <div className="h-3 w-4/5 animate-pulse rounded bg-muted/60" />
-          <div className="h-5 w-24 animate-pulse rounded bg-muted/70" />
-          <div className="h-10 w-full animate-pulse rounded bg-muted/60" />
-        </div>
-      </div>
-    ))}
+const ProductLoadingNotice = () => (
+  <div className="flex min-h-[180px] items-center justify-center rounded-lg border border-border/40 bg-card/60">
+    <div className="text-center text-sm text-muted-foreground">Loading products...</div>
   </div>
 );
 
@@ -515,6 +515,7 @@ const CategoryPage = () => {
         ) => {
           const { products: nextProducts, count: nextCount } = normalizeProductListResponse(productsRes);
           const orderedProducts = placeProductsAtOffset([], nextProducts, initialOffset);
+          warmProductImages(orderedProducts);
           setTotalProductCount(nextCount ?? nextProducts.length);
           setAllProducts(orderedProducts);
           setLoadedProductKey(requestedProductKey);
@@ -1249,7 +1250,7 @@ const CategoryPage = () => {
 
             <div className="flex-1">
               {isProductTransitionPending && visibleProducts.length === 0 ? (
-                <ProductGridSkeleton />
+                <ProductLoadingNotice />
               ) : visibleProducts.length === 0 ? (
                 <div className="flex min-h-[300px] items-center justify-center rounded-lg bg-card">
                   <div className="text-center">
