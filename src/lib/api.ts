@@ -21,6 +21,12 @@ type ApiGetOptions = {
   signal?: AbortSignal;
 };
 
+const isDocumentReload = () => {
+  if (typeof window === "undefined") return false;
+  const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  return navigation?.type === "reload" || performance.navigation?.type === 1;
+};
+
 const normalizeGetCacheKey = (path: string) => {
   const [pathname, query = ''] = path.split('?');
   if (!query) return pathname;
@@ -107,6 +113,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const canDeduplicate = true;
   const cacheTtlMs = getCacheTtlMs(path);
   const maxStaleMs = options.maxStaleMs ?? cacheTtlMs;
+  const shouldRevalidateFreshCache = options.staleWhileRevalidate === true && isDocumentReload();
 
   const fetchAndCache = () =>
     fetchWithTimeout(`${API_BASE_URL}${path}`, {
@@ -139,11 +146,11 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   const now = Date.now();
 
   // Serve only fresh cache immediately.
-  if (cached && now - cached.ts < cacheTtlMs) {
+  if (!shouldRevalidateFreshCache && cached && now - cached.ts < cacheTtlMs) {
     return cloneData(cached.data) as T;
   }
 
-  if (options.staleWhileRevalidate && cached && now - cached.ts < maxStaleMs) {
+  if (!shouldRevalidateFreshCache && options.staleWhileRevalidate && cached && now - cached.ts < maxStaleMs) {
     if (canDeduplicate && !inFlight.has(cacheKey)) {
       const refreshPromise = fetchAndCache();
       inFlight.set(cacheKey, refreshPromise);
@@ -153,14 +160,14 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
   }
 
   const sessionCached = readSessionCache<T>(cacheKey, cacheTtlMs, !options.staleWhileRevalidate);
-  if (sessionCached !== null) {
+  if (!shouldRevalidateFreshCache && sessionCached !== null) {
     return sessionCached;
   }
 
   const staleSessionCached = options.staleWhileRevalidate
     ? readSessionCache<T>(cacheKey, maxStaleMs)
     : null;
-  if (staleSessionCached !== null) {
+  if (!shouldRevalidateFreshCache && staleSessionCached !== null) {
     if (canDeduplicate && !inFlight.has(cacheKey)) {
       const refreshPromise = fetchAndCache();
       inFlight.set(cacheKey, refreshPromise);

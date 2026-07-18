@@ -10,6 +10,9 @@ import type { Category, Product, SubCategory } from '@/lib/types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+const SUBCATEGORY_PAGE_CACHE_MS = 10 * 60 * 1000;
+const SUBCATEGORY_PAGE_CACHE_PREFIX = 'reve-subcategory-page:v2:';
+const SUBCATEGORY_PRODUCTS_LIMIT = 120;
 
 const resolveImageUrl = (value?: string): string => {
   const raw = (value || '').trim();
@@ -38,14 +41,66 @@ type SubcategoryCard = {
   productCount: number;
 };
 
+type SubcategoryPageSnapshot = {
+  ts: number;
+  category: Category;
+  subcategories: SubCategory[];
+  products: Product[];
+};
+
+const normalizeProductsResponse = (response: Product[] | { results?: Product[] }): Product[] =>
+  Array.isArray(response) ? response : Array.isArray(response?.results) ? response.results : [];
+
+const buildCategoryProductsPath = (categorySlug: string) => {
+  const params = new URLSearchParams({
+    category: categorySlug,
+    summary: '1',
+    limit: String(SUBCATEGORY_PRODUCTS_LIMIT),
+  });
+  return `/products/?${params.toString()}`;
+};
+
+const readPageSnapshot = (slug?: string): SubcategoryPageSnapshot | null => {
+  if (typeof window === 'undefined' || !slug) return null;
+  try {
+    const raw = window.sessionStorage.getItem(`${SUBCATEGORY_PAGE_CACHE_PREFIX}${slug}`);
+    if (!raw) return null;
+    const snapshot = JSON.parse(raw) as SubcategoryPageSnapshot;
+    if (!snapshot?.category || !Array.isArray(snapshot.subcategories) || !Array.isArray(snapshot.products)) return null;
+    if (Date.now() - snapshot.ts > SUBCATEGORY_PAGE_CACHE_MS) {
+      window.sessionStorage.removeItem(`${SUBCATEGORY_PAGE_CACHE_PREFIX}${slug}`);
+      return null;
+    }
+    return snapshot;
+  } catch {
+    return null;
+  }
+};
+
+const writePageSnapshot = (
+  slug: string | undefined,
+  snapshot: Omit<SubcategoryPageSnapshot, 'ts'>
+) => {
+  if (typeof window === 'undefined' || !slug) return;
+  try {
+    window.sessionStorage.setItem(
+      `${SUBCATEGORY_PAGE_CACHE_PREFIX}${slug}`,
+      JSON.stringify({ ...snapshot, ts: Date.now() })
+    );
+  } catch {
+    // Ignore storage limits; the live API load still works.
+  }
+};
+
 const CategorySubcategoriesPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [category, setCategory] = useState<Category | null>(null);
-  const [subcategories, setSubcategories] = useState<SubCategory[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const initialSnapshot = useMemo(() => readPageSnapshot(slug), [slug]);
+  const [category, setCategory] = useState<Category | null>(initialSnapshot?.category ?? null);
+  const [subcategories, setSubcategories] = useState<SubCategory[]>(initialSnapshot?.subcategories ?? []);
+  const [products, setProducts] = useState<Product[]>(initialSnapshot?.products ?? []);
+  const [isLoading, setIsLoading] = useState(!initialSnapshot);
   const [loadError, setLoadError] = useState(false);
   const selectedSubSlugs = useMemo(
     () =>
@@ -57,8 +112,10 @@ const CategorySubcategoriesPage = () => {
   );
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
-      setIsLoading(true);
+      const cachedSnapshot = readPageSnapshot(slug);
       setLoadError(false);
 
       if (!slug) {
@@ -70,18 +127,37 @@ const CategorySubcategoriesPage = () => {
         return;
       }
 
-      try {
-        const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(`/products/?category=${slug}&summary=1`);
+      if (cachedSnapshot) {
+        setCategory(cachedSnapshot.category);
+        setSubcategories(cachedSnapshot.subcategories);
+        setProducts(cachedSnapshot.products);
+        setIsLoading(false);
+      } else {
+        setIsLoading(true);
+      }
 
-        const categoryMatches = await apiGet<Category[]>(`/categories/?slug=${slug}`).catch(() => []);
+      const apiOptions = {
+        staleWhileRevalidate: true,
+        maxStaleMs: SUBCATEGORY_PAGE_CACHE_MS,
+      };
+
+      try {
+        const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
+          buildCategoryProductsPath(slug),
+          apiOptions
+        );
+
+        const categoryMatches = await apiGet<Category[]>(`/categories/?slug=${slug}`, apiOptions).catch(() => []);
         let categoryItem = categoryMatches?.[0] || null;
 
         if (!categoryItem) {
-          const allCategories = await apiGet<Category[]>('/categories/').catch(() => []);
+          const allCategories = await apiGet<Category[]>('/categories/', apiOptions).catch(() => []);
           categoryItem =
             allCategories.find((entry) => entry.slug === slug || entry.name?.trim().toLowerCase() === slug.replace(/-/g, ' ')) ||
             null;
         }
+
+        if (cancelled) return;
 
         if (!categoryItem) {
           setCategory(null);
@@ -92,34 +168,54 @@ const CategorySubcategoriesPage = () => {
           return;
         }
 
+        const nextSubcategories = Array.isArray(categoryItem.subcategories) ? categoryItem.subcategories : [];
         setCategory(categoryItem);
-        setSubcategories(Array.isArray(categoryItem.subcategories) ? categoryItem.subcategories : []);
-
-        const resolvedSlug = categoryItem.slug || slug;
-        const needsSlugRetry = resolvedSlug !== slug;
-
-        const productsRes = await (needsSlugRetry
-          ? apiGet<Product[] | { results?: Product[] }>(`/products/?category=${resolvedSlug}&summary=1`)
-          : initialProductsPromise);
-
-        const normalizedProducts = Array.isArray(productsRes)
-          ? productsRes
-          : Array.isArray(productsRes?.results)
-          ? productsRes.results
-          : [];
-
-        setProducts(normalizedProducts);
-      } catch {
-        setCategory(null);
-        setSubcategories([]);
-        setProducts([]);
-        setLoadError(true);
-      } finally {
+        setSubcategories(nextSubcategories);
         setIsLoading(false);
+        writePageSnapshot(slug, {
+          category: categoryItem,
+          subcategories: nextSubcategories,
+          products: cachedSnapshot?.products ?? [],
+        });
+
+        try {
+          const resolvedSlug = categoryItem.slug || slug;
+          const needsSlugRetry = resolvedSlug !== slug;
+
+          const productsRes = await (needsSlugRetry
+            ? apiGet<Product[] | { results?: Product[] }>(buildCategoryProductsPath(resolvedSlug), apiOptions)
+            : initialProductsPromise);
+
+          if (cancelled) return;
+
+          const normalizedProducts = normalizeProductsResponse(productsRes);
+
+          setProducts(normalizedProducts);
+          writePageSnapshot(slug, {
+            category: categoryItem,
+            subcategories: nextSubcategories,
+            products: normalizedProducts,
+          });
+        } catch {
+          // Product counts and fallback images are only enrichment; keep the category cards visible.
+        }
+      } catch {
+        if (cancelled) return;
+        if (!cachedSnapshot) {
+          setCategory(null);
+          setSubcategories([]);
+          setProducts([]);
+          setLoadError(true);
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
       }
     };
 
     void load();
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   const cards = useMemo<SubcategoryCard[]>(() => {
@@ -255,7 +351,7 @@ const CategorySubcategoriesPage = () => {
                     )}
                     <div className="absolute inset-0 bg-gradient-to-t from-espresso/70 via-espresso/10 to-transparent" />
                     <div className="absolute bottom-4 left-4 rounded-full bg-background/85 px-3 py-1 text-xs font-medium uppercase tracking-[0.18em] text-foreground backdrop-blur-sm">
-                      {card.productCount} products
+                      {card.productCount > 0 ? `${card.productCount} products` : 'View products'}
                     </div>
                   </div>
 
