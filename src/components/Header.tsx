@@ -19,7 +19,7 @@ import { useCart } from '@/context/CartContext';
 import { apiGet } from '@/lib/api';
 import { formatWholePrice } from '@/lib/pricing';
 import type { Category, Product } from '@/lib/types';
-import logoLettersOnly from '@/assets/logo-letters-only.png';
+import logoLettersOnly from '@/assets/Logo letters only.svg';
 
 const NAV_CACHE_KEY = 'reve-header-nav-v1';
 const CATEGORY_PREFETCH_STALE_MS = 10 * 60 * 1000;

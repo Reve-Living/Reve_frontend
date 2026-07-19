@@ -3,6 +3,11 @@
   "short_name": "Reve Living",
   "icons": [
     {
+      "src": "/logo-letters-only.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
       "src": "/favicon.png",
       "sizes": "256x256",
       "type": "image/png"

@@ -140,12 +140,20 @@ const normalizeProductStockStatus = (
 };
 
 type ColorStockStatus = 'available' | 'out_of_stock' | 'stock_check_needed';
+type SizeStockStatus = ColorStockStatus;
 
 const normalizeColorStockStatus = (color?: { stock_status?: string | null; is_available?: boolean | null }): ColorStockStatus => {
   if (color?.stock_status === 'out_of_stock' || color?.stock_status === 'stock_check_needed') {
     return color.stock_status;
   }
   if (color?.is_available === false) return 'out_of_stock';
+  return 'available';
+};
+
+const normalizeSizeStockStatus = (size?: { stock_status?: string | null }): SizeStockStatus => {
+  if (size?.stock_status === 'out_of_stock' || size?.stock_status === 'stock_check_needed') {
+    return size.stock_status;
+  }
   return 'available';
 };
 
@@ -162,6 +170,8 @@ type ParsedSizeOption = {
   description: string;
 
   raw: string;
+
+  stock_status?: SizeStockStatus;
 
 };
 
@@ -372,7 +382,13 @@ const adjustDimensionsForWingback = (
 
 
 
-const parseSizeOption = (rawSize: string, index: number, rawDescription = '', explicitDelta?: number): ParsedSizeOption => {
+const parseSizeOption = (
+  rawSize: string,
+  index: number,
+  rawDescription = '',
+  explicitDelta?: number,
+  stockStatus: SizeStockStatus = 'available'
+): ParsedSizeOption => {
 
   const raw = (rawSize || '').trim();
 
@@ -380,7 +396,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
   if (!raw) {
 
-    return { id: `size-${index}`, label: 'Size', price: 0, description, raw: rawSize };
+    return { id: `size-${index}`, label: 'Size', price: 0, description, raw: rawSize, stock_status: stockStatus };
 
   }
 
@@ -406,6 +422,8 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
       raw: rawSize,
 
+      stock_status: stockStatus,
+
     };
 
   }
@@ -428,6 +446,8 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
       raw: rawSize,
 
+      stock_status: stockStatus,
+
     };
 
   }
@@ -436,7 +456,7 @@ const parseSizeOption = (rawSize: string, index: number, rawDescription = '', ex
 
   const fallbackDelta = Number.isFinite(explicitDelta) ? Number(explicitDelta) : 0;
 
-  return { id: `size-${index}`, label: raw, price: fallbackDelta, description, raw: rawSize };
+  return { id: `size-${index}`, label: raw, price: fallbackDelta, description, raw: rawSize, stock_status: stockStatus };
 
 };
 
@@ -1313,7 +1333,8 @@ type MattressDetailView = {
               size.name,
               index,
               size.description || '',
-              normalizeStoredSizePrice(Number(fetched.price ?? 0), Number(size.price_delta ?? 0))
+              normalizeStoredSizePrice(Number(fetched.price ?? 0), Number(size.price_delta ?? 0)),
+              normalizeSizeStockStatus(size)
             )
           )
         );
@@ -1683,7 +1704,8 @@ type MattressDetailView = {
         size.name,
         index,
         size.description || '',
-        normalizeStoredSizePrice(Number(product?.price ?? 0), Number(size.price_delta ?? 0))
+        normalizeStoredSizePrice(Number(product?.price ?? 0), Number(size.price_delta ?? 0)),
+        normalizeSizeStockStatus(size)
       )
     )
   );
@@ -1842,6 +1864,10 @@ type MattressDetailView = {
           description: size.description,
 
           price_delta: size.price,
+
+          is_available: size.stock_status !== 'out_of_stock',
+
+          stock_status: size.stock_status,
 
         })),
 
@@ -3512,6 +3538,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                             ? formatPrice(Number(option.price_delta || 0))
                                             : formatAddonPrice(Number(option.price_delta || 0))}
                                         </p>
+                                        {group.kind === 'size' && (disabled || needsStockCheck) && (
+                                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
+                                            needsStockCheck ? 'bg-orange-50 text-orange-700' : 'bg-rose-50 text-rose-700'
+                                          }`}>
+                                            {needsStockCheck ? 'Stock check needed' : 'Out of stock'}
+                                          </span>
+                                        )}
                                       </div>
                                     </div>
                                   )
@@ -3524,7 +3557,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             );
                           })}
                         </div>
-                      {(group.kind === 'color' || group.kind === 'fabric') &&
+                      {(group.kind === 'color' || group.kind === 'fabric' || group.kind === 'size') &&
                         group.options.some((option) => option.is_available === false) && (
                           <p className="text-xs text-muted-foreground">
                             Unavailable options stay visible here and are marked out of stock.
