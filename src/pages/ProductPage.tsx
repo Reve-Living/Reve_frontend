@@ -100,6 +100,8 @@ type VariantOption = {
 
   is_available?: boolean;
 
+  stock_status?: 'available' | 'out_of_stock' | 'stock_check_needed';
+
   placeholder?: string;
 
 };
@@ -135,6 +137,16 @@ const normalizeProductStockStatus = (
     default:
       return inStock ? 'available' : 'out_of_stock';
   }
+};
+
+type ColorStockStatus = 'available' | 'out_of_stock' | 'stock_check_needed';
+
+const normalizeColorStockStatus = (color?: { stock_status?: string | null; is_available?: boolean | null }): ColorStockStatus => {
+  if (color?.stock_status === 'out_of_stock' || color?.stock_status === 'stock_check_needed') {
+    return color.stock_status;
+  }
+  if (color?.is_available === false) return 'out_of_stock';
+  return 'available';
 };
 
 
@@ -1469,12 +1481,12 @@ type MattressDetailView = {
   const fabricColors = selectedFabricObj?.colors || [];
 
   const hasAvailableStandaloneColor = useMemo(
-    () => (product?.colors || []).some((color) => color.is_available !== false),
+    () => (product?.colors || []).some((color) => normalizeColorStockStatus(color) !== 'out_of_stock'),
     [product?.colors]
   );
 
   const hasAvailableFabricColor = useMemo(
-    () => (product?.fabrics || []).some((fabric) => (fabric.colors || []).some((color) => color.is_available !== false)),
+    () => (product?.fabrics || []).some((fabric) => (fabric.colors || []).some((color) => normalizeColorStockStatus(color) !== 'out_of_stock')),
     [product?.fabrics]
   );
 
@@ -1516,11 +1528,11 @@ type MattressDetailView = {
     // Keep selections stable while browsing; if the current color no longer exists, pick a sensible fallback.
     const names = new Set(displayColors.map((c) => c.name).concat(availableColors.map((c) => c.name)));
     const firstAvailableColor =
-      availableColors.find((color) => color.is_available !== false)?.name ||
-      displayColors.find((color) => color.is_available !== false)?.name ||
+      availableColors.find((color) => normalizeColorStockStatus(color) !== 'out_of_stock')?.name ||
+      displayColors.find((color) => normalizeColorStockStatus(color) !== 'out_of_stock')?.name ||
       '';
     const selectedColorOption = availableColors.find((color) => color.name === selectedColor);
-    if (selectedColorOption?.is_available === false) {
+    if (normalizeColorStockStatus(selectedColorOption) === 'out_of_stock') {
       setSelectedColor(firstAvailableColor);
       return;
     }
@@ -1775,7 +1787,7 @@ type MattressDetailView = {
           label: fabric.name,
           description: '',
           price_delta: 0,
-          is_available: (fabric.colors || []).some((color) => color.is_available !== false),
+          is_available: (fabric.colors || []).some((color) => normalizeColorStockStatus(color) !== 'out_of_stock'),
         })),
       });
     }
@@ -1800,7 +1812,8 @@ type MattressDetailView = {
           icon_url: resolveMediaUrl(color.image_url),
           // Fallback texture placeholder to avoid black flash while image streams in.
           placeholder: color.hex_code || '#f3f4f6',
-          is_available: color.is_available !== false,
+          is_available: normalizeColorStockStatus(color) !== 'out_of_stock',
+          stock_status: normalizeColorStockStatus(color),
 
           price_delta: 0,
 
@@ -3327,7 +3340,9 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <div className={gridClass} style={headboardGridStyle}>
                           {group.options.map((option) => {
                             const isSelected = selected?.key === option.key;
-                            const disabled = option.is_available === false;
+                            const colorStockStatus = normalizeColorStockStatus(option);
+                            const needsStockCheck = colorStockStatus === 'stock_check_needed';
+                            const disabled = option.is_available === false || colorStockStatus === 'out_of_stock';
                           const shouldShowIcon =
                             !(group.kind === 'size' && !sizeIconsEnabled) &&
                             group.kind !== 'fabric';
@@ -3339,6 +3354,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                               title={
                                 disabled
                                   ? `${formatOptionLabel(option.label)} - Out of stock`
+                                  : needsStockCheck
+                                  ? `${formatOptionLabel(option.label)} - Stock check needed`
                                   : formatOptionLabel(option.label)
                               }
                               onClick={() => {
@@ -3426,11 +3443,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                         }}
                                       />
                                     )}
-                                    {disabled && (
+                                    {(disabled || needsStockCheck) && (
                                       <>
-                                        <span className="absolute inset-0 rounded-md bg-white/70" />
-                                        <span className="absolute inset-x-1 bottom-1 rounded bg-white px-1 py-0.5 text-center text-[8px] font-semibold uppercase tracking-wide text-rose-700">
-                                          Out
+                                        {disabled && <span className="absolute inset-0 rounded-md bg-white/70" />}
+                                        <span className={`absolute inset-x-1 bottom-1 rounded bg-white px-1 py-0.5 text-center text-[8px] font-semibold uppercase tracking-wide ${
+                                          needsStockCheck ? 'text-orange-700' : 'text-rose-700'
+                                        }`}>
+                                          {needsStockCheck ? 'Check' : 'Out'}
                                         </span>
                                       </>
                                     )}
@@ -3442,9 +3461,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                       <span className="text-sm font-semibold text-espresso">
                                         {formatOptionLabel(option.label)}
                                       </span>
-                                      {disabled && (
-                                        <span className="rounded-full bg-rose-50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-rose-700">
-                                          Out of stock
+                                      {(disabled || needsStockCheck) && (
+                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                                          needsStockCheck ? 'bg-orange-50 text-orange-700' : 'bg-rose-50 text-rose-700'
+                                        }`}>
+                                          {needsStockCheck ? 'Stock check needed' : 'Out of stock'}
                                         </span>
                                       )}
                                     </>
