@@ -5,6 +5,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 type ProductSeoRecord = {
+  id?: number;
   name: string;
   slug: string;
   meta_title?: string;
@@ -12,10 +13,21 @@ type ProductSeoRecord = {
   short_description?: string;
   description?: string;
   price: string | number;
+  delivery_charges?: string | number | null;
+  rating?: string | number | null;
+  review_count?: string | number | null;
+  reviews?: ProductSeoReviewRecord[];
   stock_status?: string;
   in_stock?: boolean;
   primary_image_url?: string;
   images?: { url?: string }[];
+};
+
+type ProductSeoReviewRecord = {
+  name?: string;
+  rating?: string | number | null;
+  comment?: string;
+  created_at?: string;
 };
 
 type ProductSeoResponse =
@@ -23,12 +35,93 @@ type ProductSeoResponse =
   | { results?: ProductSeoRecord[] };
 
 const SITE_URL = "https://www.reveliving.co.uk";
+const PRODUCT_SCHEMA_COUNTRY = "GB";
+const PRODUCT_SCHEMA_CURRENCY = "GBP";
+const PRODUCT_SCHEMA_RETURN_DAYS = 30;
+const PRODUCT_SCHEMA_RETURN_COLLECTION_FEE = 60;
+
+const formatSchemaMoney = (value: unknown, fallback = 0): string => {
+  const numericValue = Number(value);
+  const safeValue = Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : fallback;
+  return safeValue.toFixed(2);
+};
 
 const escapeHtml = (value: string) =>
   value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 const plainText = (value = "") =>
   value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+const normalizeSchemaText = (value?: string | null): string =>
+  String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+
+const normalizeSchemaRating = (value: unknown): number | null => {
+  const rating = Number(value);
+  if (!Number.isFinite(rating) || rating <= 0) return null;
+  return Math.min(5, Math.max(1, rating));
+};
+
+const formatSchemaRating = (value: number): string => {
+  const fixed = value.toFixed(1);
+  return fixed.endsWith(".0") ? fixed.slice(0, -2) : fixed;
+};
+
+const formatSchemaDate = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString().slice(0, 10);
+};
+
+const getSchemaReviewAuthorName = (name?: string): string => {
+  const normalized = normalizeSchemaText(name);
+  if (!normalized || /^anonymous$/i.test(normalized)) return "";
+  return normalized;
+};
+
+const buildAggregateRatingSchema = (ratingValue: unknown, reviewCountValue: unknown) => {
+  const rating = normalizeSchemaRating(ratingValue);
+  const reviewCount = Number(reviewCountValue);
+
+  if (!rating || !Number.isFinite(reviewCount) || reviewCount <= 0) return null;
+
+  return {
+    "@type": "AggregateRating",
+    ratingValue: formatSchemaRating(rating),
+    reviewCount: String(Math.floor(reviewCount)),
+    bestRating: "5",
+    worstRating: "1",
+  };
+};
+
+const buildReviewSchemas = (reviews: ProductSeoReviewRecord[] = []) =>
+  reviews
+    .map((review) => {
+      const authorName = getSchemaReviewAuthorName(review.name);
+      const reviewBody = normalizeSchemaText(review.comment);
+      const rating = normalizeSchemaRating(review.rating);
+      const datePublished = formatSchemaDate(review.created_at);
+
+      if (!authorName || !reviewBody || !rating) return null;
+
+      return {
+        "@type": "Review",
+        author: {
+          "@type": "Person",
+          name: authorName,
+        },
+        ...(datePublished ? { datePublished } : {}),
+        reviewBody,
+        reviewRating: {
+          "@type": "Rating",
+          ratingValue: formatSchemaRating(rating),
+          bestRating: "5",
+          worstRating: "1",
+        },
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
 
 const sleep = (milliseconds: number) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -79,6 +172,8 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
       const availability = product.in_stock === false || product.stock_status === "out_of_stock"
         ? "https://schema.org/OutOfStock"
         : "https://schema.org/InStock";
+      const aggregateRatingSchema = buildAggregateRatingSchema(product.rating, product.review_count);
+      const reviewSchemas = buildReviewSchemas(product.reviews);
       const schema = JSON.stringify({
         "@context": "https://schema.org",
         "@type": "Product",
@@ -87,12 +182,39 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         description,
         url: canonicalUrl,
         brand: { "@type": "Brand", name: "Reve Living" },
+        ...(aggregateRatingSchema ? { aggregateRating: aggregateRatingSchema } : {}),
+        ...(reviewSchemas.length > 0 ? { review: reviewSchemas } : {}),
         offers: {
           "@type": "Offer",
           url: canonicalUrl,
-          priceCurrency: "GBP",
+          priceCurrency: PRODUCT_SCHEMA_CURRENCY,
           price: String(product.price),
           availability,
+          shippingDetails: {
+            "@type": "OfferShippingDetails",
+            shippingRate: {
+              "@type": "MonetaryAmount",
+              value: formatSchemaMoney(product.delivery_charges),
+              currency: PRODUCT_SCHEMA_CURRENCY,
+            },
+            shippingDestination: {
+              "@type": "DefinedRegion",
+              addressCountry: PRODUCT_SCHEMA_COUNTRY,
+            },
+          },
+          hasMerchantReturnPolicy: {
+            "@type": "MerchantReturnPolicy",
+            applicableCountry: PRODUCT_SCHEMA_COUNTRY,
+            returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+            merchantReturnDays: PRODUCT_SCHEMA_RETURN_DAYS,
+            returnMethod: "https://schema.org/ReturnByMail",
+            returnFees: "https://schema.org/ReturnShippingFees",
+            returnShippingFeesAmount: {
+              "@type": "MonetaryAmount",
+              value: formatSchemaMoney(PRODUCT_SCHEMA_RETURN_COLLECTION_FEE),
+              currency: PRODUCT_SCHEMA_CURRENCY,
+            },
+          },
         },
       }).replace(/</g, "\\u003c");
 
@@ -108,7 +230,7 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
         imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}" />` : "",
         `<meta property="product:price:amount" content="${escapeHtml(String(product.price))}" />`,
-        '<meta property="product:price:currency" content="GBP" />',
+        `<meta property="product:price:currency" content="${PRODUCT_SCHEMA_CURRENCY}" />`,
         `<script id="product-json-ld" type="application/ld+json">${schema}</script>`,
       ].filter(Boolean).join("\n    ");
       html = html.replace("</head>", `    ${extraHead}\n  </head>`);

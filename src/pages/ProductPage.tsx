@@ -788,6 +788,88 @@ const resolveMediaUrl = (url?: string) => {
   return `${backendBase}${normalizedPath}`;
 };
 
+const PRODUCT_SCHEMA_COUNTRY = 'GB';
+const PRODUCT_SCHEMA_CURRENCY = 'GBP';
+const PRODUCT_SCHEMA_RETURN_DAYS = 30;
+const PRODUCT_SCHEMA_RETURN_COLLECTION_FEE = 60;
+
+const formatSchemaMoney = (value: unknown, fallback = 0): string => {
+  const numericValue = Number(value);
+  const safeValue = Number.isFinite(numericValue) && numericValue >= 0 ? numericValue : fallback;
+  return safeValue.toFixed(2);
+};
+
+const normalizeSchemaText = (value?: string | null): string =>
+  String(value || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+
+const normalizeSchemaRating = (value: unknown): number | null => {
+  const rating = Number(value);
+  if (!Number.isFinite(rating) || rating <= 0) return null;
+  return Math.min(5, Math.max(1, rating));
+};
+
+const formatSchemaRating = (value: number): string => {
+  const fixed = value.toFixed(1);
+  return fixed.endsWith('.0') ? fixed.slice(0, -2) : fixed;
+};
+
+const formatSchemaDate = (value?: string): string | undefined => {
+  if (!value) return undefined;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return undefined;
+  return date.toISOString().slice(0, 10);
+};
+
+const getSchemaReviewAuthorName = (name?: string): string => {
+  const normalized = normalizeSchemaText(name);
+  if (!normalized || /^anonymous$/i.test(normalized)) return '';
+  return normalized;
+};
+
+const buildAggregateRatingSchema = (ratingValue: unknown, reviewCountValue: unknown) => {
+  const rating = normalizeSchemaRating(ratingValue);
+  const reviewCount = Number(reviewCountValue);
+
+  if (!rating || !Number.isFinite(reviewCount) || reviewCount <= 0) return null;
+
+  return {
+    '@type': 'AggregateRating',
+    ratingValue: formatSchemaRating(rating),
+    reviewCount: String(Math.floor(reviewCount)),
+    bestRating: '5',
+    worstRating: '1',
+  };
+};
+
+const buildReviewSchemas = (reviews: Review[]) =>
+  reviews
+    .map((review) => {
+      const authorName = getSchemaReviewAuthorName(review.name);
+      const reviewBody = normalizeSchemaText(review.comment);
+      const rating = normalizeSchemaRating(review.rating);
+      const datePublished = formatSchemaDate(review.created_at);
+
+      if (!authorName || !reviewBody || !rating) return null;
+
+      return {
+        '@type': 'Review',
+        author: {
+          '@type': 'Person',
+          name: authorName,
+        },
+        ...(datePublished ? { datePublished } : {}),
+        reviewBody,
+        reviewRating: {
+          '@type': 'Rating',
+          ratingValue: formatSchemaRating(rating),
+          bestRating: '5',
+          worstRating: '1',
+        },
+      };
+    })
+    .filter(Boolean)
+    .slice(0, 10);
+
 const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; className: string }) => {
   if (isInlineSvgMarkup(icon)) {
     return <img src={svgMarkupToDataUrl((icon || '').trim())} alt={alt} className={className} />;
@@ -898,6 +980,33 @@ type MattressDetailView = {
   const [isMattressDetailOpen, setIsMattressDetailOpen] = useState(false);
   const [isLoadingMattressDetail, setIsLoadingMattressDetail] = useState(false);
   const [activeMattressDetailImage, setActiveMattressDetailImage] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
+  const [reviewMediaFiles, setReviewMediaFiles] = useState<SelectedReviewMedia[]>([]);
+  const [reviewGalleryMedia, setReviewGalleryMedia] = useState<ReviewGalleryMedia[]>([]);
+  const [selectedReviewMediaIndex, setSelectedReviewMediaIndex] = useState(0);
+  const [isReviewGalleryOpen, setIsReviewGalleryOpen] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+  const reviewSummary = useMemo(() => {
+    const productReviewCount = Number(product?.review_count ?? 0);
+    const productRating = Number(product?.rating ?? 0);
+
+    if ((productReviewCount > 0 || productRating > 0) || reviews.length === 0) {
+      return {
+        reviewCount: productReviewCount,
+        rating: productRating,
+      };
+    }
+
+    const totalRating = reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
+    return {
+      reviewCount: reviews.length,
+      rating: totalRating / reviews.length,
+    };
+  }, [product?.rating, product?.review_count, reviews]);
 
   useEffect(() => {
     const seoTitle = product?.meta_title || (product?.name ? `${product.name} | Reve Living` : 'Reve Living');
@@ -931,13 +1040,16 @@ type MattressDetailView = {
 
     if (!product) return;
 
+    const aggregateRatingSchema = buildAggregateRatingSchema(reviewSummary.rating, reviewSummary.reviewCount);
+    const reviewSchemas = buildReviewSchemas(reviews);
+
     setPropertyMeta('og:title', seoTitle);
     setPropertyMeta('og:description', plainDescription);
     setPropertyMeta('og:type', 'product');
     setPropertyMeta('og:url', canonicalUrl);
     if (imageUrl) setPropertyMeta('og:image', imageUrl);
     setPropertyMeta('product:price:amount', String(product.price));
-    setPropertyMeta('product:price:currency', 'GBP');
+    setPropertyMeta('product:price:currency', PRODUCT_SCHEMA_CURRENCY);
 
     let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!canonical) {
@@ -963,17 +1075,44 @@ type MattressDetailView = {
       description: plainDescription,
       url: canonicalUrl,
       brand: { '@type': 'Brand', name: 'Reve Living' },
+      ...(aggregateRatingSchema ? { aggregateRating: aggregateRatingSchema } : {}),
+      ...(reviewSchemas.length > 0 ? { review: reviewSchemas } : {}),
       offers: {
         '@type': 'Offer',
         url: canonicalUrl,
-        priceCurrency: 'GBP',
+        priceCurrency: PRODUCT_SCHEMA_CURRENCY,
         price: String(product.price),
         availability: product.in_stock === false || product.stock_status === 'out_of_stock'
           ? 'https://schema.org/OutOfStock'
           : 'https://schema.org/InStock',
+        shippingDetails: {
+          '@type': 'OfferShippingDetails',
+          shippingRate: {
+            '@type': 'MonetaryAmount',
+            value: formatSchemaMoney(product.delivery_charges),
+            currency: PRODUCT_SCHEMA_CURRENCY,
+          },
+          shippingDestination: {
+            '@type': 'DefinedRegion',
+            addressCountry: PRODUCT_SCHEMA_COUNTRY,
+          },
+        },
+        hasMerchantReturnPolicy: {
+          '@type': 'MerchantReturnPolicy',
+          applicableCountry: PRODUCT_SCHEMA_COUNTRY,
+          returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+          merchantReturnDays: PRODUCT_SCHEMA_RETURN_DAYS,
+          returnMethod: 'https://schema.org/ReturnByMail',
+          returnFees: 'https://schema.org/ReturnShippingFees',
+          returnShippingFeesAmount: {
+            '@type': 'MonetaryAmount',
+            value: formatSchemaMoney(PRODUCT_SCHEMA_RETURN_COLLECTION_FEE),
+            currency: PRODUCT_SCHEMA_CURRENCY,
+          },
+        },
       },
     });
-  }, [product, slug]);
+  }, [product, reviewSummary.rating, reviewSummary.reviewCount, reviews, slug]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(true);
   const [selectedFabric, setSelectedFabric] = useState('');
@@ -988,15 +1127,6 @@ type MattressDetailView = {
   const [includeDimensions, setIncludeDimensions] = useState(true);
   const [selectedDimension, setSelectedDimension] = useState<string | null>(null);
   const [isDimensionsOpen, setIsDimensionsOpen] = useState(false);
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [isLoadingReviews, setIsLoadingReviews] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviewForm, setReviewForm] = useState({ name: '', rating: 5, comment: '' });
-  const [reviewMediaFiles, setReviewMediaFiles] = useState<SelectedReviewMedia[]>([]);
-  const [reviewGalleryMedia, setReviewGalleryMedia] = useState<ReviewGalleryMedia[]>([]);
-  const [selectedReviewMediaIndex, setSelectedReviewMediaIndex] = useState(0);
-  const [isReviewGalleryOpen, setIsReviewGalleryOpen] = useState(false);
-  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const hasAutoSelectedIncludedMattress = useRef(false);
   const preloadedAssets = useRef(new Set<string>());
   const reviewMediaFilesRef = useRef<SelectedReviewMedia[]>([]);
@@ -1110,24 +1240,6 @@ type MattressDetailView = {
       setIsLoadingReviews(false);
     }
   };
-
-  const reviewSummary = useMemo(() => {
-    const productReviewCount = Number(product?.review_count ?? 0);
-    const productRating = Number(product?.rating ?? 0);
-
-    if ((productReviewCount > 0 || productRating > 0) || reviews.length === 0) {
-      return {
-        reviewCount: productReviewCount,
-        rating: productRating,
-      };
-    }
-
-    const totalRating = reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0);
-    return {
-      reviewCount: reviews.length,
-      rating: totalRating / reviews.length,
-    };
-  }, [product?.rating, product?.review_count, reviews]);
 
   const loadSeriesProducts = useCallback(
     async (currentProduct: Product | null) => {
