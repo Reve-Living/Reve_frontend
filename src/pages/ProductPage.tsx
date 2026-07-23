@@ -3746,7 +3746,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     size="sm"
                     variant="outline"
                     onClick={() => {
-                      setShowAllMattresses(false);
+                      setShowAllMattresses(true);
                       setIsMattressOpen(true);
                     }}
                   >
@@ -3756,7 +3756,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                 <button
                   type="button"
                   onClick={() => {
-                    setShowAllMattresses(false);
+                    setShowAllMattresses(true);
                     setIsMattressOpen(true);
                   }}
                   className="flex w-full items-center justify-between rounded-lg border border-dashed border-primary/50 px-3 py-3 text-left transition hover:border-primary/70"
