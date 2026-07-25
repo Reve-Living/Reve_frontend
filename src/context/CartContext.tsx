@@ -14,6 +14,7 @@ export interface CartItem {
     position?: 'top' | 'bottom' | 'both' | null;
     price?: number | null;
   }[];
+    
   fabric?: string;
   dimension?: string;
   dimension_details?: string;
