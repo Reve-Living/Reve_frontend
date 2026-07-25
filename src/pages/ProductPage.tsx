@@ -2411,7 +2411,8 @@ type MattressDetailView = {
       : undefined;
 
   const useExactKidsMattressPricing = kidsMattressTabsEnabled && chargeableMattressDetails.length > 0;
-  const formatProductTotalPrice = useExactKidsMattressPricing ? formatExactPrice : formatPrice;
+  const formatProductTotalPrice =
+    useExactKidsMattressPricing || product?.discount_override_applied ? formatExactPrice : formatPrice;
   const formatMattressChoicePrice = kidsMattressTabsEnabled ? formatExactPrice : formatPrice;
   const discountPercentage = Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0);
   const discountedProductBase = product?.discount_override_applied
