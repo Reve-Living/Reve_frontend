@@ -316,6 +316,7 @@ export interface Product {
   size_count?: number | null;
   discount_percentage?: number;
   effective_discount_percentage?: number;
+  discount_override_applied?: boolean;
   stock_status?: ProductStockStatus;
   description: string;
   short_description?: string;

@@ -51,6 +51,13 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
     minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
   const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
   const displayOriginalPrice = toFiniteNumber(product.original_price);
+  const originalBasePrice =
+    displayOriginalPrice !== null && displayOriginalPrice > basePrice
+      ? displayBasePrice + (displayOriginalPrice - basePrice)
+      : displayBasePrice;
+  const effectiveDisplayPrice = product.discount_override_applied
+    ? originalBasePrice * (1 - Math.min(100, Math.max(0, salePercentage)) / 100)
+    : displayBasePrice;
   const imageUrl = product.images?.[0]?.url || "";
   const imageFlipHorizontal = Boolean(product.images?.[0]?.flip_horizontal);
   const hasImage = imageUrl.trim().length > 0;
@@ -183,11 +190,11 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              {hasMultipleSizePrices ? `From ${formatWholePrice(displayBasePrice)}` : formatWholePrice(displayBasePrice)}
+              {hasMultipleSizePrices ? `From ${formatWholePrice(effectiveDisplayPrice)}` : formatWholePrice(effectiveDisplayPrice)}
             </p>
-            {displayOriginalPrice !== null && displayOriginalPrice > displayBasePrice && (
+            {originalBasePrice > effectiveDisplayPrice && (
               <p className="text-sm text-muted-foreground line-through">
-                {formatWholePrice(displayOriginalPrice)}
+                {formatWholePrice(originalBasePrice)}
               </p>
             )}
           </div>
