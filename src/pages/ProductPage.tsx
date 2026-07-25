@@ -2404,10 +2404,14 @@ type MattressDetailView = {
   const selectedSizeOriginalPriceBase =
     baseOriginalPrice !== undefined ? selectedSizeBasePrice + baseSavings : undefined;
 
+  const overrideDiscountRate = Math.min(99, Math.max(0, Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0))) / 100;
+  const displayedOriginalProductBase =
+    product?.discount_override_applied && overrideDiscountRate > 0
+      ? selectedSizeBasePrice / (1 - overrideDiscountRate)
+      : selectedSizeOriginalPriceBase;
   const unitOriginalPrice =
-
-    selectedSizeOriginalPriceBase !== undefined
-      ? selectedSizeOriginalPriceBase + stylePriceDelta + totalMattressPrice
+    displayedOriginalProductBase !== undefined
+      ? displayedOriginalProductBase + stylePriceDelta + totalMattressPrice
       : undefined;
 
   const useExactKidsMattressPricing = kidsMattressTabsEnabled && chargeableMattressDetails.length > 0;
@@ -2415,15 +2419,7 @@ type MattressDetailView = {
     useExactKidsMattressPricing || product?.discount_override_applied ? formatExactPrice : formatPrice;
   const formatMattressChoicePrice = kidsMattressTabsEnabled ? formatExactPrice : formatPrice;
   const discountPercentage = Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0);
-  const discountedProductBase = product?.discount_override_applied
-    ? (selectedSizeOriginalPriceBase ?? selectedSizeBasePrice) *
-      (1 - Math.min(100, Math.max(0, discountPercentage)) / 100)
-    : selectedSizeBasePrice;
-  const discountedUnitPrice =
-    discountedProductBase +
-    stylePriceDelta +
-    totalMattressPrice +
-    (assemblyServiceSelected ? assemblyServicePrice : 0);
+  const discountedUnitPrice = unitPrice;
   const totalPrice = discountedUnitPrice * quantity;
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";

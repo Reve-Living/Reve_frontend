@@ -59,13 +59,13 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
     minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
   const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
   const displayOriginalPrice = toFiniteNumber(product.original_price);
-  const originalBasePrice =
-    displayOriginalPrice !== null && displayOriginalPrice > basePrice
+  const overrideRate = Math.min(99, Math.max(0, salePercentage)) / 100;
+  const originalBasePrice = product.discount_override_applied && overrideRate > 0
+    ? displayBasePrice / (1 - overrideRate)
+    : displayOriginalPrice !== null && displayOriginalPrice > basePrice
       ? displayBasePrice + (displayOriginalPrice - basePrice)
       : displayBasePrice;
-  const effectiveDisplayPrice = product.discount_override_applied
-    ? originalBasePrice * (1 - Math.min(100, Math.max(0, salePercentage)) / 100)
-    : displayBasePrice;
+  const effectiveDisplayPrice = displayBasePrice;
   const formattedDisplayPrice = product.discount_override_applied
     ? formatOverridePrice(effectiveDisplayPrice)
     : formatWholePrice(effectiveDisplayPrice);
