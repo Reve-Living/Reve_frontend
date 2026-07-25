@@ -1404,6 +1404,21 @@ type MattressDetailView = {
               const fullProduct = normalizeProductResponse(fullRes);
               if (!cancelled && fullProduct?.id === fetched?.id) {
                 setProduct((current) => ({ ...(current || {}), ...fullProduct }) as Product);
+                const selectedSuggestionIds = Array.isArray(fullProduct.suggested_products)
+                  ? fullProduct.suggested_products.map(Number).filter(Number.isFinite)
+                  : [];
+                if (selectedSuggestionIds.length > 0) {
+                  const selectedProducts = Array.isArray(fullProduct.suggested_products_data)
+                    ? fullProduct.suggested_products_data
+                    : [];
+                  const productsById = new Map(selectedProducts.map((item) => [Number(item.id), item]));
+                  setRelatedProducts(
+                    selectedSuggestionIds
+                      .map((productId) => productsById.get(productId))
+                      .filter((item): item is Product => Boolean(item))
+                      .slice(0, 4)
+                  );
+                }
               }
             })
             .catch(() => undefined);
