@@ -10,6 +10,11 @@ export interface Category {
   sort_order?: number;
   discount_override_enabled?: boolean;
   discount_percentage?: number;
+  faqs_override_enabled?: boolean;
+  faqs?: { question: string; answer: string }[];
+  delivery_info_override_enabled?: boolean;
+  delivery_info?: string;
+  delivery_title?: string;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
@@ -32,6 +37,11 @@ export interface SubCategory {
   sort_order?: number;
   discount_override_enabled?: boolean;
   discount_percentage?: number;
+  faqs_override_enabled?: boolean;
+  faqs?: { question: string; answer: string }[];
+  delivery_info_override_enabled?: boolean;
+  delivery_info?: string;
+  delivery_title?: string;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
