@@ -55,7 +55,7 @@ import ProductCard from '@/components/ProductCard';
 import PaymentBrandMark from '@/components/PaymentBrandMark';
 
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
-import { Category, Collection, Product, ProductDimensionRow, ProductStockStatus, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
+import { Category, Collection, Product, ProductAddon, ProductDimensionRow, ProductStockStatus, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
 
 import { toast } from 'sonner';
@@ -958,6 +958,7 @@ const ProductPage = () => {
   const [selectedSize, setSelectedSize] = useState('');
 
   const [selectedColor, setSelectedColor] = useState('');
+  const [selectedAddonIds, setSelectedAddonIds] = useState<number[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({});
 type BunkPosition = 'top' | 'bottom' | 'both';
 type SelectedMattressPick = { id: number; position?: BunkPosition | null; group_label?: string | null };
@@ -2435,7 +2436,10 @@ type MattressDetailView = {
   const formatMattressChoicePrice = kidsMattressTabsEnabled ? formatExactPrice : formatPrice;
   const discountPercentage = Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0);
   const discountedUnitPrice = unitPrice;
-  const totalPrice = discountedUnitPrice * quantity;
+  const productAddons = (product?.product_addons || []).filter((addon) => addon.is_active !== false);
+  const selectedProductAddons = productAddons.filter((addon) => selectedAddonIds.includes(addon.id));
+  const addonUnitTotal = selectedProductAddons.reduce((sum, addon) => sum + Number(addon.addon_price || 0), 0);
+  const totalPrice = (discountedUnitPrice + addonUnitTotal) * quantity;
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";
 
@@ -2959,7 +2963,39 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       unit_price: discountedUnitPrice,
     });
 
-    toast.success(`${product.name} added to cart`);
+    selectedProductAddons.forEach((addon) => {
+      const addonPrice = Number(addon.addon_price || 0);
+      const addonProduct: Product = {
+        id: addon.addon_product,
+        name: addon.addon_product_name,
+        slug: addon.addon_product_slug,
+        category: 0,
+        price: addonPrice,
+        original_price: Number(addon.regular_price || 0),
+        description: '',
+        features: [],
+        in_stock: addon.addon_product_stock_status === 'available' || addon.addon_product_stock_status === 'low_stock',
+        stock_status: addon.addon_product_stock_status,
+        is_bestseller: false,
+        is_new: false,
+        rating: 0,
+        review_count: 0,
+        images: addon.addon_product_image ? [{ url: addon.addon_product_image }] : [],
+        videos: [], colors: [], sizes: [], styles: [], fabrics: [],
+      };
+      addItem({
+        product: addonProduct,
+        quantity,
+        size: '',
+        color: '',
+        selectedVariants: { 'Add-on for': product.name },
+        include_dimension: false,
+        extras_total: 0,
+        unit_price: addonPrice,
+      });
+    });
+
+    toast.success(`${product.name}${selectedProductAddons.length ? ` and ${selectedProductAddons.length} add-on${selectedProductAddons.length > 1 ? 's' : ''}` : ''} added to cart`);
   };
 
   const handleReviewMediaChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -3803,6 +3839,27 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
                 </button>
+              </div>
+            )}
+
+            {productAddons.length > 0 && (
+              <div className="rounded-xl border border-border bg-white p-4 space-y-3">
+                <div><p className="text-base font-semibold">Complete the set</p>
+                  <p className="text-xs text-muted-foreground">Add matching products at their special bundle price.</p></div>
+                <div className="space-y-3">
+                  {productAddons.map((addon: ProductAddon) => {
+                    const selected = selectedAddonIds.includes(addon.id);
+                    const available = addon.addon_product_stock_status === 'available' || addon.addon_product_stock_status === 'low_stock';
+                    return <label key={addon.id} className={`flex items-center gap-3 rounded-lg border p-3 ${available ? 'cursor-pointer hover:border-primary/60' : 'opacity-60'}`}>
+                      <input type="checkbox" checked={selected} disabled={!available} onChange={() => setSelectedAddonIds(ids => selected ? ids.filter(id => id !== addon.id) : [...ids, addon.id])}/>
+                      {addon.addon_product_image && <img src={addon.addon_product_image} alt={addon.addon_product_name} className="h-16 w-16 rounded-md object-cover"/>}
+                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{addon.addon_product_name}</span>
+                        {!available && <span className="text-xs text-destructive">Currently unavailable</span>}</span>
+                      <span className="text-right"><span className="block text-sm font-semibold text-primary">{formatExactPrice(Number(addon.addon_price))}</span>
+                        {Number(addon.regular_price) > Number(addon.addon_price) && <span className="block text-xs text-muted-foreground line-through">{formatExactPrice(Number(addon.regular_price))}</span>}</span>
+                    </label>;
+                  })}
+                </div>
               </div>
             )}
 

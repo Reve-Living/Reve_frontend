@@ -361,6 +361,7 @@ export interface Product {
   styles: ProductStyle[];
   fabrics: ProductFabric[];
   mattresses?: ProductMattress[];
+  product_addons?: ProductAddon[];
   filters?: FilterType[];
   filter_values?: ProductFilterValue[];
   computed_dimensions?: ProductDimensionRow[];
@@ -369,6 +370,21 @@ export interface Product {
   wingback_width_delta_cm?: number;
   suggested_products?: number[];
   suggested_products_data?: Product[];
+}
+
+export interface ProductAddon {
+  id: number;
+  main_product: number;
+  main_product_name?: string;
+  addon_product: number;
+  addon_product_name: string;
+  addon_product_slug: string;
+  addon_product_image?: string;
+  addon_product_stock_status?: ProductStockStatus;
+  regular_price: number | string;
+  addon_price: number | string;
+  is_active: boolean;
+  sort_order: number;
 }
 
 export interface OrderItem {
