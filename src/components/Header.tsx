@@ -764,8 +764,8 @@ const Header = () => {
                   )}
 
                   {link.children && activeDropdown === link.name && (
-                    <div className="absolute left-0 top-full w-56 rounded-lg bg-card p-3 shadow-luxury">
-                      <div className="flex flex-col">
+                    <div className="absolute left-0 top-full w-56 rounded-lg bg-white p-3 shadow-luxury">
+                      <div className="flex flex-col divide-y divide-primary/15">
                         {link.children.map((child) => (
                           <Link
                             key={child.name}
