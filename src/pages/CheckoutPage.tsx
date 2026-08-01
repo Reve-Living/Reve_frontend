@@ -540,28 +540,7 @@ const CheckoutPage = () => {
       if (Object.keys(userData).length > 0) {
         gtag('set', 'user_data', userData);
       }
-      gtag('event', 'purchase', {
-        transaction_id: String(lastOrderId || ""),
-        affiliation: "Reve Living",
-        value: totalValue,
-        currency: "GBP",
-        tax: 0,
-        shipping: shippingValue,
-        items: lastOrderItems.map((item: any) => ({
-          item_id: String(item.product.id),
-          item_name: item.product.name,
-          price: Number((item.unit_price ?? item.product.price).toFixed(2)),
-          quantity: item.quantity,
-          item_category: item.product.category_name || "Uncategorized"
-        }))
-      });
       
-      console.log('✅ GA4 Purchase Event via gtag():', {
-        transaction_id: String(lastOrderId || ""),
-        value: totalValue,
-        currency: "GBP",
-        items_count: lastOrderItems.length
-      });
       gtag('event', 'conversion', {
         send_to: GOOGLE_ADS_PURCHASE_SEND_TO,
         value: totalValue,
