@@ -1016,6 +1016,19 @@ const CategoryPage = () => {
   const filteredProducts = useMemo(() => {
     let products = [...allProducts];
 
+    const selectedFilterEntries = Object.entries(selectedFilters).filter(([, values]) => values.length > 0);
+    const hasCompleteLocalFilterData =
+      products.length > 0 && products.every((product) => Array.isArray(product.filter_values));
+    if (hasCompleteLocalFilterData && selectedFilterEntries.length > 0) {
+      products = products.filter((product) =>
+        selectedFilterEntries.every(([filterSlug, optionSlugs]) =>
+          (product.filter_values || []).some(
+            (value) => value.filter_type === filterSlug && optionSlugs.includes(value.option)
+          )
+        )
+      );
+    }
+
     if (hasPriceFilter) {
       products = products.filter((p) => p.price >= priceRange[0] && p.price <= priceRange[1]);
     }
@@ -1051,7 +1064,7 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, hasPriceFilter, priceRange, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
+  }, [allProducts, hasPriceFilter, priceRange, selectedFilters, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
 
   const isShowingStaleProducts = loadedProductKey !== requestedProductKey;
   const isProductTransitionPending = isLoading || isShowingStaleProducts;
@@ -1059,7 +1072,10 @@ const CategoryPage = () => {
   const hasClientSideFilters =
     selectedSizes.length > 0 ||
     hasPriceFilter ||
-    Boolean(showBedSizeFilter && linkedBedSize);
+    Boolean(showBedSizeFilter && linkedBedSize) ||
+    (Object.keys(selectedFilters).length > 0 &&
+      allProducts.length > 0 &&
+      allProducts.every((product) => Array.isArray(product.filter_values)));
   const displayProductCount = hasClientSideFilters
     ? visibleProducts.length
     : totalProductCount ?? Math.max(visibleProducts.length, currentPage * PRODUCTS_PER_PAGE);

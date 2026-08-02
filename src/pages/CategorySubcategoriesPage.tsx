@@ -11,7 +11,7 @@ import type { Category, Product, SubCategory } from '@/lib/types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const SUBCATEGORY_PAGE_CACHE_MS = 10 * 60 * 1000;
-const SUBCATEGORY_PAGE_CACHE_PREFIX = 'reve-subcategory-page:v2:';
+const SUBCATEGORY_PAGE_CACHE_PREFIX = 'reve-subcategory-page:v3:';
 const SUBCATEGORY_PRODUCTS_LIMIT = 120;
 
 const resolveImageUrl = (value?: string): string => {
@@ -56,6 +56,7 @@ const buildCategoryProductsPath = (categorySlug: string) => {
   const params = new URLSearchParams({
     category: categorySlug,
     summary: '1',
+    include_filters: '1',
     limit: String(SUBCATEGORY_PRODUCTS_LIMIT),
   });
   return `/products/?${params.toString()}`;
