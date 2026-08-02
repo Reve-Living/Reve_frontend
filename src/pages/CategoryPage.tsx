@@ -373,6 +373,10 @@ const CategoryPage = () => {
     () => new URLSearchParams(debouncedServerFilterParamsKey),
     [debouncedServerFilterParamsKey]
   );
+  const navigationHandoff = useMemo(
+    () => (location.state as { categoryPageHandoff?: CategoryPageHandoff } | null)?.categoryPageHandoff,
+    [location.state]
+  );
   const initialSnapshot = useMemo(() => {
     const stored = readCategoryPageSnapshot(
       slug,
@@ -383,8 +387,7 @@ const CategoryPage = () => {
     );
     if (stored) return stored;
 
-    const handoff = (location.state as { categoryPageHandoff?: CategoryPageHandoff } | null)
-      ?.categoryPageHandoff;
+    const handoff = navigationHandoff;
     const handoffMatches =
       handoff?.category?.slug === slug &&
       handoff.subcategorySlug === subSlug &&
@@ -401,7 +404,7 @@ const CategoryPage = () => {
       totalProductCount: handoff.products.length,
       availableFilters: [],
     };
-  }, [debouncedServerFilterParamsKey, linkedBedSize, location.state, pageFromQuery, slug, subSlug]);
+  }, [debouncedServerFilterParamsKey, linkedBedSize, navigationHandoff, pageFromQuery, slug, subSlug]);
   const requestedProductKey = getCategoryPageSnapshotKey(
     slug,
     subSlug,
@@ -427,6 +430,13 @@ const CategoryPage = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>(initialSnapshot?.availableFilters ?? []);
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
+  const [prefetchedCatalog] = useState<Product[]>(() => {
+    const handoffMatches =
+      navigationHandoff?.category?.slug === slug &&
+      navigationHandoff.subcategorySlug === subSlug &&
+      Array.isArray(navigationHandoff.products);
+    return handoffMatches ? navigationHandoff.products : [];
+  });
 
   const isMattressCategory = (s: string | undefined) => s === 'mattress' || s === 'mattresses';
 
@@ -877,6 +887,14 @@ const CategoryPage = () => {
 
   const goToPage = (nextPage: number, replace = false) => {
     const clampedPage = Math.min(Math.max(1, nextPage), totalPages);
+    const localStart = (clampedPage - 1) * PRODUCTS_PER_PAGE;
+    const localPage = prefetchedCatalog.slice(localStart, localStart + PRODUCTS_PER_PAGE);
+    if (localPage.length > 0 && !serverFilterParamsKey) {
+      setAllProducts(localPage);
+      setLoadedProductKey(
+        getCategoryPageSnapshotKey(slug, subSlug, linkedBedSize, clampedPage, debouncedServerFilterParamsKey)
+      );
+    }
     setCurrentPage(clampedPage);
     updatePageInSearch(clampedPage, replace);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1082,6 +1100,34 @@ const CategoryPage = () => {
   const totalPages = Math.max(1, Math.ceil(displayProductCount / PRODUCTS_PER_PAGE));
   const displayRangeStart = displayProductCount === 0 ? 0 : (currentPage - 1) * PRODUCTS_PER_PAGE + 1;
   const displayRangeEnd = Math.min(currentPage * PRODUCTS_PER_PAGE, displayProductCount);
+
+  useEffect(() => {
+    if (isLoading || !slug || currentPage >= totalPages || hasClientSideFilters) return;
+
+    const categorySlug = category?.slug || slug;
+    const includeSizes = shouldRequestSizesForCategory(categorySlug, linkedBedSize);
+    const nextOffset = currentPage * PRODUCTS_PER_PAGE;
+    const timeoutId = window.setTimeout(() => {
+      void apiGet<ProductListResponse>(
+        buildCategoryProductsPath(
+          categorySlug,
+          subSlug,
+          false,
+          includeSizes,
+          PRODUCTS_PER_PAGE,
+          nextOffset,
+          debouncedServerFilterParams,
+          true
+        ),
+        {
+          staleWhileRevalidate: true,
+          maxStaleMs: CATEGORY_STALE_CACHE_MS,
+        }
+      ).catch(() => undefined);
+    }, 500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [category?.slug, currentPage, debouncedServerFilterParams, hasClientSideFilters, isLoading, linkedBedSize, slug, subSlug, totalPages]);
 
   const paginatedProducts = useMemo(() => {
     if (!hasClientSideFilters) {
