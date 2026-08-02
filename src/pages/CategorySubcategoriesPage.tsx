@@ -39,6 +39,7 @@ type SubcategoryCard = {
   description: string;
   image: string;
   productCount: number;
+  products: Product[];
 };
 
 type SubcategoryPageSnapshot = {
@@ -237,6 +238,7 @@ const CategorySubcategoriesPage = () => {
           description: sub.description || '',
           image: fallbackImage,
           productCount: subProducts.length,
+          products: subProducts,
         };
       })
       .sort((a, b) => a.name.localeCompare(b.name));
@@ -338,6 +340,14 @@ const CategorySubcategoriesPage = () => {
               >
                 <Link
                   to={`/category/${category.slug}?sub=${card.slug}`}
+                  state={{
+                    categoryPageHandoff: {
+                      category,
+                      subcategories,
+                      subcategorySlug: card.slug,
+                      products: card.products,
+                    },
+                  }}
                   className="group flex h-full flex-col overflow-hidden rounded-[28px] border border-border/60 bg-card shadow-[0_20px_50px_-30px_rgba(74,58,46,0.35)] transition-transform duration-300 hover:-translate-y-1"
                 >
                   <div className="relative aspect-[4/3] overflow-hidden bg-muted">

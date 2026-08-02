@@ -25,8 +25,6 @@ const CATEGORY_STALE_CACHE_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v6:';
 const CATEGORY_PAGE_PERSISTED_SNAPSHOT_MS = 24 * 60 * 60 * 1000;
-const FILTER_PREFETCH_SINGLE_LIMIT = 8;
-const FILTER_PREFETCH_PAIR_LIMIT = 12;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -284,6 +282,13 @@ type CategoryPageSnapshot = {
   availableFilters: FilterType[];
 };
 
+type CategoryPageHandoff = {
+  category: Category;
+  subcategories: SubCategory[];
+  subcategorySlug: string;
+  products: Product[];
+};
+
 const getCategoryPageSnapshotKey = (slug = '', subSlug = '', linkedBedSize = '', page = 1, productKey = '') =>
   `${CATEGORY_PAGE_SNAPSHOT_PREFIX}${slug}|${subSlug}|${linkedBedSize}|${page}|${productKey}`;
 
@@ -367,10 +372,35 @@ const CategoryPage = () => {
     () => new URLSearchParams(debouncedServerFilterParamsKey),
     [debouncedServerFilterParamsKey]
   );
-  const initialSnapshot = useMemo(
-    () => readCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey),
-    [debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, slug, subSlug]
-  );
+  const initialSnapshot = useMemo(() => {
+    const stored = readCategoryPageSnapshot(
+      slug,
+      subSlug,
+      linkedBedSize,
+      pageFromQuery,
+      debouncedServerFilterParamsKey
+    );
+    if (stored) return stored;
+
+    const handoff = (location.state as { categoryPageHandoff?: CategoryPageHandoff } | null)
+      ?.categoryPageHandoff;
+    const handoffMatches =
+      handoff?.category?.slug === slug &&
+      handoff.subcategorySlug === subSlug &&
+      pageFromQuery === 1 &&
+      !linkedBedSize &&
+      !debouncedServerFilterParamsKey;
+    if (!handoffMatches || !handoff || !Array.isArray(handoff.products)) return null;
+
+    return {
+      ts: Date.now(),
+      category: handoff.category,
+      subcategories: handoff.subcategories,
+      products: handoff.products,
+      totalProductCount: handoff.products.length,
+      availableFilters: [],
+    };
+  }, [debouncedServerFilterParamsKey, linkedBedSize, location.state, pageFromQuery, slug, subSlug]);
   const requestedProductKey = getCategoryPageSnapshotKey(
     slug,
     subSlug,
@@ -722,88 +752,6 @@ const CategoryPage = () => {
       controller.abort();
     };
   }, [debouncedServerFilterParams, debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, requestedFilterScopeKey, requestedProductKey, slug, subSlug]);
-
-  useEffect(() => {
-    if (serverFilterParamsKey) return;
-    if (!slug || availableFilters.length === 0) return;
-    const categorySlug = category?.slug || slug;
-    const includeSizes = shouldRequestSizesForCategory(categorySlug, linkedBedSize);
-    const prefetchTargets = availableFilters
-      .flatMap((filter) =>
-        (filter.options || [])
-          .filter((option) => (option.product_count ?? 1) > 0)
-          .map((option) => ({ filterSlug: filter.slug, optionSlug: option.slug }))
-      )
-      .slice(0, FILTER_PREFETCH_SINGLE_LIMIT);
-
-    if (prefetchTargets.length === 0) return;
-
-    const prefetchParams = new Map<string, URLSearchParams>();
-    prefetchTargets.forEach(({ filterSlug, optionSlug }) => {
-      const params = new URLSearchParams();
-      params.set(filterSlug, optionSlug);
-      prefetchParams.set(params.toString(), params);
-    });
-    for (
-      let leftIndex = 0;
-      leftIndex < prefetchTargets.length && prefetchParams.size < FILTER_PREFETCH_SINGLE_LIMIT + FILTER_PREFETCH_PAIR_LIMIT;
-      leftIndex += 1
-    ) {
-      for (
-        let rightIndex = leftIndex + 1;
-        rightIndex < prefetchTargets.length && prefetchParams.size < FILTER_PREFETCH_SINGLE_LIMIT + FILTER_PREFETCH_PAIR_LIMIT;
-        rightIndex += 1
-      ) {
-        const left = prefetchTargets[leftIndex];
-        const right = prefetchTargets[rightIndex];
-        const params = new URLSearchParams();
-        if (left.filterSlug === right.filterSlug) {
-          params.set(left.filterSlug, `${left.optionSlug},${right.optionSlug}`);
-        } else {
-          params.set(left.filterSlug, left.optionSlug);
-          params.set(right.filterSlug, right.optionSlug);
-        }
-        prefetchParams.set(params.toString(), params);
-      }
-    }
-    const prefetchParamSets = Array.from(prefetchParams.values());
-
-    let cancelled = false;
-    const warmFilterResults = async () => {
-      for (let index = 0; index < prefetchParamSets.length && !cancelled; index += 2) {
-        const batch = prefetchParamSets.slice(index, index + 2);
-        await Promise.allSettled(
-          batch.map((params) => {
-            return apiGet<ProductListResponse>(
-              buildCategoryProductsPath(
-                categorySlug,
-                subSlug,
-                false,
-                includeSizes,
-                INITIAL_PRODUCTS_LIMIT,
-                0,
-                params,
-                true
-              ),
-              {
-                staleWhileRevalidate: true,
-                maxStaleMs: CATEGORY_STALE_CACHE_MS,
-              }
-            );
-          })
-        );
-      }
-    };
-
-    const timeoutId = window.setTimeout(() => {
-      void warmFilterResults();
-    }, 450);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timeoutId);
-    };
-  }, [availableFilters, category?.slug, linkedBedSize, serverFilterParamsKey, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {
