@@ -61,6 +61,14 @@ const buildCategoryProductsPath = (categorySlug: string) => {
   return `/products/?${params.toString()}`;
 };
 
+const warmSubcategoryFilters = (subcategorySlug: string) => {
+  if (!subcategorySlug) return;
+  void apiGet(`/products/filters/?subcategory=${encodeURIComponent(subcategorySlug)}`, {
+    staleWhileRevalidate: true,
+    maxStaleMs: SUBCATEGORY_PAGE_CACHE_MS,
+  }).catch(() => undefined);
+};
+
 const readPageSnapshot = (slug?: string): SubcategoryPageSnapshot | null => {
   if (typeof window === 'undefined' || !slug) return null;
   try {
@@ -340,6 +348,8 @@ const CategorySubcategoriesPage = () => {
               >
                 <Link
                   to={`/category/${category.slug}?sub=${card.slug}`}
+                  onPointerEnter={() => warmSubcategoryFilters(card.slug)}
+                  onFocus={() => warmSubcategoryFilters(card.slug)}
                   state={{
                     categoryPageHandoff: {
                       category,

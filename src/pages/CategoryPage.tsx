@@ -25,6 +25,7 @@ const CATEGORY_STALE_CACHE_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v6:';
 const CATEGORY_PAGE_PERSISTED_SNAPSHOT_MS = 24 * 60 * 60 * 1000;
+const SINGLE_FILTER_PREFETCH_LIMIT = 12;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -752,6 +753,65 @@ const CategoryPage = () => {
       controller.abort();
     };
   }, [debouncedServerFilterParams, debouncedServerFilterParamsKey, linkedBedSize, pageFromQuery, requestedFilterScopeKey, requestedProductKey, slug, subSlug]);
+
+  useEffect(() => {
+    if (isLoading || serverFilterParamsKey || !slug || availableFilters.length === 0) return;
+
+    const categorySlug = category?.slug || slug;
+    const includeSizes = shouldRequestSizesForCategory(categorySlug, linkedBedSize);
+    const targets = availableFilters
+      .flatMap((filter) =>
+        (filter.options || [])
+          .filter((option) => (option.product_count ?? 1) > 0)
+          .map((option) => ({ filterSlug: filter.slug, optionSlug: option.slug }))
+      )
+      .slice(0, SINGLE_FILTER_PREFETCH_LIMIT);
+
+    if (targets.length === 0) return;
+
+    let cancelled = false;
+    const controller = new AbortController();
+    const warmSingleFilterResults = async () => {
+      for (const target of targets) {
+        if (cancelled) return;
+        const params = new URLSearchParams();
+        params.set(target.filterSlug, target.optionSlug);
+        try {
+          await apiGet<ProductListResponse>(
+            buildCategoryProductsPath(
+              categorySlug,
+              subSlug,
+              false,
+              includeSizes,
+              INITIAL_PRODUCTS_LIMIT,
+              0,
+              params,
+              true
+            ),
+            {
+              staleWhileRevalidate: true,
+              maxStaleMs: CATEGORY_STALE_CACHE_MS,
+              signal: controller.signal,
+            }
+          );
+        } catch (error) {
+          if (isAbortError(error)) return;
+        }
+      }
+    };
+
+    // Wait until the visible products and filters have finished loading, then
+    // warm one request at a time so this never competes with the initial page.
+    const timeoutId = window.setTimeout(() => {
+      void warmSingleFilterResults();
+    }, 1200);
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      window.clearTimeout(timeoutId);
+    };
+  }, [availableFilters, category?.slug, isLoading, linkedBedSize, serverFilterParamsKey, slug, subSlug]);
 
   useEffect(() => {
     if (availableFilters.length === 0) {
