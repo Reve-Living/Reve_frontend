@@ -33,8 +33,6 @@ type ReferenceImageUpload = {
 
 const STYLE_OPTION_KEY_RE = /^(\d+)-(\d+)$/;
 const REFERENCE_IMAGE_ACCEPT = 'image/webp,image/*';
-const GOOGLE_ADS_PURCHASE_SEND_TO = 'AW-18061556705/LvLrCJuqkJccEOH3taRD';
-
 const splitFullName = (fullName: string) => {
   const parts = fullName
     .trim()
@@ -499,10 +497,11 @@ const CheckoutPage = () => {
   useEffect(() => {
   if (step === 'confirmation' && confirmationEmailSent) {
     const lastOrderId = localStorage.getItem('last_order_id');
+    const transactionId = String(confirmedOrder?.id || lastOrderId || "");
     const trackedOrderId = localStorage.getItem('gtm_tracked_order_id');
     
     // Prevent duplicate tracking on re-renders
-    if (trackedOrderId === lastOrderId) {
+    if (!transactionId || trackedOrderId === transactionId) {
       return;
     }
 
@@ -530,37 +529,38 @@ const CheckoutPage = () => {
     window.dataLayer = window.dataLayer || [];
     
     // Convert values to numbers
-    const totalValue = Number(lastOrderTotal.toFixed(2));
+    const backendOrderTotal = Number(confirmedOrder?.total_amount);
+    const fallbackOrderTotal = Number(orderTotal);
+    const resolvedOrderTotal = Number.isFinite(backendOrderTotal) && backendOrderTotal > 0
+      ? backendOrderTotal
+      : Number.isFinite(fallbackOrderTotal) && fallbackOrderTotal > 0
+      ? fallbackOrderTotal
+      : lastOrderTotal;
+    const totalValue = Number(resolvedOrderTotal.toFixed(2));
     const shippingValue = Number(lastDeliveryFee.toFixed(2));
     const userData = buildGoogleUserData(confirmedOrder, formData);
     const enhancedConversionData = buildEnhancedConversionData(confirmedOrder, formData);
+
+    if (!Number.isFinite(totalValue) || totalValue <= 0) {
+      return;
+    }
     
-    // 🔥 USE gtag() DIRECTLY - THIS GOES STRAIGHT TO GA4
     if (typeof gtag !== 'undefined') {
       if (Object.keys(userData).length > 0) {
         gtag('set', 'user_data', userData);
       }
-      
-      gtag('event', 'conversion', {
-        send_to: GOOGLE_ADS_PURCHASE_SEND_TO,
-        value: totalValue,
-        currency: "GBP",
-        transaction_id: String(lastOrderId || "")
-      });
-    } else {
-      console.error('🚨 gtag not available');
     }
     
-    // Also push to dataLayer for GTM
+    // Push purchase once to dataLayer for GTM
     const purchaseEvent = {
       event: "purchase",
       enhanced_conversion_data: enhancedConversionData,
-      transaction_id: String(lastOrderId || ""),
+      transaction_id: transactionId,
       user_data: userData,
       value: totalValue,
       currency: "GBP",
       ecommerce: {
-        transaction_id: String(lastOrderId || ""),
+        transaction_id: transactionId,
         affiliation: "Reve Living",
         value: totalValue,
         currency: "GBP",
@@ -578,7 +578,7 @@ const CheckoutPage = () => {
     
     window.dataLayer.push(purchaseEvent);
     
-    localStorage.setItem('gtm_tracked_order_id', String(lastOrderId || ""));
+    localStorage.setItem('gtm_tracked_order_id', transactionId);
     localStorage.removeItem('last_order_items');
     localStorage.removeItem('last_order_total');
     localStorage.removeItem('last_delivery_fee');
