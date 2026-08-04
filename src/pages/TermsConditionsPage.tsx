@@ -85,7 +85,7 @@ const TermsConditionsPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Returns & Refunds</h2>
               <p>
-                Returns are accepted within 30 days of delivery in line with our Returns & Refunds Policy. A £60
+                Returns are accepted within 14 days of delivery in line with our Returns & Refunds Policy. A £60
                 collection fee applies where applicable. Items must be returned in resaleable condition.
                 Custom-made items are non-refundable unless faulty.
               </p>

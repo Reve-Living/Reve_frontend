@@ -37,7 +37,7 @@ type ProductSeoResponse =
 const SITE_URL = "https://www.reveliving.co.uk";
 const PRODUCT_SCHEMA_COUNTRY = "GB";
 const PRODUCT_SCHEMA_CURRENCY = "GBP";
-const PRODUCT_SCHEMA_RETURN_DAYS = 30;
+const PRODUCT_SCHEMA_RETURN_DAYS = 14;
 const PRODUCT_SCHEMA_RETURN_COLLECTION_FEE = 60;
 
 const formatSchemaMoney = (value: unknown, fallback = 0): string => {

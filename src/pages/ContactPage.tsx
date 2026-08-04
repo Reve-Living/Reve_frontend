@@ -40,7 +40,7 @@ const faqs = [
   {
     question: 'Can I return my order?',
     answer:
-      'Returns are accepted within 30 days of delivery. Items must be in resaleable condition, and custom-made or made-to-order items are non-refundable unless faulty or supplied incorrectly.',
+      'Returns are accepted within 14 days of delivery. Items must be in resaleable condition, and custom-made or made-to-order items are non-refundable unless faulty or supplied incorrectly.',
   },
   {
     question: 'What if my item arrives damaged or faulty?',

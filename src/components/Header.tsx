@@ -32,7 +32,7 @@ const TRUST_BADGES = [
   { label: 'Secure Checkout', Icon: ShieldCheck },
   { label: 'Fast UK Delivery', Icon: Truck },
   { label: 'Handmade in the UK', Icon: Hammer },
-  { label: '30-Day Returns', Icon: RotateCcw },
+  { label: '14-Day Returns', Icon: RotateCcw },
 ] as const;
 const SEARCH_ROOT_SELECTOR = '[data-header-search]';
 

@@ -101,7 +101,7 @@ const FaqPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Can I return my order?</h2>
               <p>
-                Yes, you can return your order within 30 days of delivery. To begin the process, you must
+                Yes, you can return your order within 14 days of delivery. To begin the process, you must
                 contact us within this period so we can arrange the return.
               </p>
             </section>

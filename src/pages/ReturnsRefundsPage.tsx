@@ -22,7 +22,7 @@ const ReturnsRefundsPage = () => {
 
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Returns Window</h2>
-              <p>We accept returns and offer refunds within 30 days of delivery.</p>
+              <p>We accept returns and offer refunds within 14 days of delivery.</p>
               <p>
                 To begin a return, you must contact us within this 30-day period so we can guide you through the
                 process and arrange the next steps.
