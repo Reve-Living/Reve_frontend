@@ -953,7 +953,7 @@ const CheckoutPage = () => {
                 <li>
                   •{' '}
                   {confirmationEmailSent
-                    ? 'Estimated delivery: 1–7 working days'
+                    ? 'Estimated delivery: 1-10 working days'
                     : 'The order will remain pending until payment is confirmed'}
                 </li>
               </ul>

@@ -25,7 +25,7 @@ const faqs = [
   {
     question: 'How long does delivery take?',
     answer:
-      'Delivery timeframes vary by product and are shown on each product page. Most in-stock items are dispatched within 1-3 working days, while made-to-order items are typically delivered within 3-7 working days.',
+      'Delivery timeframes vary depending on the product, delivery postcode, and scheduled delivery route. Estimated delivery times are displayed on each product page and typically range from 1-10 working days. In the unlikely event of an unforeseen delay, we will notify you as soon as possible.',
   },
   {
     question: 'Can you deliver upstairs or to a specific room?',

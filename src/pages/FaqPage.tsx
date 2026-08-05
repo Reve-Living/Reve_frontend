@@ -38,13 +38,12 @@ const FaqPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">How long does delivery take?</h2>
               <p>
-                Delivery timeframes vary depending on the product and are shown on each product page.
+                Delivery timeframes vary depending on the product, delivery postcode, and scheduled delivery route.
+                Estimated delivery times are displayed on each product page and typically range from 1-10 working days.
               </p>
               <p>
-                Most in-stock items are dispatched within 1–3 working days, while made-to-order items are
-                typically delivered within 3–7 working days.
+                In the unlikely event of an unforeseen delay, we will notify you as soon as possible.
               </p>
-              <p>If there are any unexpected delays, you will be notified as soon as possible.</p>
             </section>
 
             <section>
@@ -62,10 +61,17 @@ const FaqPage = () => {
                 What happens on the day of delivery?
               </h2>
               <p>
-                On the day of delivery, your order is scheduled based on delivery routes. You will be given a
-                delivery window of up to 6 hours.
+                On the day of delivery, routes are planned to ensure efficiency. Our delivery team will contact you
+                to confirm your estimated delivery time.
               </p>
-              <p>Exact delivery times cannot be guaranteed.</p>
+              <p>
+                If you are unavailable on the scheduled date, the delivery team will work with you to arrange an
+                alternative suitable date.
+              </p>
+              <p>
+                To avoid any inconvenience or additional delivery costs, we recommend informing us in advance if
+                you are unable to receive your order or require delivery on a specific date.
+              </p>
             </section>
 
             <section>

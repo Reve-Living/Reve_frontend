@@ -42,15 +42,11 @@ const DeliveryInformationPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Delivery Timeframes</h2>
               <p>
-                Delivery timeframes vary depending on the product and are displayed on each product page.
+                Delivery timeframes vary depending on the product, delivery postcode, and scheduled delivery route.
+                Estimated delivery times are displayed on each product page and typically range from 1-10 working days.
               </p>
               <p>
-                Most in-stock items are dispatched within 1–3 working days, while made-to-order items are typically
-                delivered within 3–7 working days.
-              </p>
-              <p>
-                In the unlikely event of a delay due to unforeseen circumstances, you will be notified as soon as
-                possible.
+                In the unlikely event of an unforeseen delay, we will notify you as soon as possible.
               </p>
             </section>
 
@@ -73,8 +69,8 @@ const DeliveryInformationPage = () => {
             <section>
               <h2 className="mb-3 font-serif text-2xl font-semibold text-foreground">Delivery Process</h2>
               <p>
-                On the day of delivery, routes are planned to ensure efficiency, and a delivery window of up to 6
-                hours will be provided. Exact delivery times cannot be guaranteed.
+                On the day of delivery, routes are planned to ensure efficiency. Our delivery team will contact you
+                to confirm your estimated delivery time.
               </p>
               <p>
                 If you are unavailable on the scheduled date, the delivery team will work with you to arrange an
