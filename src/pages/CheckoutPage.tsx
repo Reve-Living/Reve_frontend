@@ -416,7 +416,8 @@ const CheckoutPage = () => {
       const paypalToken = params.get('token');
       const stripeSessionId = params.get('session_id');
       const lastOrderEmail = localStorage.getItem('last_order_email') || '';
-      const lastOrderId = localStorage.getItem('last_order_id');
+      let lastOrderId = localStorage.getItem('last_order_id');
+      const pendingOrderPayload = localStorage.getItem('pending_order_payload');
       const lastStripePaymentMethod = localStorage.getItem('last_stripe_payment_method') || 'card';
       const resolvedStripePaymentMethod = isStripeBackedPaymentMethod(lastStripePaymentMethod)
         ? lastStripePaymentMethod
@@ -429,19 +430,37 @@ const CheckoutPage = () => {
           const captureResponse = await apiPost<any>('/payments/capture_paypal_order/', { orderID: paypalToken });
           const captureId = captureResponse?.purchase_units?.[0]?.payments?.captures?.[0]?.id;
 
-          if (lastOrderId) {
-            const updatedOrder = await apiPost<Order>(`/orders/${lastOrderId}/mark_paid/`, {
-              email: lastOrderEmail,
-              payment_method: 'paypal',
-              payment_id: captureId || paypalToken,
-              payment_metadata: {
-                paypal_order_id: paypalToken,
-                ...(captureId ? { paypal_capture_id: captureId } : {}),
-              },
-            });
-            setConfirmedOrder(updatedOrder);
+          if (!lastOrderId && pendingOrderPayload && captureId) {
+            const createdOrder = await apiPost<Order>('/orders/', JSON.parse(pendingOrderPayload));
+            lastOrderId = String(createdOrder.id);
+            localStorage.setItem('last_order_id', lastOrderId);
           }
-        } else if (lastOrderId) {
+
+          if (!lastOrderId) {
+            throw new Error('The completed payment could not be matched to an order.');
+          }
+
+          const updatedOrder = await apiPost<Order>(`/orders/${lastOrderId}/mark_paid/`, {
+            email: lastOrderEmail,
+            payment_method: 'paypal',
+            payment_id: captureId || paypalToken,
+            payment_metadata: {
+              paypal_order_id: paypalToken,
+              ...(captureId ? { paypal_capture_id: captureId } : {}),
+            },
+          });
+          setConfirmedOrder(updatedOrder);
+        } else {
+          if (!lastOrderId && pendingOrderPayload && stripeSessionId) {
+            const createdOrder = await apiPost<Order>('/orders/', JSON.parse(pendingOrderPayload));
+            lastOrderId = String(createdOrder.id);
+            localStorage.setItem('last_order_id', lastOrderId);
+          }
+
+          if (!lastOrderId) {
+            throw new Error('The completed payment could not be matched to an order.');
+          }
+
           const updatedOrder = await apiPost<Order>(`/orders/${lastOrderId}/mark_paid/`, {
             email: lastOrderEmail,
             payment_method: resolvedStripePaymentMethod,
@@ -457,6 +476,7 @@ const CheckoutPage = () => {
           });
           setConfirmedOrder(updatedOrder);
         }
+        localStorage.removeItem('pending_order_payload');
       } catch {
         toast.error('We could not verify the payment yet. We will email you once payment is confirmed.');
       }
@@ -751,10 +771,7 @@ const CheckoutPage = () => {
         reference_images: uploadedReferenceImages,
       };
 
-      const orderRes = await apiPost<Order>('/orders/', orderPayload);
-      setConfirmedOrder(orderRes);
-      localStorage.setItem('last_order_id', String(orderRes.id));
-      localStorage.setItem('last_order_email', orderRes.email || formData.email);
+      localStorage.setItem('last_order_email', formData.email);
       
       // 👈 CAPTURE ITEMS AND TOTALS BEFORE CLEARING CART
       localStorage.setItem('last_order_items', JSON.stringify(state.items));
@@ -762,6 +779,10 @@ const CheckoutPage = () => {
       localStorage.setItem('last_delivery_fee', String(deliveryFee));
 
       if (paymentMethod === 'cod') {
+        const orderRes = await apiPost<Order>('/orders/', orderPayload);
+        setConfirmedOrder(orderRes);
+        localStorage.setItem('last_order_id', String(orderRes.id));
+        localStorage.removeItem('pending_order_payload');
         setStep('confirmation');
         closeCart();
         clearCart();
@@ -772,6 +793,8 @@ const CheckoutPage = () => {
         try {
           const discountRate = (state.appliedPromo?.discountPercentage || 0) / 100;
           const applicableSet = new Set(state.appliedPromo?.applicableProductIds || []);
+          localStorage.removeItem('last_order_id');
+          localStorage.setItem('pending_order_payload', JSON.stringify(orderPayload));
           localStorage.setItem('last_stripe_payment_method', paymentMethod);
           const session = await apiPost<{ url: string; id: string }>('/payments/create_stripe_session/', {
             items: state.items.map((item) => ({
@@ -785,7 +808,6 @@ const CheckoutPage = () => {
             })),
             delivery_charges: String(deliveryFee),
             currency: 'gbp',
-            order_id: orderRes.id,
             payment_method: paymentMethod,
             success_url: `${window.location.origin}/checkout?success=1`,
             cancel_url: `${window.location.origin}/checkout?canceled=1`,
@@ -809,12 +831,13 @@ const CheckoutPage = () => {
       }
 
       if (paymentMethod === 'paypal') {
+        localStorage.removeItem('last_order_id');
+        localStorage.setItem('pending_order_payload', JSON.stringify(orderPayload));
         const paypalOrder = await apiPost<{ links: { rel: string; href: string }[] }>(
           '/payments/create_paypal_order/',
           {
             total: orderTotal.toFixed(2),
             currency: 'GBP',
-            order_id: orderRes.id,
             return_url: `${window.location.origin}/checkout?success=1`,
             cancel_url: `${window.location.origin}/checkout?canceled=1`,
           }
