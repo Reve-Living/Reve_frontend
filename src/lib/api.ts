@@ -138,6 +138,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
     const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
       headers: buildHeaders(false),
       cache: "no-store",
+      signal: options.signal,
     });
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()) as T;

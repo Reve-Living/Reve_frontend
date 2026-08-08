@@ -41,6 +41,40 @@ type ProductListResponse = Product[] | { results?: Product[] };
 const normalizeProductResults = (response: ProductListResponse): Product[] =>
   Array.isArray(response) ? response : Array.isArray(response?.results) ? response.results : [];
 
+const deduplicateKidsBedsSearchResults = (products: Product[]): Product[] => {
+  const productById = new Map(products.map((product) => [Number(product.id), product]));
+  const getOriginalProductId = (product: Product) => {
+    let originalId = Number(product.id);
+    let sourceId = Number(product.imported_from_product || 0);
+    const visited = new Set<number>([originalId]);
+    while (sourceId > 0 && !visited.has(sourceId)) {
+      originalId = sourceId;
+      visited.add(sourceId);
+      sourceId = Number(productById.get(sourceId)?.imported_from_product || 0);
+    }
+    return originalId;
+  };
+
+  const visibleProducts = new Map<string, Product>();
+  products.forEach((product) => {
+    const isKidsBeds =
+      product.category_slug === 'kids-beds' ||
+      String(product.category_name || '').trim().toLowerCase() === 'kids beds';
+    const key = isKidsBeds
+      ? `kids-beds:${getOriginalProductId(product)}`
+      : `product:${product.id}`;
+    const existing = visibleProducts.get(key);
+
+    // The parent/original row is the product shown in admin and contains the
+    // current price. Placement copies are never allowed to replace it.
+    if (!existing || (existing.imported_from_product && !product.imported_from_product)) {
+      visibleProducts.set(key, product);
+    }
+  });
+
+  return Array.from(visibleProducts.values());
+};
+
 const isAbortError = (error: unknown): boolean =>
   error instanceof DOMException
     ? error.name === 'AbortError'
@@ -226,11 +260,12 @@ const Header = () => {
 
       setIsLoadingSearch(true);
       void apiGet<ProductListResponse>(`/products/?${params.toString()}`, {
-        staleWhileRevalidate: true,
-        maxStaleMs: 1 * 60 * 1000, // 1 minute for fresher discount data
+        noStore: true,
         signal: controller.signal,
       })
-        .then((response) => setSearchResults(normalizeProductResults(response)))
+        .then((response) =>
+          setSearchResults(deduplicateKidsBedsSearchResults(normalizeProductResults(response)))
+        )
         .catch((error) => {
           if (!isAbortError(error)) setSearchResults([]);
         })
