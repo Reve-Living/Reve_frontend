@@ -1398,13 +1398,17 @@ type MattressDetailView = {
         }
 
         if (fetched?.id) {
+          const fullProductRequestOptions =
+            String(fetched.category_slug || '').trim().toLowerCase() === 'kids-beds'
+              ? { noStore: true }
+              : productRequestOptions;
           void coreProductPromise
             .then((coreRes) => {
               const coreProduct = normalizeProductResponse(coreRes);
               if (!cancelled && coreProduct?.id === fetched?.id) {
                 setProduct((current) => ({ ...(current || {}), ...coreProduct }) as Product);
               }
-              return apiGet<Product | Product[]>(`/products/${fetched.id}/`, productRequestOptions);
+              return apiGet<Product | Product[]>(`/products/${fetched.id}/`, fullProductRequestOptions);
             })
             .then((fullRes) => {
               const fullProduct = normalizeProductResponse(fullRes);
