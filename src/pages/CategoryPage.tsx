@@ -263,6 +263,35 @@ const placeProductsAtOffset = (current: Product[], incoming: Product[], offset: 
   return next;
 };
 
+const deduplicateKidsBedsProducts = (products: Product[]): Product[] => {
+  const productById = new Map(products.map((product) => [Number(product.id), product]));
+  const getOriginalProductId = (product: Product) => {
+    let originalId = Number(product.id);
+    let sourceId = Number(product.imported_from_product || 0);
+    const visited = new Set<number>([originalId]);
+    while (sourceId > 0 && !visited.has(sourceId)) {
+      originalId = sourceId;
+      visited.add(sourceId);
+      sourceId = Number(productById.get(sourceId)?.imported_from_product || 0);
+    }
+    return originalId;
+  };
+
+  const logicalProducts = new Map<number, Product>();
+  products.forEach((product) => {
+    const originalId = getOriginalProductId(product);
+    const existing = logicalProducts.get(originalId);
+    if (
+      !existing ||
+      (existing.imported_from_product && !product.imported_from_product) ||
+      (Boolean(existing.imported_from_product) === Boolean(product.imported_from_product) && product.id > existing.id)
+    ) {
+      logicalProducts.set(originalId, product);
+    }
+  });
+  return Array.from(logicalProducts.values());
+};
+
 const warmProductImages = (products: Product[], count = 6) => {
   if (typeof window === 'undefined') return;
   products.slice(0, count).forEach((product) => {
@@ -560,6 +589,9 @@ const CategoryPage = () => {
 
         const aliasSlug = slug === 'mattress' ? 'mattresses' : slug === 'mattresses' ? 'mattress' : '';
         const initialResolvedSlug = slug;
+        if (initialResolvedSlug === 'kids-beds') {
+          Object.assign(apiOptions, { noStore: true, staleWhileRevalidate: false });
+        }
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
         const productRequestLimit = INITIAL_PRODUCTS_LIMIT;
         const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
@@ -1032,7 +1064,11 @@ const CategoryPage = () => {
   const hasPriceFilter = searchParams.has('min-price') || searchParams.has('max-price');
 
   const filteredProducts = useMemo(() => {
-    let products = [...allProducts];
+    const isKidsBeds =
+      category?.slug === 'kids-beds' ||
+      String(category?.name || '').trim().toLowerCase() === 'kids beds' ||
+      slug === 'kids-beds';
+    let products = isKidsBeds ? deduplicateKidsBedsProducts(allProducts) : [...allProducts];
 
     const selectedFilterEntries = Object.entries(selectedFilters).filter(([, values]) => values.length > 0);
     const hasCompleteLocalFilterData =
@@ -1082,7 +1118,7 @@ const CategoryPage = () => {
     }
 
     return products;
-  }, [allProducts, hasPriceFilter, priceRange, selectedFilters, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, sortBy]);
+  }, [allProducts, category?.name, category?.slug, hasPriceFilter, priceRange, selectedFilters, selectedSizes, showSizeFilter, showBedSizeFilter, linkedBedSize, slug, sortBy]);
 
   const isShowingStaleProducts = loadedProductKey !== requestedProductKey;
   const isProductTransitionPending = isLoading || isShowingStaleProducts;
