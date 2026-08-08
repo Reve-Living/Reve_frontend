@@ -52,6 +52,24 @@ const escapeHtml = (value: string) =>
 const plainText = (value = "") =>
   value.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
+const buildProductFallbackHtml = (product: ProductSeoRecord, description: string, imageUrl: string) => {
+  const name = plainText(product.name);
+  const price = formatSchemaMoney(product.price);
+  const availability = product.in_stock === false || product.stock_status === "out_of_stock"
+    ? "Out of stock"
+    : "In stock";
+
+  return [
+    '<main class="seo-product-fallback" style="max-width:1120px;margin:0 auto;padding:32px 20px;font-family:Arial,sans-serif;color:#3f3028;">',
+    imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" style="max-width:420px;width:100%;height:auto;object-fit:contain;" />` : "",
+    `<h1 style="font-size:32px;line-height:1.2;margin:24px 0 12px;">${escapeHtml(name)}</h1>`,
+    `<p style="font-size:16px;line-height:1.6;margin:0 0 16px;">${escapeHtml(description)}</p>`,
+    `<p style="font-size:20px;font-weight:700;margin:0 0 8px;">£${escapeHtml(price)}</p>`,
+    `<p style="font-size:14px;margin:0;">${escapeHtml(availability)}</p>`,
+    "</main>",
+  ].filter(Boolean).join("");
+};
+
 const normalizeSchemaText = (value?: string | null): string =>
   String(value || "").replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 
@@ -226,6 +244,7 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         .replace(/<meta property="og:type" content="[^"]*"\s*\/>/, '<meta property="og:type" content="product" />');
 
       const extraHead = [
+        `<meta name="robots" content="index, follow" />`,
         `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`,
         `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
         imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}" />` : "",
@@ -234,6 +253,7 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         `<script id="product-json-ld" type="application/ld+json">${schema}</script>`,
       ].filter(Boolean).join("\n    ");
       html = html.replace("</head>", `    ${extraHead}\n  </head>`);
+      html = html.replace('<div id="root"></div>', `<div id="root">${buildProductFallbackHtml(product, description, imageUrl)}</div>`);
 
       await fs.writeFile(path.join(outputDirectory, `${product.slug}.html`), html, "utf8");
     }));
