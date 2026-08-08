@@ -1361,6 +1361,17 @@ type MattressDetailView = {
               `/products/?slug=${encodeURIComponent(slug)}&core=1`,
               productRequestOptions
             );
+        const isKnownKidsBedsProduct =
+          String(previewProduct?.category_slug || '').trim().toLowerCase() === 'kids-beds';
+        const fullProductPromise = fallbackProductId
+          ? apiGet<Product | Product[]>(
+              `/products/${fallbackProductId}/`,
+              isKnownKidsBedsProduct ? { noStore: true } : productRequestOptions
+            )
+          : apiGet<Product[] | { results?: Product[] }>(
+              `/products/?slug=${encodeURIComponent(slug)}`,
+              { noStore: true }
+            );
 
         fetched = normalizeProductResponse(await quickProductPromise.catch(() => coreProductPromise));
         if (!fetched) {
@@ -1398,18 +1409,19 @@ type MattressDetailView = {
         }
 
         if (fetched?.id) {
-          const fullProductRequestOptions =
-            String(fetched.category_slug || '').trim().toLowerCase() === 'kids-beds'
-              ? { noStore: true }
-              : productRequestOptions;
           void coreProductPromise
             .then((coreRes) => {
               const coreProduct = normalizeProductResponse(coreRes);
               if (!cancelled && coreProduct?.id === fetched?.id) {
                 setProduct((current) => ({ ...(current || {}), ...coreProduct }) as Product);
               }
-              return apiGet<Product | Product[]>(`/products/${fetched.id}/`, fullProductRequestOptions);
             })
+            .catch(() => undefined);
+
+          // The full response contains mattresses. Start it immediately rather
+          // than waiting for the core request, which can otherwise delay Kids
+          // Beds mattress controls by an additional backend round trip.
+          void fullProductPromise
             .then((fullRes) => {
               const fullProduct = normalizeProductResponse(fullRes);
               if (!cancelled && fullProduct?.id === fetched?.id) {
