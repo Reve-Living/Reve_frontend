@@ -2232,10 +2232,25 @@ type MattressDetailView = {
       grouped.set(label, existing);
     });
 
-    return Array.from(grouped.entries()).map(([label, items]) => ({
-      label,
-      mattresses: items,
-    }));
+    return Array.from(grouped.entries())
+      .map(([label, items], insertionIndex) => {
+        const orderedValues = items
+          .map((item) => Number(item.kids_button_sort_order ?? 0))
+          .filter((value) => Number.isFinite(value) && value > 0);
+        return {
+          label,
+          mattresses: items,
+          labelOrder: orderedValues.length > 0 ? Math.min(...orderedValues) : 0,
+          insertionIndex,
+        };
+      })
+      .sort((a, b) => {
+        const aPriority = a.labelOrder > 0 ? 0 : 1;
+        const bPriority = b.labelOrder > 0 ? 0 : 1;
+        if (aPriority !== bPriority) return aPriority - bPriority;
+        if (a.labelOrder !== b.labelOrder) return a.labelOrder - b.labelOrder;
+        return a.insertionIndex - b.insertionIndex;
+      });
   }, [mattresses]);
   const kidsMattressTabsEnabled = kidsMattressGroups.length > 0;
   const isIncludedMattress = useCallback(
