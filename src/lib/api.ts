@@ -18,6 +18,7 @@ type ApiGetOptions = {
   staleWhileRevalidate?: boolean;
   refreshOnCacheHit?: boolean;
   maxStaleMs?: number;
+  timeoutMs?: number;
   onUpdate?: (data: unknown) => void;
   signal?: AbortSignal;
 };
@@ -114,7 +115,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
       headers: buildHeaders(false),
       cache: "no-store",
       signal: options.signal,
-    }).then(async (res) => {
+    }, options.timeoutMs).then(async (res) => {
       if (!res.ok) throw new Error(await res.text());
       const data = (await res.json()) as T;
       const entry = { ts: Date.now(), data };
@@ -139,7 +140,7 @@ export const apiGet = async <T>(path: string, options: ApiGetOptions = {}): Prom
       headers: buildHeaders(false),
       cache: "no-store",
       signal: options.signal,
-    });
+    }, options.timeoutMs);
     if (!res.ok) throw new Error(await res.text());
     return (await res.json()) as T;
   }

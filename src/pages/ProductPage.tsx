@@ -1366,11 +1366,11 @@ type MattressDetailView = {
         const fullProductPromise = fallbackProductId
           ? apiGet<Product | Product[]>(
               `/products/${fallbackProductId}/`,
-              isKnownKidsBedsProduct ? { noStore: true } : productRequestOptions
+              isKnownKidsBedsProduct ? { noStore: true, timeoutMs: 30000 } : productRequestOptions
             )
           : apiGet<Product[] | { results?: Product[] }>(
               `/products/?slug=${encodeURIComponent(slug)}`,
-              { noStore: true }
+              { noStore: true, timeoutMs: 30000 }
             );
 
         fetched = normalizeProductResponse(await quickProductPromise.catch(() => coreProductPromise));
