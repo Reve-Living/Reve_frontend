@@ -2235,7 +2235,7 @@ type MattressDetailView = {
     return Array.from(grouped.entries())
       .map(([label, items], insertionIndex) => {
         const orderedValues = items
-          .map((item) => Number(item.kids_button_sort_order ?? 0))
+          .map((item) => Number(item.sort_order ?? 0))
           .filter((value) => Number.isFinite(value) && value > 0);
         return {
           label,
