@@ -270,9 +270,14 @@ const deduplicateKidsBedsProducts = (products: Product[]): Product[] => {
     let sourceId = Number(product.imported_from_product || 0);
     const visited = new Set<number>([originalId]);
     while (sourceId > 0 && !visited.has(sourceId)) {
+      const currentProduct = productById.get(originalId);
+      const sourceProduct = productById.get(sourceId);
+      const currentName = String(currentProduct?.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      const sourceName = String(sourceProduct?.name || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      if (!currentName || !sourceName || currentName !== sourceName) break;
       originalId = sourceId;
       visited.add(sourceId);
-      sourceId = Number(productById.get(sourceId)?.imported_from_product || 0);
+      sourceId = Number(sourceProduct?.imported_from_product || 0);
     }
     return originalId;
   };
