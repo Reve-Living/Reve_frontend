@@ -946,6 +946,11 @@ const ProductPage = () => {
   const [seriesCollection, setSeriesCollection] = useState<Collection | null>(null);
   const [seriesProducts, setSeriesProducts] = useState<Product[]>([]);
   const categoryHref = returnTo && !returnToHasSubcategory ? returnTo : category ? `/category/${category.slug}` : '';
+  const productSubcategoryHref = product?.subcategory_slug
+    ? returnToHasSubcategory
+      ? returnTo
+      : `/category/${category?.slug || product.category_slug || ''}?sub=${encodeURIComponent(product.subcategory_slug)}`
+    : '';
 
 
 
@@ -3169,10 +3174,10 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
               </Link>
 
-              {returnToHasSubcategory && product.subcategory_name && (
+              {productSubcategoryHref && product.subcategory_name && (
                 <>
                   <ChevronRight className="h-4 w-4" />
-                  <Link to={returnTo} className="hover:text-primary">
+                  <Link to={productSubcategoryHref} className="hover:text-primary">
                     {product.subcategory_name}
                   </Link>
                 </>
