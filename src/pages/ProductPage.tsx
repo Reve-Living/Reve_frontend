@@ -2246,6 +2246,14 @@ type MattressDetailView = {
 
     return Array.from(grouped.entries())
       .map(([label, items], insertionIndex) => {
+        const normalizedLabel = label.trim().toLowerCase();
+        const positionalLabelOrder = /\btop\b/.test(normalizedLabel)
+          ? 0
+          : /\bmiddle\b/.test(normalizedLabel)
+            ? 1
+            : /\bbottom\b/.test(normalizedLabel)
+              ? 2
+              : null;
         const orderedValues = items
           .map((item) => Number(item.sort_order ?? 0))
           .filter((value) => Number.isFinite(value) && value > 0);
@@ -2253,10 +2261,17 @@ type MattressDetailView = {
           label,
           mattresses: items,
           labelOrder: orderedValues.length > 0 ? Math.min(...orderedValues) : 0,
+          positionalLabelOrder,
           insertionIndex,
         };
       })
       .sort((a, b) => {
+        const aIsPositional = a.positionalLabelOrder !== null;
+        const bIsPositional = b.positionalLabelOrder !== null;
+        if (aIsPositional && bIsPositional) {
+          return Number(a.positionalLabelOrder) - Number(b.positionalLabelOrder);
+        }
+        if (aIsPositional !== bIsPositional) return aIsPositional ? -1 : 1;
         const aPriority = a.labelOrder > 0 ? 0 : 1;
         const bPriority = b.labelOrder > 0 ? 0 : 1;
         if (aPriority !== bPriority) return aPriority - bPriority;
