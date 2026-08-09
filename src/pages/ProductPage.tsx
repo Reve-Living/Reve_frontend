@@ -1484,8 +1484,7 @@ type MattressDetailView = {
         }
 
       if (fetched?.sizes?.length) {
-        const parsedSizes = sortParsedSizeOptions(
-          fetched.sizes.map((size, index) =>
+        const parsedSizesInSavedOrder = fetched.sizes.map((size, index) =>
             parseSizeOption(
               size.name,
               index,
@@ -1493,13 +1492,23 @@ type MattressDetailView = {
               normalizeStoredSizePrice(Number(fetched.price ?? 0), Number(size.price_delta ?? 0)),
               normalizeSizeStockStatus(size)
             )
-          )
-        );
+          );
+        const fetchedIsSofa =
+          containsSofaKeyword(fetched.category_name) ||
+          containsSofaKeyword(fetched.category_slug) ||
+          containsSofaKeyword(fetched.subcategory_name) ||
+          containsSofaKeyword(fetched.subcategory_slug) ||
+          containsSofaKeyword(fetched.name);
+        const parsedSizes = fetchedIsSofa
+          ? parsedSizesInSavedOrder
+          : sortParsedSizeOptions(parsedSizesInSavedOrder);
         const normalizedLinkedSize = (linkedBedSize || '').trim().toLowerCase();
         const matchedSize = normalizedLinkedSize
           ? parsedSizes.find((opt) => opt.label.trim().toLowerCase() === normalizedLinkedSize)
           : null;
-        setSelectedSize((matchedSize || getLowestPricedSizeOption(parsedSizes) || parsedSizes[0]).label);
+        setSelectedSize(
+          (matchedSize || (fetchedIsSofa ? parsedSizes[0] : getLowestPricedSizeOption(parsedSizes)) || parsedSizes[0]).label
+        );
       }
 
         const firstFabricWithColors = (fetched?.fabrics || []).find((f) => (f.colors || []).length > 0);
@@ -1879,8 +1888,7 @@ type MattressDetailView = {
     setSelectedImage((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
-  const sizeOptions = sortParsedSizeOptions(
-    productSizes.map((size, index) =>
+  const parsedSizeOptionsInSavedOrder = productSizes.map((size, index) =>
       parseSizeOption(
         size.name,
         index,
@@ -1888,11 +1896,15 @@ type MattressDetailView = {
         normalizeStoredSizePrice(Number(product?.price ?? 0), Number(size.price_delta ?? 0)),
         normalizeSizeStockStatus(size)
       )
-    )
-  );
+    );
+  const sizeOptions = isSofaImageProduct
+    ? parsedSizeOptionsInSavedOrder
+    : sortParsedSizeOptions(parsedSizeOptionsInSavedOrder);
 
   const resolvedSelectedSize =
-    selectedSize || getLowestPricedSizeOption(sizeOptions)?.label || sizeOptions[0]?.label || '';
+    selectedSize ||
+    (isSofaImageProduct ? sizeOptions[0]?.label : getLowestPricedSizeOption(sizeOptions)?.label) ||
+    sizeOptions[0]?.label || '';
 
 
 
