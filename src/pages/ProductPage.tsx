@@ -1363,10 +1363,18 @@ type MattressDetailView = {
             );
         const isKnownKidsBedsProduct =
           String(previewProduct?.category_slug || '').trim().toLowerCase() === 'kids-beds';
+        const isKnownSofaProduct =
+          containsSofaKeyword(previewProduct?.category_name) ||
+          containsSofaKeyword(previewProduct?.category_slug) ||
+          containsSofaKeyword(previewProduct?.subcategory_name) ||
+          containsSofaKeyword(previewProduct?.subcategory_slug) ||
+          containsSofaKeyword(previewProduct?.name);
         const fullProductPromise = fallbackProductId
           ? apiGet<Product | Product[]>(
               `/products/${fallbackProductId}/`,
-              isKnownKidsBedsProduct ? { noStore: true, timeoutMs: 30000 } : productRequestOptions
+              isKnownKidsBedsProduct || isKnownSofaProduct
+                ? { noStore: true, timeoutMs: 30000 }
+                : productRequestOptions
             )
           : apiGet<Product[] | { results?: Product[] }>(
               `/products/?slug=${encodeURIComponent(slug)}`,
