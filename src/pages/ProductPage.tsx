@@ -3614,7 +3614,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                         <div className="flex items-center gap-3">
                           {showGroupIcon && (
                             isSofaProduct && group.kind === 'size' ? (
-                              <SofaSizeIcon className="h-10 w-10 object-contain" />
+                              <SofaSizeIcon className="h-12 w-24 object-contain" />
                             ) : (
                               <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
                             )
@@ -3777,9 +3777,15 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                       } w-full`}
                                     >
                                       {shouldShowIcon && (
-                                        <div className={isHeadboardGroup ? 'flex h-14 w-14 items-center justify-center shrink-0' : 'flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center'}>
+                                        <div className={
+                                          isHeadboardGroup
+                                            ? 'flex h-14 w-14 items-center justify-center shrink-0'
+                                            : isSofaProduct && group.kind === 'size'
+                                            ? 'flex h-12 w-24 items-center justify-center'
+                                            : 'flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center'
+                                        }>
                                           {isSofaProduct && group.kind === 'size' ? (
-                                            <SofaSizeIcon className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
+                                            <SofaSizeIcon className="h-12 w-24 object-contain" />
                                           ) : (
                                             <IconVisual
                                               icon={option.icon_url || group.icon_url}
