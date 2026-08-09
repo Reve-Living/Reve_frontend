@@ -222,7 +222,7 @@ const buildCategoryProductsPath = (
 };
 
 const buildProductFiltersPath = (categorySlug: string, subSlug: string): string => {
-  const params = new URLSearchParams({ order_version: '2' });
+  const params = new URLSearchParams({ order_version: '3' });
   if (subSlug) params.set('subcategory', subSlug);
   else if (categorySlug) params.set('category', categorySlug);
   const query = params.toString();
@@ -463,6 +463,7 @@ const CategoryPage = () => {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [availableFilters, setAvailableFilters] = useState<FilterType[]>(initialSnapshot?.availableFilters ?? []);
+  const refreshedFilterScopeRef = useRef('');
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({});
   const [prefetchedCatalog] = useState<Product[]>(() => {
     const handoffMatches =
@@ -523,7 +524,9 @@ const CategoryPage = () => {
       );
       const hasScopedFilters = loadedFilterScopeKey === requestedFilterScopeKey && availableFilters.length > 0;
       const needsFilterDefinitions =
-        loadedFilterScopeKey !== requestedFilterScopeKey || (!cachedSnapshot && availableFilters.length === 0);
+        refreshedFilterScopeRef.current !== requestedFilterScopeKey ||
+        loadedFilterScopeKey !== requestedFilterScopeKey ||
+        (!cachedSnapshot && availableFilters.length === 0);
       let latestFilters =
         cachedSnapshot?.availableFilters && cachedSnapshot.availableFilters.length > 0
           ? cachedSnapshot.availableFilters
@@ -557,12 +560,12 @@ const CategoryPage = () => {
         setAllProducts(cachedSnapshot.products);
         setTotalProductCount(cachedSnapshot.totalProductCount);
         setLoadedProductKey(requestedProductKey);
-        setAvailableFilters(needsFilterDefinitions ? [] : latestFilters);
-        if (!needsFilterDefinitions) {
+        setAvailableFilters(latestFilters);
+        if (latestFilters.length > 0) {
           setLoadedFilterScopeKey(requestedFilterScopeKey);
         }
         setIsLoading(false);
-        setIsFiltersLoading(needsFilterDefinitions);
+        setIsFiltersLoading(needsFilterDefinitions && latestFilters.length === 0);
       } else {
         setIsFiltersLoading(needsFilterDefinitions);
         if (needsFilterDefinitions) {
@@ -648,7 +651,7 @@ const CategoryPage = () => {
         const initialFiltersPromise = shouldRequestFilterDefinitions
           ? apiGet<{ filters: FilterType[] }>(
               buildProductFiltersPath(initialResolvedSlug, subSlug),
-              apiOptions
+              { noStore: true, signal: controller.signal, timeoutMs: 30000 }
             )
           : Promise.resolve({ filters: latestFilters });
         if (shouldRequestFilterDefinitions) {
@@ -659,6 +662,7 @@ const CategoryPage = () => {
               latestFilters = filters;
               setAvailableFilters(filters);
               setLoadedFilterScopeKey(requestedFilterScopeKey);
+              refreshedFilterScopeRef.current = requestedFilterScopeKey;
             })
             .catch(() => {
               if (cancelled) return;
@@ -753,7 +757,7 @@ const CategoryPage = () => {
         void (needsSlugRetry
           ? apiGet<{ filters: FilterType[] }>(
               buildProductFiltersPath(resolvedSlug, subSlug),
-              apiOptions
+              { noStore: true, signal: controller.signal, timeoutMs: 30000 }
             )
           : initialFiltersPromise)
           .then((filtersRes) => {
@@ -762,6 +766,7 @@ const CategoryPage = () => {
             if (Array.isArray(filtersRes?.filters)) {
               setAvailableFilters(filters);
               setLoadedFilterScopeKey(requestedFilterScopeKey);
+              refreshedFilterScopeRef.current = requestedFilterScopeKey;
             } else {
               setAvailableFilters([]);
             }
