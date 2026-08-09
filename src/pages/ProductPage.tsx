@@ -883,6 +883,12 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
   return <BedDouble className="h-5 w-5 text-muted-foreground" />;
 };
 
+const parseImageSizeBindings = (value?: string | null): string[] =>
+  String(value || '')
+    .split('|')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
 const SofaSizeIcon = ({ className }: { className: string }) => (
   <img src="/sofa-size-icon.png" alt="Sofa size" className={className} />
 );
@@ -1660,7 +1666,10 @@ type MattressDetailView = {
     if (isSofaImageProduct && selectedSize) {
       const sizeMatched = resolved.filter((img) =>
         img.size_name
-          ? normalizeSizeName(img.size_name).toLowerCase() === normalizeSizeName(selectedSize).toLowerCase()
+          ? parseImageSizeBindings(img.size_name).some(
+              (sizeName) =>
+                normalizeSizeName(sizeName).toLowerCase() === normalizeSizeName(selectedSize).toLowerCase()
+            )
           : false
       );
       if (sizeMatched.length > 0) {
