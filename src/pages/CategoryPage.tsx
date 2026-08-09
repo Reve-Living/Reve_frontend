@@ -222,7 +222,7 @@ const buildCategoryProductsPath = (
 };
 
 const buildProductFiltersPath = (categorySlug: string, subSlug: string): string => {
-  const params = new URLSearchParams();
+  const params = new URLSearchParams({ order_version: '2' });
   if (subSlug) params.set('subcategory', subSlug);
   else if (categorySlug) params.set('category', categorySlug);
   const query = params.toString();
