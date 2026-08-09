@@ -884,7 +884,7 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
 };
 
 const SofaSizeIcon = ({ className }: { className: string }) => (
-  <img src="/sofa-size-icon.png" alt="Sofa size" className={className} />
+  <img src="/sofa-size-icon.png?v=2" alt="Sofa size" className={className} />
 );
 
 const REVIEW_SECTION_ID = 'reviews';
