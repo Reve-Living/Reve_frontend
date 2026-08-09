@@ -50,6 +50,12 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
   const basePrice = toFiniteNumber(product.price) ?? 0;
   const minSizePrice = toFiniteNumber(product.min_size_price);
   const summarySizeCount = toFiniteNumber(product.size_count) ?? 0;
+  const isSofaProduct = [
+    product.category_name,
+    product.category_slug,
+    product.subcategory_name,
+    product.subcategory_slug,
+  ].some((value) => /\bsofas?\b/i.test(String(value || '').replace(/-/g, ' ')));
   const sizePrices = Array.isArray(product.sizes)
     ? product.sizes
         .map((size) => normalizeStoredSizePrice(basePrice, Number(size.price_delta)))
@@ -57,7 +63,11 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
     : [];
   const summaryDisplayPrice =
     minSizePrice == null ? basePrice : normalizeStoredSizePrice(basePrice, minSizePrice);
-  const displayBasePrice = sizePrices.length > 0 ? Math.min(...sizePrices) : summaryDisplayPrice;
+  const displayBasePrice = isSofaProduct
+    ? basePrice
+    : sizePrices.length > 0
+      ? Math.min(...sizePrices)
+      : summaryDisplayPrice;
   const displayOriginalPrice = toFiniteNumber(product.original_price);
   const overrideRate = Math.min(99, Math.max(0, salePercentage)) / 100;
   const originalBasePrice = product.discount_override_applied && overrideRate > 0
@@ -201,7 +211,7 @@ const ProductCard = ({ product, index = 0, fromBedProduct, selectedBedSize, retu
           {/* Price */}
           <div className="flex items-center gap-2">
             <p className="text-lg font-bold text-primary">
-              {hasMultipleSizePrices ? `From ${formattedDisplayPrice}` : formattedDisplayPrice}
+              {hasMultipleSizePrices && !isSofaProduct ? `From ${formattedDisplayPrice}` : formattedDisplayPrice}
             </p>
             {originalBasePrice > effectiveDisplayPrice && (
               <p className="text-sm text-muted-foreground line-through">

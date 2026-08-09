@@ -2077,13 +2077,25 @@ type MattressDetailView = {
 
 
 
+  const isSofaProduct = useMemo(
+    () =>
+      containsSofaKeyword(product?.category_name) ||
+      containsSofaKeyword(product?.category_slug) ||
+      containsSofaKeyword(product?.subcategory_name) ||
+      containsSofaKeyword(product?.subcategory_slug) ||
+      containsSofaKeyword(product?.name),
+    [product?.category_name, product?.category_slug, product?.subcategory_name, product?.subcategory_slug, product?.name]
+  );
+
   const activeSizeOption =
     sizeOptions.find((size) => size.label === resolvedSelectedSize) ||
     getLowestPricedSizeOption(sizeOptions) ||
     sizeOptions[0];
 
   const selectedSizeBasePrice =
-    sizeOptions.length > 0
+    isSofaProduct
+      ? Number(product?.price ?? 0)
+      : sizeOptions.length > 0
       ? Number(activeSizeOption?.price ?? 0)
       : Number(product?.price ?? 0);
 
@@ -2144,16 +2156,6 @@ type MattressDetailView = {
     () => normalizeSofaFeatureHighlights(product?.features, product?.sofa_feature_highlights),
     [product?.features, product?.sofa_feature_highlights]
   );
-  const isSofaProduct = useMemo(
-    () =>
-      containsSofaKeyword(product?.category_name) ||
-      containsSofaKeyword(product?.category_slug) ||
-      containsSofaKeyword(product?.subcategory_name) ||
-      containsSofaKeyword(product?.subcategory_slug) ||
-      containsSofaKeyword(product?.name),
-    [product?.category_name, product?.category_slug, product?.subcategory_name, product?.subcategory_slug, product?.name]
-  );
-
   const dimensionsRows = featureList.filter((feature) =>
     /(dimension|height|width|length|depth|cm|mm|inch|ft)/i.test(feature)
   );
