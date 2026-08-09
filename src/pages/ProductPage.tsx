@@ -1598,6 +1598,12 @@ type MattressDetailView = {
 
 
   const productImages = product?.images || [];
+  const isSofaImageProduct =
+    containsSofaKeyword(product?.category_name) ||
+    containsSofaKeyword(product?.category_slug) ||
+    containsSofaKeyword(product?.subcategory_name) ||
+    containsSofaKeyword(product?.subcategory_slug) ||
+    containsSofaKeyword(product?.name);
   const activeStyleSelections = useMemo(
     () =>
       Object.entries(selectedStyles)
@@ -1630,8 +1636,26 @@ type MattressDetailView = {
       }
     }
 
+    if (isSofaImageProduct && selectedSize) {
+      const sizeMatched = resolved.filter((img) =>
+        img.size_name
+          ? normalizeSizeName(img.size_name).toLowerCase() === normalizeSizeName(selectedSize).toLowerCase()
+          : false
+      );
+      if (sizeMatched.length > 0) {
+        resolved = sizeMatched;
+      }
+    }
+
     return resolved;
-  }, [activeStyleSelections, productImages, selectedColor]);
+  }, [activeStyleSelections, isSofaImageProduct, productImages, selectedColor, selectedSize]);
+
+  useEffect(() => {
+    if (isSofaImageProduct && selectedSize) {
+      setSelectedImage(0);
+    }
+  }, [isSofaImageProduct, selectedSize]);
+
   const totalImages = displayImages.length;
   const hasDisplayImages = totalImages > 0;
   const selectedImageFlipped = Boolean(displayImages[selectedImage]?.flip_horizontal);
