@@ -883,6 +883,10 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
   return <BedDouble className="h-5 w-5 text-muted-foreground" />;
 };
 
+const SofaSizeIcon = ({ className }: { className: string }) => (
+  <img src="/sofa-size-icon.png" alt="Sofa size" className={className} />
+);
+
 const REVIEW_SECTION_ID = 'reviews';
 const REVIEW_FORM_ID = 'write-review';
 const REVIEW_MEDIA_ACCEPT = 'image/*,video/*';
@@ -3609,7 +3613,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
                           {showGroupIcon && (
-                            <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
+                            isSofaProduct && group.kind === 'size' ? (
+                              <SofaSizeIcon className="h-10 w-10 object-contain" />
+                            ) : (
+                              <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
+                            )
                           )}
                           <div>
                             <p className="text-base font-semibold capitalize">{group.name}</p>
@@ -3770,11 +3778,15 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     >
                                       {shouldShowIcon && (
                                         <div className={isHeadboardGroup ? 'flex h-14 w-14 items-center justify-center shrink-0' : 'flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center'}>
-                                          <IconVisual
-                                            icon={option.icon_url || group.icon_url}
-                                            alt={option.label}
-                                            className={isHeadboardGroup ? 'h-10 w-10 sm:h-14 sm:w-14 object-contain' : 'h-8 w-8 sm:h-10 sm:w-10 object-contain'}
-                                          />
+                                          {isSofaProduct && group.kind === 'size' ? (
+                                            <SofaSizeIcon className="h-8 w-8 sm:h-10 sm:w-10 object-contain" />
+                                          ) : (
+                                            <IconVisual
+                                              icon={option.icon_url || group.icon_url}
+                                              alt={option.label}
+                                              className={isHeadboardGroup ? 'h-10 w-10 sm:h-14 sm:w-14 object-contain' : 'h-8 w-8 sm:h-10 sm:w-10 object-contain'}
+                                            />
+                                          )}
                                         </div>
                                       )}
                                       <div
