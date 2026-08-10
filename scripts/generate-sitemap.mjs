@@ -62,10 +62,15 @@ async function main() {
     }
   }
 
-  const products = await fetchJson("/products/");
+  const productsPayload = await fetchJson("/products/seo/");
+  const products = Array.isArray(productsPayload) ? productsPayload : (productsPayload.results || []);
+  const seenProductSlugs = new Set();
   for (const product of products) {
     if (product.is_hidden) continue;
-    urls.push({ loc: `/product/${product.slug}`, priority: "0.6" });
+    const canonicalSlug = (product.canonical_slug || product.slug || "").trim();
+    if (!canonicalSlug || seenProductSlugs.has(canonicalSlug)) continue;
+    seenProductSlugs.add(canonicalSlug);
+    urls.push({ loc: `/product/${canonicalSlug}`, priority: "0.6" });
   }
 
   const articles = await fetchJson("/lifestyle-articles/?active_only=true");

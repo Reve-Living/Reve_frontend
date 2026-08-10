@@ -313,6 +313,7 @@ export interface Product {
   id: number;
   name: string;
   slug: string;
+  canonical_slug?: string | null;
   meta_title?: string;
   meta_description?: string;
   category: number;

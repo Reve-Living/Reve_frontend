@@ -8,6 +8,7 @@ type ProductSeoRecord = {
   id?: number;
   name: string;
   slug: string;
+  canonical_slug?: string | null;
   meta_title?: string;
   meta_description?: string;
   short_description?: string;
@@ -185,7 +186,11 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         || plainText(product.short_description)
         || plainText(product.description)
         || "Explore handcrafted furniture and made-to-order pieces from Reve Living.";
-      const canonicalUrl = `${SITE_URL}/product/${encodeURIComponent(product.slug)}`;
+      const canonicalSlug =
+        product.canonical_slug && /^[a-z0-9_-]+$/i.test(product.canonical_slug)
+          ? product.canonical_slug
+          : product.slug;
+      const canonicalUrl = `${SITE_URL}/product/${encodeURIComponent(canonicalSlug)}`;
       const imageUrl = String(product.primary_image_url || product.images?.[0]?.url || "").trim();
       const availability = product.in_stock === false || product.stock_status === "out_of_stock"
         ? "https://schema.org/OutOfStock"

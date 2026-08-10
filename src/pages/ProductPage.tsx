@@ -1026,7 +1026,8 @@ type MattressDetailView = {
       'Explore handcrafted furniture and made-to-order pieces from Reve Living.';
 
     const plainDescription = seoDescription.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-    const canonicalUrl = `https://www.reveliving.co.uk/product/${encodeURIComponent(product?.slug || slug || '')}`;
+    const canonicalSlug = product?.canonical_slug || product?.slug || slug || '';
+    const canonicalUrl = `https://www.reveliving.co.uk/product/${encodeURIComponent(canonicalSlug)}`;
     const imageUrl = product?.images?.[0]?.url ? resolveMediaUrl(product.images[0].url) : '';
 
     const setPropertyMeta = (property: string, content: string) => {
