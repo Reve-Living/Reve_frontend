@@ -36,10 +36,13 @@ const TRUST_BADGES = [
 ] as const;
 const SEARCH_ROOT_SELECTOR = '[data-header-search]';
 
-type ProductListResponse = Product[] | { results?: Product[] };
+type ProductListResponse = Product[] | { count?: number; results?: Product[] };
 
 const normalizeProductResults = (response: ProductListResponse): Product[] =>
   Array.isArray(response) ? response : Array.isArray(response?.results) ? response.results : [];
+
+const getProductListTotalCount = (response: ProductListResponse, fallbackCount: number): number =>
+  !Array.isArray(response) && typeof response?.count === 'number' ? response.count : fallbackCount;
 
 const deduplicateKidsBedsSearchResults = (products: Product[]): Product[] => {
   const productById = new Map(products.map((product) => [Number(product.id), product]));
@@ -195,6 +198,7 @@ const Header = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searchTotalCount, setSearchTotalCount] = useState(0);
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [navLinks, setNavLinks] = useState<
@@ -222,6 +226,7 @@ const Header = () => {
     setIsSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
+    setSearchTotalCount(0);
   }, [location]);
 
   useEffect(() => {
@@ -251,6 +256,7 @@ const Header = () => {
   useEffect(() => {
     if (!isSearchOpen || !normalizedSearch) {
       setSearchResults([]);
+      setSearchTotalCount(0);
       setIsLoadingSearch(false);
       return;
     }
@@ -261,6 +267,7 @@ const Header = () => {
         summary: '1',
         search: normalizedSearch,
         limit: '12',
+        include_total: '1',
       });
 
       setIsLoadingSearch(true);
@@ -268,11 +275,16 @@ const Header = () => {
         noStore: true,
         signal: controller.signal,
       })
-        .then((response) =>
-          setSearchResults(deduplicateKidsBedsSearchResults(normalizeProductResults(response)))
-        )
+        .then((response) => {
+          const results = deduplicateKidsBedsSearchResults(normalizeProductResults(response));
+          setSearchResults(results);
+          setSearchTotalCount(getProductListTotalCount(response, results.length));
+        })
         .catch((error) => {
-          if (!isAbortError(error)) setSearchResults([]);
+          if (!isAbortError(error)) {
+            setSearchResults([]);
+            setSearchTotalCount(0);
+          }
         })
         .finally(() => {
           if (!controller.signal.aborted) setIsLoadingSearch(false);
@@ -290,6 +302,7 @@ const Header = () => {
       const target = event.target;
       if (!(target instanceof Element) || !target.closest(SEARCH_ROOT_SELECTOR)) {
         setSearchResults([]);
+        setSearchTotalCount(0);
       }
     };
 
@@ -302,6 +315,7 @@ const Header = () => {
     if (isSearchOpen) {
       setSearchQuery('');
       setSearchResults([]);
+      setSearchTotalCount(0);
     }
   };
 
@@ -314,6 +328,7 @@ const Header = () => {
     setIsSearchOpen(false);
     setSearchQuery('');
     setSearchResults([]);
+    setSearchTotalCount(0);
     navigate(productDetailPath(product), { state: { previewProduct: product } });
   };
 
@@ -328,6 +343,30 @@ const Header = () => {
       handleSearchSelect(limitedSearchResults[0]);
     }
   };
+
+  const handleViewAllSearchResults = () => {
+    const query = normalizedSearch;
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    setSearchResults([]);
+    setSearchTotalCount(0);
+    if (query) navigate(`/search?q=${encodeURIComponent(query)}`);
+  };
+
+  const renderViewAllSearchResults = () =>
+    searchTotalCount > 0 ? (
+      <button
+        type="button"
+        onPointerDown={(event) => {
+          event.preventDefault();
+          handleViewAllSearchResults();
+        }}
+        onClick={handleViewAllSearchResults}
+        className="flex w-full items-center justify-center border-t border-border px-3 py-3 text-sm font-medium text-primary transition-colors hover:bg-muted"
+      >
+        View all {searchTotalCount} {searchTotalCount === 1 ? 'result' : 'results'}
+      </button>
+    ) : null;
 
   const renderSearchResults = (layout: 'floating' | 'mobile' = 'floating') => {
     if (!shouldShowSearchResults) return null;
@@ -378,6 +417,7 @@ const Header = () => {
             {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
           </div>
         )}
+        {renderViewAllSearchResults()}
       </div>
     );
   };
@@ -474,6 +514,7 @@ const Header = () => {
                               {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
                             </div>
                           )}
+                          {renderViewAllSearchResults()}
                         </div>
                       )}
                     </>
@@ -562,6 +603,7 @@ const Header = () => {
                           {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
                         </div>
                       )}
+                      {renderViewAllSearchResults()}
                     </div>
                   )}
                 </div>
@@ -717,6 +759,7 @@ const Header = () => {
                                 {isLoadingSearch ? 'Searching products...' : 'No related items found.'}
                               </div>
                             )}
+                            {renderViewAllSearchResults()}
                           </div>
                         )}
                       </>
