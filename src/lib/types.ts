@@ -385,6 +385,7 @@ export interface ProductAddon {
   addon_product_stock_status?: ProductStockStatus;
   regular_price: number | string;
   addon_price: number | string;
+  addon_quantity: number;
   is_active: boolean;
   sort_order: number;
 }

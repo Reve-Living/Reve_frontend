@@ -2540,7 +2540,10 @@ type MattressDetailView = {
   const discountedUnitPrice = unitPrice;
   const productAddons = (product?.product_addons || []).filter((addon) => addon.is_active !== false);
   const selectedProductAddons = productAddons.filter((addon) => selectedAddonIds.includes(addon.id));
-  const addonUnitTotal = selectedProductAddons.reduce((sum, addon) => sum + Number(addon.addon_price || 0), 0);
+  const addonUnitTotal = selectedProductAddons.reduce(
+    (sum, addon) => sum + Number(addon.addon_price || 0) * Math.max(1, Number(addon.addon_quantity) || 1),
+    0
+  );
   const totalPrice = (discountedUnitPrice + addonUnitTotal) * quantity;
   const clearpayInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 4) : "";
   const klarnaInstallment = totalPrice > 0 ? gbpFormatter.format(totalPrice / 3) : "";
@@ -3067,6 +3070,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
     selectedProductAddons.forEach((addon) => {
       const addonPrice = Number(addon.addon_price || 0);
+      const addonQuantity = Math.max(1, Number(addon.addon_quantity) || 1);
       const addonProduct: Product = {
         id: addon.addon_product,
         name: addon.addon_product_name,
@@ -3087,10 +3091,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       };
       addItem({
         product: addonProduct,
-        quantity,
+        quantity: quantity * addonQuantity,
         size: '',
         color: '',
-        selectedVariants: { 'Add-on for': product.name },
+        selectedVariants: {
+          'Add-on for': product.name,
+          'Sets per product': String(addonQuantity),
+        },
         include_dimension: false,
         extras_total: 0,
         unit_price: addonPrice,
@@ -3970,9 +3977,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <input type="checkbox" checked={selected} disabled={!available} onChange={() => setSelectedAddonIds(ids => selected ? ids.filter(id => id !== addon.id) : [...ids, addon.id])}/>
                       {addon.addon_product_image && <img src={addon.addon_product_image} alt={addon.addon_product_name} className="h-16 w-16 rounded-md object-cover"/>}
                       <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{addon.addon_product_name}</span>
+                        {Math.max(1, Number(addon.addon_quantity) || 1) > 1 && (
+                          <span className="block text-xs text-muted-foreground">{Math.max(1, Number(addon.addon_quantity) || 1)} sets included when selected</span>
+                        )}
                         {!available && <span className="text-xs text-destructive">Currently unavailable</span>}</span>
-                      <span className="text-right"><span className="block text-sm font-semibold text-primary">{formatExactPrice(Number(addon.addon_price))}</span>
-                        {Number(addon.regular_price) > Number(addon.addon_price) && <span className="block text-xs text-muted-foreground line-through">{formatExactPrice(Number(addon.regular_price))}</span>}</span>
+                      <span className="text-right"><span className="block text-sm font-semibold text-primary">{formatExactPrice(Number(addon.addon_price) * Math.max(1, Number(addon.addon_quantity) || 1))}</span>
+                        {Math.max(1, Number(addon.addon_quantity) || 1) > 1 && <span className="block text-xs text-muted-foreground">{formatExactPrice(Number(addon.addon_price))} each</span>}
+                        {Number(addon.regular_price) > Number(addon.addon_price) && <span className="block text-xs text-muted-foreground line-through">{formatExactPrice(Number(addon.regular_price) * Math.max(1, Number(addon.addon_quantity) || 1))}</span>}</span>
                     </label>;
                   })}
                 </div>
