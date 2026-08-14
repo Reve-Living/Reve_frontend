@@ -13,6 +13,7 @@ import WhatsAppButton from "@/components/WhatsAppButton";
 import Index from "./pages/Index";
 
 const CategoryPage = lazy(() => import("./pages/CategoryPage"));
+const SearchResultsPage = lazy(() => import("./pages/SearchResultsPage"));
 const CategorySubcategoriesPage = lazy(() => import("./pages/CategorySubcategoriesPage"));
 const ProductPage = lazy(() => import("./pages/ProductPage"));
 const CartPage = lazy(() => import("./pages/CartPage"));
@@ -115,6 +116,7 @@ const App = () => (
                 <Route path="/" element={<Index />} />
                 <Route path="/category/:slug/subcategories" element={<CategorySubcategoriesPage />} />
                 <Route path="/category/:slug" element={<CategoryPage />} />
+                <Route path="/search" element={<SearchResultsPage />} />
                 <Route path="/product/:slug" element={<ProductPage />} />
                 <Route path="/cart" element={<CartPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />
