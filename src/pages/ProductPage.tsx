@@ -679,6 +679,7 @@ const normalizeFeatures = (features: unknown): string[] => {
 };
 
 const containsSofaKeyword = (value?: string | null): boolean => /\bsofas?\b/i.test(String(value || '').trim());
+const containsDiningKeyword = (value?: string | null): boolean => /\bdining\b/i.test(String(value || '').trim());
 
 const normalizeSofaFeatureLabel = (value?: string | null): string =>
   String(value || '')
@@ -2537,6 +2538,11 @@ type MattressDetailView = {
   const formatMattressChoicePrice = kidsMattressTabsEnabled ? formatExactPrice : formatPrice;
   const discountPercentage = Number(product?.effective_discount_percentage ?? product?.discount_percentage ?? 0);
   const discountedUnitPrice = unitPrice;
+  const isDiningProduct =
+    containsDiningKeyword(product?.category_name) ||
+    containsDiningKeyword(product?.category_slug) ||
+    containsDiningKeyword(product?.subcategory_name) ||
+    containsDiningKeyword(product?.subcategory_slug);
   const productAddons = (product?.product_addons || []).filter((addon) => addon.is_active !== false);
   const selectedProductAddons = productAddons.filter((addon) => selectedAddonIds.includes(addon.id));
   const addonUnitTotal = selectedProductAddons.reduce((sum, addon) => sum + Number(addon.addon_price || 0), 0);
@@ -3959,8 +3965,12 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
 
             {productAddons.length > 0 && (
               <div className="rounded-xl border border-border bg-white p-4 space-y-3">
-                <div><p className="text-base font-semibold">Complete the set</p>
-                  <p className="text-xs text-muted-foreground">Add matching products at their special bundle price.</p></div>
+                <div><p className="text-base font-semibold">{isDiningProduct ? 'Optional extra chairs' : 'Complete the set'}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {isDiningProduct
+                      ? 'Select a chair only if you would like to add it. Its special price is added to your total.'
+                      : 'Add matching products at their special bundle price.'}
+                  </p></div>
                 <div className="space-y-3">
                   {productAddons.map((addon: ProductAddon) => {
                     const selected = selectedAddonIds.includes(addon.id);
