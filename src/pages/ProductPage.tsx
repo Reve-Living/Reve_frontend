@@ -1354,42 +1354,29 @@ type MattressDetailView = {
           return response as Product;
         };
 
-        const quickProductPromise = fallbackProductId
-          ? apiGet<Product | Product[]>(`/products/${fallbackProductId}/?quick=1`, productRequestOptions)
-          : apiGet<Product[] | { results?: Product[] }>(
-              `/products/?slug=${encodeURIComponent(slug)}&quick=1`,
-              productRequestOptions
-            );
         const coreProductPromise = fallbackProductId
           ? apiGet<Product | Product[]>(`/products/${fallbackProductId}/?core=1`, productRequestOptions)
           : apiGet<Product[] | { results?: Product[] }>(
               `/products/?slug=${encodeURIComponent(slug)}&core=1`,
               productRequestOptions
             );
-        const isKnownKidsBedsProduct =
-          String(previewProduct?.category_slug || '').trim().toLowerCase() === 'kids-beds';
-        const isKnownSofaProduct =
-          containsSofaKeyword(previewProduct?.category_name) ||
-          containsSofaKeyword(previewProduct?.category_slug) ||
-          containsSofaKeyword(previewProduct?.subcategory_name) ||
-          containsSofaKeyword(previewProduct?.subcategory_slug) ||
-          containsSofaKeyword(previewProduct?.name);
-        const fullProductPromise = fallbackProductId
-          ? apiGet<Product | Product[]>(
-              `/products/${fallbackProductId}/`,
-              isKnownKidsBedsProduct || isKnownSofaProduct
-                ? { noStore: true, timeoutMs: 30000 }
-                : productRequestOptions
-            )
-          : apiGet<Product[] | { results?: Product[] }>(
-              `/products/?slug=${encodeURIComponent(slug)}`,
-              { noStore: true, timeoutMs: 30000 }
-            );
+        let fullProductPromise: Promise<Product | Product[] | { results?: Product[] }> | null = null;
+        const getFullProduct = () => {
+          if (!fullProductPromise) {
+            fullProductPromise = fallbackProductId
+              ? apiGet<Product | Product[]>(`/products/${fallbackProductId}/`, productRequestOptions)
+              : apiGet<Product[] | { results?: Product[] }>(
+                  `/products/?slug=${encodeURIComponent(slug)}`,
+                  productRequestOptions
+                );
+          }
+          return fullProductPromise;
+        };
 
-        fetched = normalizeProductResponse(await quickProductPromise.catch(() => coreProductPromise));
-        if (!fetched) {
-          fetched = normalizeProductResponse(await coreProductPromise);
-        }
+        // The core response is preloaded for the detail page. Loading it first
+        // avoids the old quick response doing N+1 detail work before the page
+        // could render. Full content now continues in the background.
+        fetched = normalizeProductResponse(await coreProductPromise.catch(() => getFullProduct()));
 
         if (cancelled) return;
         setProduct((current) => fetched ? { ...(current || {}), ...fetched } as Product : null);
@@ -1434,7 +1421,7 @@ type MattressDetailView = {
           // The full response contains mattresses. Start it immediately rather
           // than waiting for the core request, which can otherwise delay Kids
           // Beds mattress controls by an additional backend round trip.
-          void fullProductPromise
+          void getFullProduct()
             .then((fullRes) => {
               const fullProduct = normalizeProductResponse(fullRes);
               if (!cancelled && fullProduct?.id === fetched?.id) {
