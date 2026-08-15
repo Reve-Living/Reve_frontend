@@ -43,6 +43,7 @@ export interface SubCategory {
   delivery_info_override_enabled?: boolean;
   delivery_info?: string;
   delivery_title?: string;
+  size_option_heading?: string;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
