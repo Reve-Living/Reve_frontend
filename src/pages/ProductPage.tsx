@@ -57,9 +57,9 @@ import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
 import { Category, Collection, Product, ProductAddon, ProductDimensionRow, ProductStockStatus, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
-import diningSetOf2Icon from '@/assets/setof2-icon.png';
-import diningSetOf4Icon from '@/assets/setof4-icon.png';
-import diningSetOf6Icon from '@/assets/setof6-icon.png';
+import diningSetOf2Icon from '@/assets/setof2-icon-removebg-preview.png';
+import diningSetOf4Icon from '@/assets/setof4-icon-removebg-preview.png';
+import diningSetOf6Icon from '@/assets/setof6-icon-removebg-preview.png';
 
 import { toast } from 'sonner';
 
