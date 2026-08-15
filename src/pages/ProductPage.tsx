@@ -57,9 +57,9 @@ import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
 import { Category, Collection, Product, ProductAddon, ProductDimensionRow, ProductStockStatus, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
-import diningSetOf2Icon from '@/assets/setof2.png';
-import diningSetOf4Icon from '@/assets/setof4.png';
-import diningSetOf6Icon from '@/assets/setof6.png';
+import diningSetOf2Icon from '@/assets/setof2-icon.png';
+import diningSetOf4Icon from '@/assets/setof4-icon.png';
+import diningSetOf6Icon from '@/assets/setof6-icon.png';
 
 import { toast } from 'sonner';
 
@@ -902,8 +902,8 @@ const DiningSizeIcon = ({ sizeName, className }: { sizeName?: string | null; cla
   const icon = getDiningSizeIcon(sizeName);
   if (!icon) return null;
   return (
-    <span className={`block overflow-hidden ${className}`}>
-      <img src={icon} alt={sizeName || 'Dining set size'} className="h-auto w-full object-contain object-top" />
+    <span className={`block ${className}`}>
+      <img src={icon} alt={sizeName || 'Dining set size'} className="h-full w-full object-contain" />
     </span>
   );
 };
