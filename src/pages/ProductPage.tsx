@@ -3626,7 +3626,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             isSofaProduct && group.kind === 'size' ? (
                               <SofaSizeIcon className="h-12 w-24 object-contain" />
                             ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(selected?.label) ? (
-                              <img src={getDiningSizeIcon(selected?.label)} alt={selected?.label || 'Dining set size'} className="h-12 w-20 object-contain" />
+                              <img src={getDiningSizeIcon(selected?.label)} alt={selected?.label || 'Dining set size'} className={`h-12 w-20 object-contain ${/\bset\s+of\s+2\b/i.test(String(selected?.label || '')) ? 'scale-[1.8]' : ''}`} />
                             ) : (
                               <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
                             )
@@ -3801,7 +3801,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                           {isSofaProduct && group.kind === 'size' ? (
                                             <SofaSizeIcon className="h-12 w-24 object-contain" />
                                           ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(option.label) ? (
-                                            <img src={getDiningSizeIcon(option.label)} alt={formatOptionLabel(option.label)} className="h-12 w-20 object-contain" />
+                                            <img src={getDiningSizeIcon(option.label)} alt={formatOptionLabel(option.label)} className={`h-12 w-20 object-contain ${/\bset\s+of\s+2\b/i.test(option.label) ? 'scale-[1.8]' : ''}`} />
                                           ) : (
                                             <IconVisual
                                               icon={option.icon_url || group.icon_url}
