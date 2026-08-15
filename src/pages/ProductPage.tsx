@@ -1628,6 +1628,7 @@ type MattressDetailView = {
 
 
   const productImages = product?.images || [];
+  const hasSizeBoundImages = productImages.some((image) => Boolean((image.size_name || '').trim()));
   const isSofaImageProduct =
     containsSofaKeyword(product?.category_name) ||
     containsSofaKeyword(product?.category_slug) ||
@@ -1666,7 +1667,7 @@ type MattressDetailView = {
       }
     }
 
-    if (isSofaImageProduct && selectedSize) {
+    if (hasSizeBoundImages && selectedSize) {
       const sizeMatched = resolved.filter((img) =>
         img.size_name
           ? normalizeSizeName(img.size_name).toLowerCase() === normalizeSizeName(selectedSize).toLowerCase()
@@ -1678,13 +1679,13 @@ type MattressDetailView = {
     }
 
     return resolved;
-  }, [activeStyleSelections, isSofaImageProduct, productImages, selectedColor, selectedSize]);
+  }, [activeStyleSelections, hasSizeBoundImages, productImages, selectedColor, selectedSize]);
 
   useEffect(() => {
-    if (isSofaImageProduct && selectedSize) {
+    if (hasSizeBoundImages && selectedSize) {
       setSelectedImage(0);
     }
-  }, [isSofaImageProduct, selectedSize]);
+  }, [hasSizeBoundImages, selectedSize]);
 
   const totalImages = displayImages.length;
   const hasDisplayImages = totalImages > 0;
