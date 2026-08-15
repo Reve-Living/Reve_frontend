@@ -3617,6 +3617,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       }
                     : undefined;
                   const groupEnabled = enabledGroups[group.name] !== false;
+                  const isBedProduct = /\bbeds?\b/i.test(
+                    `${product?.category_name || ''} ${product?.category_slug || ''}`
+                  );
+                  const groupDisplayName =
+                    group.kind === 'size' && !isBedProduct && (product?.size_option_heading || '').trim()
+                      ? (product?.size_option_heading || '').trim()
+                      : group.name;
                   const showGroupIcon = group.kind !== 'fabric' && group.kind !== 'color';
                   const useFullWidthGrid = isStorageGroup || group.kind === 'size';
                   const gridClass = (() => {
@@ -3638,11 +3645,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(selected?.label) ? (
                               <DiningSizeIcon sizeName={selected?.label} className="h-14 w-20" />
                             ) : (
-                              <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
+                              <IconVisual icon={group.icon_url} alt={groupDisplayName} className="h-10 w-10 object-contain" />
                             )
                           )}
                           <div>
-                            <p className="text-base font-semibold capitalize">{group.name}</p>
+                            <p className="text-base font-semibold capitalize">{groupDisplayName}</p>
                             <p className="text-xs text-muted-foreground">
                               {groupEnabled && selected?.label
                                 ? `Selected: ${selected.label.replace(/(\d+)(Drawers)/i, '$1 $2')}${

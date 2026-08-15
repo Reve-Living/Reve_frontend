@@ -15,6 +15,7 @@ export interface Category {
   delivery_info_override_enabled?: boolean;
   delivery_info?: string;
   delivery_title?: string;
+  size_option_heading?: string;
   image_alt_text?: string;
   meta_title?: string;
   meta_description?: string;
@@ -322,6 +323,7 @@ export interface Product {
   subcategory_name?: string;
   category_slug?: string;
   subcategory_slug?: string;
+  size_option_heading?: string;
   price: number;
   original_price?: number | null;
   min_size_price?: number | string | null;
