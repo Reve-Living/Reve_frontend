@@ -898,6 +898,16 @@ const getDiningSizeIcon = (sizeName?: string | null): string | undefined => {
   return undefined;
 };
 
+const DiningSizeIcon = ({ sizeName, className }: { sizeName?: string | null; className: string }) => {
+  const icon = getDiningSizeIcon(sizeName);
+  if (!icon) return null;
+  return (
+    <span className={`block overflow-hidden ${className}`}>
+      <img src={icon} alt={sizeName || 'Dining set size'} className="h-auto w-full object-contain object-top" />
+    </span>
+  );
+};
+
 const REVIEW_SECTION_ID = 'reviews';
 const REVIEW_FORM_ID = 'write-review';
 const REVIEW_MEDIA_ACCEPT = 'image/*,video/*';
@@ -3626,7 +3636,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                             isSofaProduct && group.kind === 'size' ? (
                               <SofaSizeIcon className="h-12 w-24 object-contain" />
                             ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(selected?.label) ? (
-                              <img src={getDiningSizeIcon(selected?.label)} alt={selected?.label || 'Dining set size'} className={`h-12 w-20 object-contain ${/\bset\s+of\s+2\b/i.test(String(selected?.label || '')) ? 'scale-[1.8]' : ''}`} />
+                              <DiningSizeIcon sizeName={selected?.label} className="h-14 w-20" />
                             ) : (
                               <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
                             )
@@ -3795,13 +3805,13 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                             : isSofaProduct && group.kind === 'size'
                                             ? 'flex h-12 w-24 items-center justify-center'
                                             : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(option.label)
-                                            ? 'flex h-12 w-20 items-center justify-center'
+                                            ? 'flex h-14 w-20 items-center justify-center'
                                             : 'flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center'
                                         }>
                                           {isSofaProduct && group.kind === 'size' ? (
                                             <SofaSizeIcon className="h-12 w-24 object-contain" />
                                           ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(option.label) ? (
-                                            <img src={getDiningSizeIcon(option.label)} alt={formatOptionLabel(option.label)} className={`h-12 w-20 object-contain ${/\bset\s+of\s+2\b/i.test(option.label) ? 'scale-[1.8]' : ''}`} />
+                                            <DiningSizeIcon sizeName={option.label} className="h-14 w-20" />
                                           ) : (
                                             <IconVisual
                                               icon={option.icon_url || group.icon_url}
