@@ -57,6 +57,9 @@ import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { apiGet, apiPost, apiUpload } from '@/lib/api';
 import { Category, Collection, Product, ProductAddon, ProductDimensionRow, ProductStockStatus, Review, ReviewMedia, ProductMattress, MattressOptionPrice } from '@/lib/types';
 import { useCart } from '@/context/CartContext';
+import diningSetOf2Icon from '@/assets/setof2.png';
+import diningSetOf4Icon from '@/assets/setof4.png';
+import diningSetOf6Icon from '@/assets/setof6.png';
 
 import { toast } from 'sonner';
 
@@ -886,6 +889,14 @@ const IconVisual = ({ icon, alt, className }: { icon?: string; alt: string; clas
 const SofaSizeIcon = ({ className }: { className: string }) => (
   <img src="/sofa-size-icon.png?v=2" alt="Sofa size" className={className} />
 );
+
+const getDiningSizeIcon = (sizeName?: string | null): string | undefined => {
+  const normalized = String(sizeName || '').toLowerCase().replace(/[\s-]+/g, ' ').trim();
+  if (/\bset\s+of\s+2\b/.test(normalized)) return diningSetOf2Icon;
+  if (/\bset\s+of\s+4\b/.test(normalized)) return diningSetOf4Icon;
+  if (/\bset\s+of\s+6\b/.test(normalized)) return diningSetOf6Icon;
+  return undefined;
+};
 
 const REVIEW_SECTION_ID = 'reviews';
 const REVIEW_FORM_ID = 'write-review';
@@ -2121,6 +2132,10 @@ type MattressDetailView = {
       containsSofaKeyword(product?.subcategory_slug) ||
       containsSofaKeyword(product?.name),
     [product?.category_name, product?.category_slug, product?.subcategory_name, product?.subcategory_slug, product?.name]
+  );
+  const isDiningProduct = useMemo(
+    () => /\bdining\b/i.test(`${product?.category_name || ''} ${product?.category_slug || ''}`),
+    [product?.category_name, product?.category_slug]
   );
 
   const activeSizeOption =
@@ -3610,6 +3625,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                           {showGroupIcon && (
                             isSofaProduct && group.kind === 'size' ? (
                               <SofaSizeIcon className="h-12 w-24 object-contain" />
+                            ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(selected?.label) ? (
+                              <img src={getDiningSizeIcon(selected?.label)} alt={selected?.label || 'Dining set size'} className="h-12 w-20 object-contain" />
                             ) : (
                               <IconVisual icon={group.icon_url} alt={group.name} className="h-10 w-10 object-contain" />
                             )
@@ -3777,10 +3794,14 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                             ? 'flex h-14 w-14 items-center justify-center shrink-0'
                                             : isSofaProduct && group.kind === 'size'
                                             ? 'flex h-12 w-24 items-center justify-center'
+                                            : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(option.label)
+                                            ? 'flex h-12 w-20 items-center justify-center'
                                             : 'flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center'
                                         }>
                                           {isSofaProduct && group.kind === 'size' ? (
                                             <SofaSizeIcon className="h-12 w-24 object-contain" />
+                                          ) : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(option.label) ? (
+                                            <img src={getDiningSizeIcon(option.label)} alt={formatOptionLabel(option.label)} className="h-12 w-20 object-contain" />
                                           ) : (
                                             <IconVisual
                                               icon={option.icon_url || group.icon_url}
