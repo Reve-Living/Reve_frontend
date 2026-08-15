@@ -3737,6 +3737,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                                     : `relative flex ${
                                         isHeadboardGroup
                                           ? 'h-32 w-full flex-row items-center justify-start gap-4 px-3 text-left'
+                                          : isDiningProduct && group.kind === 'size' && getDiningSizeIcon(option.label)
+                                          ? 'h-36 min-h-[144px] w-full flex-col items-center justify-start gap-2 px-3 pb-4 pt-3 text-center'
                                           : 'h-24 min-h-[96px] w-full flex-col items-center justify-center gap-0 px-3 py-3 text-center'
                                       } shrink-0 rounded-lg border bg-white transition-all ${
                                         disabled
