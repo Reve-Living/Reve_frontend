@@ -989,6 +989,7 @@ const ProductPage = () => {
 
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedAddonIds, setSelectedAddonIds] = useState<number[]>([]);
+  const [selectedAddonColors, setSelectedAddonColors] = useState<Record<number, string>>({});
   const [selectedStyles, setSelectedStyles] = useState<Record<string, string>>({});
 type BunkPosition = 'top' | 'bottom' | 'both';
 type SelectedMattressPick = { id: number; position?: BunkPosition | null; group_label?: string | null };
@@ -1344,6 +1345,8 @@ type MattressDetailView = {
         setSelectedImage(0);
         setSelectedSize('');
         setSelectedColor('');
+        setSelectedAddonIds([]);
+        setSelectedAddonColors({});
         setSelectedStyles({});
         setSelectedFabric('');
         setSelectedMattresses([]);
@@ -3024,6 +3027,17 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
       return;
     }
 
+    const addonMissingColour = selectedProductAddons.find((addon) => {
+      const availableColours = Array.isArray(addon.addon_color_names) && addon.addon_color_names.length > 0
+        ? addon.addon_color_names
+        : String(addon.addon_color_name || '').split('|').map((name) => name.trim()).filter(Boolean);
+      return availableColours.length > 0 && !selectedAddonColors[addon.id];
+    });
+    if (addonMissingColour) {
+      toast.error(`Choose a colour for ${addonMissingColour.addon_product_name}`);
+      return;
+    }
+
     // Push GA4 event to dataLayer
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push({
@@ -3121,10 +3135,11 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
         product: addonProduct,
         quantity: quantity * addonQuantity,
         size: addon.addon_size_name || '',
-        color: '',
+        color: selectedAddonColors[addon.id] || '',
         selectedVariants: {
           'Add-on for': product.name,
           ...(addon.addon_size_name ? { Variation: addon.addon_size_name } : {}),
+          ...(selectedAddonColors[addon.id] ? { Colour: selectedAddonColors[addon.id] } : {}),
           'Sets per product': String(addonQuantity),
         },
         include_dimension: false,
@@ -4017,11 +4032,41 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                   {productAddons.map((addon: ProductAddon) => {
                     const selected = selectedAddonIds.includes(addon.id);
                     const available = addon.addon_product_stock_status === 'available' || addon.addon_product_stock_status === 'low_stock';
+                    const addonColours = Array.isArray(addon.addon_color_names) && addon.addon_color_names.length > 0
+                      ? addon.addon_color_names
+                      : String(addon.addon_color_name || '').split('|').map((name) => name.trim()).filter(Boolean);
                     return <label key={addon.id} className={`flex items-center gap-3 rounded-lg border p-3 ${available ? 'cursor-pointer hover:border-primary/60' : 'opacity-60'}`}>
                       <input type="checkbox" checked={selected} disabled={!available} onChange={() => setSelectedAddonIds(ids => selected ? ids.filter(id => id !== addon.id) : [...ids, addon.id])}/>
                       {addon.addon_product_image && <img src={addon.addon_product_image} alt={addon.addon_product_name} className="h-16 w-16 rounded-md object-cover"/>}
                       <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{addon.addon_product_name}</span>
-                        {addon.addon_size_name && <span className="block text-xs font-bold text-foreground">{addon.addon_size_name}</span>}
+                        {(addon.addon_size_name || addonColours.length > 0) && (
+                          <span className="mt-1 flex flex-wrap gap-1.5">
+                            {addon.addon_size_name && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{addon.addon_size_name}</span>}
+                            {addonColours.length > 0 && <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">Choose colour</span>}
+                          </span>
+                        )}
+                        {addonColours.length > 0 && (
+                          <span className="mt-2 block" onClick={(event) => event.preventDefault()}>
+                            <span className="mb-1 block text-xs font-medium text-muted-foreground">Colour</span>
+                            <span className="flex flex-wrap gap-2">
+                              {addonColours.map((colour) => (
+                                <button
+                                  key={colour}
+                                  type="button"
+                                  disabled={!available}
+                                  onClick={(event) => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    setSelectedAddonColors((current) => ({ ...current, [addon.id]: colour }));
+                                  }}
+                                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${selectedAddonColors[addon.id] === colour ? 'border-primary bg-primary text-white' : 'border-border bg-white text-foreground hover:border-primary/60'}`}
+                                >
+                                  {colour}
+                                </button>
+                              ))}
+                            </span>
+                          </span>
+                        )}
                         {Math.max(1, Number(addon.addon_quantity) || 1) > 1 && (
                           <span className="block text-xs text-muted-foreground">{Math.max(1, Number(addon.addon_quantity) || 1)} sets included when selected</span>
                         )}
