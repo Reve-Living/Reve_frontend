@@ -4041,8 +4041,8 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{addon.addon_product_name}</span>
                         {(addon.addon_size_name || addonColours.length > 0) && (
                           <span className="mt-1 flex flex-wrap gap-1.5">
-                            {addon.addon_size_name && <span className="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{addon.addon_size_name}</span>}
-                            {addonColours.length > 0 && <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">Choose colour</span>}
+                            {addon.addon_size_name && <span className="border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{addon.addon_size_name}</span>}
+                            {addonColours.length > 0 && <span className="border border-border bg-muted px-2 py-0.5 text-xs font-semibold text-foreground">Choose colour</span>}
                           </span>
                         )}
                         {addonColours.length > 0 && (
