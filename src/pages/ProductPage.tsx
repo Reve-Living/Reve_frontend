@@ -1451,6 +1451,17 @@ type MattressDetailView = {
               const fullProduct = normalizeProductResponse(fullRes);
               if (!cancelled && fullProduct?.id === fetched?.id) {
                 setProduct((current) => ({ ...(current || {}), ...fullProduct }) as Product);
+                if (preSelectedMattressId && fullProduct.mattresses) {
+                  const targetId = Number(preSelectedMattressId);
+                  const mattressToSelect =
+                    fullProduct.mattresses.find((m) => Number(m.id) === targetId) ||
+                    fullProduct.mattresses.find((m) => Number(m.source_product) === targetId);
+                  if (mattressToSelect?.id) {
+                    setSelectedMattresses([
+                      { id: mattressToSelect.id, position: mattressToSelect.enable_bunk_positions ? 'top' : null },
+                    ]);
+                  }
+                }
                 const selectedSuggestionIds = Array.isArray(fullProduct.suggested_products)
                   ? fullProduct.suggested_products.map(Number).filter(Number.isFinite)
                   : [];
