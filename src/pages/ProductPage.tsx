@@ -1394,9 +1394,13 @@ type MattressDetailView = {
           return fullProductPromise;
         };
 
-        // The core response is preloaded for the detail page. Loading it first
-        // avoids the old quick response doing N+1 detail work before the page
-        // could render. Full content now continues in the background.
+        // Start the complete detail response at the same time as the fast
+        // core response. The core data still paints first, but feature and
+        // detail sections no longer wait for a second network round trip.
+        void getFullProduct();
+
+        // The core response is preloaded for the detail page and provides the
+        // immediate paint while the full response continues in parallel.
         fetched = normalizeProductResponse(await coreProductPromise.catch(() => getFullProduct()));
 
         if (cancelled) return;
