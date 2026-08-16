@@ -4021,7 +4021,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <input type="checkbox" checked={selected} disabled={!available} onChange={() => setSelectedAddonIds(ids => selected ? ids.filter(id => id !== addon.id) : [...ids, addon.id])}/>
                       {addon.addon_product_image && <img src={addon.addon_product_image} alt={addon.addon_product_name} className="h-16 w-16 rounded-md object-cover"/>}
                       <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{addon.addon_product_name}</span>
-                        {addon.addon_size_name && <span className="block text-xs text-muted-foreground">{addon.addon_size_name}</span>}
+                        {addon.addon_size_name && <span className="block text-xs font-bold text-foreground">{addon.addon_size_name}</span>}
                         {Math.max(1, Number(addon.addon_quantity) || 1) > 1 && (
                           <span className="block text-xs text-muted-foreground">{Math.max(1, Number(addon.addon_quantity) || 1)} sets included when selected</span>
                         )}
