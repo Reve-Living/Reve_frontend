@@ -604,7 +604,10 @@ const CategoryPage = () => {
         const shouldLoadSizes = shouldRequestSizesForCategory(initialResolvedSlug, linkedBedSize);
         const productRequestLimit = INITIAL_PRODUCTS_LIMIT;
         const initialOffset = (pageFromQuery - 1) * PRODUCTS_PER_PAGE;
-        const shouldIncludeTotal = true;
+        // Render the first product grid without waiting for the potentially
+        // expensive total-count query. The exact count/pagination follows in
+        // the background after cards are already visible.
+        const shouldIncludeTotal = false;
         const applyProductsResponse = (
           productsRes: ProductListResponse,
           snapshotCategory: Category | null = cachedSnapshot?.category ?? category,
@@ -648,6 +651,30 @@ const CategoryPage = () => {
           ),
           productApiOptions
         );
+        let totalCountRequestStarted = false;
+        const refreshTotalProductCount = () => {
+          if (totalCountRequestStarted) return;
+          totalCountRequestStarted = true;
+          void apiGet<ProductListResponse>(
+            buildCategoryProductsPath(
+              initialResolvedSlug,
+              subSlug,
+              false,
+              shouldLoadSizes,
+              1,
+              0,
+              debouncedServerFilterParams,
+              true
+            ),
+            apiOptions
+          )
+            .then((response) => {
+              if (cancelled) return;
+              const { count } = normalizeProductListResponse(response);
+              if (typeof count === 'number') setTotalProductCount(count);
+            })
+            .catch(() => undefined);
+        };
         const shouldRequestFilterDefinitions = needsFilterDefinitions;
         const initialFiltersPromise = shouldRequestFilterDefinitions
           ? apiGet<{ filters: FilterType[] }>(
@@ -678,6 +705,7 @@ const CategoryPage = () => {
             .then((productsRes) => {
               if (cancelled) return;
               const { normalizedProducts } = applyProductsResponse(productsRes, null, []);
+              refreshTotalProductCount();
               if (normalizedProducts.length === 0) return;
             })
             .catch(() => undefined);
@@ -736,6 +764,7 @@ const CategoryPage = () => {
           categoryItem,
           resolvedSubcategories
         );
+        refreshTotalProductCount();
         writeCategoryPageSnapshot(slug, subSlug, linkedBedSize, pageFromQuery, debouncedServerFilterParamsKey, {
           category: categoryItem,
           subcategories: resolvedSubcategories,
