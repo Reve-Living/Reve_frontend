@@ -4031,10 +4031,10 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                     const addonColours = Array.isArray(addon.addon_color_names) && addon.addon_color_names.length > 0
                       ? addon.addon_color_names
                       : String(addon.addon_color_name || '').split('|').map((name) => name.trim()).filter(Boolean);
-                    return <label key={addon.id} className={`flex items-center gap-3 rounded-lg border p-3 ${available ? 'cursor-pointer hover:border-primary/60' : 'opacity-60'}`}>
-                      <input type="checkbox" checked={selected} disabled={!available} onChange={() => setSelectedAddonIds(ids => selected ? ids.filter(id => id !== addon.id) : [...ids, addon.id])}/>
-                      {addon.addon_product_image && <img src={addon.addon_product_image} alt={addon.addon_product_name} className="h-16 w-16 rounded-md object-cover"/>}
-                      <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{addon.addon_product_name}</span>
+                    return <div key={addon.id} className={`flex items-center gap-3 rounded-lg border p-3 ${available ? 'hover:border-primary/60' : 'opacity-60'}`}>
+                      <input aria-label={`Add ${addon.addon_product_name}`} type="checkbox" checked={selected} disabled={!available} onChange={() => setSelectedAddonIds(ids => selected ? ids.filter(id => id !== addon.id) : [...ids, addon.id])}/>
+                      {addon.addon_product_image && <Link to={`/product/${addon.addon_product_slug}`} className="shrink-0"><img src={addon.addon_product_image} alt={addon.addon_product_name} className="h-16 w-16 rounded-md object-cover"/></Link>}
+                      <span className="min-w-0 flex-1"><Link to={`/product/${addon.addon_product_slug}`} className="block text-sm font-semibold hover:text-primary hover:underline">{addon.addon_product_name}</Link>
                         {(addon.addon_size_name || addonColours.length > 0) && (
                           <span className="mt-1 flex flex-wrap gap-1.5">
                             {addon.addon_size_name && <span className="border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-bold text-primary">{addon.addon_size_name}</span>}
@@ -4070,7 +4070,7 @@ const returnsInfoAnswer = (product?.returns_guarantee || '').trim();
                       <span className="text-right"><span className="block text-sm font-semibold text-primary">{formatExactPrice(Number(addon.addon_price) * Math.max(1, Number(addon.addon_quantity) || 1))}</span>
                         {Math.max(1, Number(addon.addon_quantity) || 1) > 1 && <span className="block text-xs text-muted-foreground">{formatExactPrice(Number(addon.addon_price))} each</span>}
                         {Number(addon.regular_price) > Number(addon.addon_price) && <span className="block text-xs text-muted-foreground line-through">{formatExactPrice(Number(addon.regular_price) * Math.max(1, Number(addon.addon_quantity) || 1))}</span>}</span>
-                    </label>;
+                    </div>;
                   })}
                 </div>
               </div>
