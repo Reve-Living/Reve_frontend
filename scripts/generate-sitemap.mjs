@@ -9,7 +9,14 @@ import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const SITE_URL = "https://www.reveliving.co.uk";
-const API_BASE_URL = process.env.VITE_API_BASE_URL || "https://reve-backend.onrender.com/api";
+const DEFAULT_API_BASE_URL = "https://backend.reveliving.co.uk/api";
+const configuredApiBaseUrl = (process.env.VITE_API_BASE_URL || "").replace(/\/+$/, "");
+// A previously configured Vercel environment variable can otherwise keep the
+// build pointed at the retired Render service even after the storefront moved
+// to the VPS.
+const API_BASE_URL = configuredApiBaseUrl.includes("reve-backend.onrender.com")
+  ? DEFAULT_API_BASE_URL
+  : configuredApiBaseUrl || DEFAULT_API_BASE_URL;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_PATH = path.join(__dirname, "..", "public", "sitemap.xml");
