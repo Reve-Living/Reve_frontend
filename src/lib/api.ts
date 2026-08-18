@@ -1,6 +1,6 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
-  "https://reve-backend.onrender.com/api";
+  "https://backend.reveliving.co.uk/api";
 
 const getAuthToken = () => localStorage.getItem("auth_token");
 

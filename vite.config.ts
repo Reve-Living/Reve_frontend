@@ -279,7 +279,7 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    productSeoPlugin(loadEnv(mode, process.cwd(), "").VITE_API_BASE_URL || "https://reve-backend.onrender.com/api"),
+    productSeoPlugin(loadEnv(mode, process.cwd(), "").VITE_API_BASE_URL || "https://backend.reveliving.co.uk/api"),
   ].filter(Boolean),
   resolve: {
     alias: {

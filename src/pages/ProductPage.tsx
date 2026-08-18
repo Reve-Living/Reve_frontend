@@ -783,7 +783,7 @@ const resolveMediaUrl = (url?: string) => {
   if (trimmed.startsWith("//")) return `https:${trimmed}`;
   const API_BASE_URL =
     (import.meta.env.VITE_API_BASE_URL as string | undefined) ||
-    "https://reve-backend.onrender.com/api";
+    "https://backend.reveliving.co.uk/api";
   const backendBase = API_BASE_URL.replace(/\/api\/?$/, "");
   const normalizedPath = trimmed.startsWith("/media/")
     ? trimmed
