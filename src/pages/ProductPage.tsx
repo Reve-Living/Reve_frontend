@@ -1397,9 +1397,10 @@ type MattressDetailView = {
           return fullProductPromise;
         };
 
-        // Load the lean detail response first. Starting the expensive full
-        // response at the same time makes both requests compete for the same
-        // backend worker and delays the whole product page on cold requests.
+        // Start the complete response immediately as well.  The VPS can serve
+        // both requests concurrently, so options, mattresses, add-ons and the
+        // rest of the product detail are not held back by the core response.
+        void getFullProduct();
         fetched = normalizeProductResponse(await coreProductPromise.catch(() => getFullProduct()));
 
         if (cancelled) return;
@@ -1442,9 +1443,8 @@ type MattressDetailView = {
             })
             .catch(() => undefined);
 
-          // The full response contains mattresses. Start it immediately rather
-          // than waiting for the core request, which can otherwise delay Kids
-          // Beds mattress controls by an additional backend round trip.
+          // The complete response was started alongside the core response, so
+          // this only applies its already-in-flight result.
           void getFullProduct()
             .then((fullRes) => {
               const fullProduct = normalizeProductResponse(fullRes);
