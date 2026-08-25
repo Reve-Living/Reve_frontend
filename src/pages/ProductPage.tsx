@@ -795,6 +795,11 @@ const PRODUCT_SCHEMA_COUNTRY = 'GB';
 const PRODUCT_SCHEMA_CURRENCY = 'GBP';
 const PRODUCT_SCHEMA_RETURN_DAYS = 14;
 const PRODUCT_SCHEMA_RETURN_COLLECTION_FEE = 60;
+// Keep these values aligned with the 1–10 working day Merchant Center policy.
+const PRODUCT_SCHEMA_HANDLING_MIN_DAYS = 0;
+const PRODUCT_SCHEMA_HANDLING_MAX_DAYS = 2;
+const PRODUCT_SCHEMA_TRANSIT_MIN_DAYS = 1;
+const PRODUCT_SCHEMA_TRANSIT_MAX_DAYS = 8;
 
 const formatSchemaMoney = (value: unknown, fallback = 0): string => {
   const numericValue = Number(value);
@@ -1128,6 +1133,21 @@ type MattressDetailView = {
           shippingDestination: {
             '@type': 'DefinedRegion',
             addressCountry: PRODUCT_SCHEMA_COUNTRY,
+          },
+          deliveryTime: {
+            '@type': 'ShippingDeliveryTime',
+            handlingTime: {
+              '@type': 'QuantitativeValue',
+              minValue: PRODUCT_SCHEMA_HANDLING_MIN_DAYS,
+              maxValue: PRODUCT_SCHEMA_HANDLING_MAX_DAYS,
+              unitCode: 'DAY',
+            },
+            transitTime: {
+              '@type': 'QuantitativeValue',
+              minValue: PRODUCT_SCHEMA_TRANSIT_MIN_DAYS,
+              maxValue: PRODUCT_SCHEMA_TRANSIT_MAX_DAYS,
+              unitCode: 'DAY',
+            },
           },
         },
         hasMerchantReturnPolicy: {
