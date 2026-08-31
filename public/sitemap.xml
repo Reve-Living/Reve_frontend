@@ -1203,16 +1203,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/camelot-white-bunk-bed-with-storage-and-stairs</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/domino-triple-sleeper-bunk-bed-white-or-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/domino-bunk-bed-with-shelves-and-stairs</loc>
     <priority>0.6</priority>
   </url>
@@ -1303,11 +1293,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/campervan-bunk-bed-vintage-green-white-kids-bunk-bed-with-surfboard-ladder</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/atlantis-white-taupe-toddler-car-bed</loc>
     <priority>0.6</priority>
   </url>
@@ -1338,11 +1323,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/hercules-high-sleeper-bed-with-desk-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/julian-bowen-pegasus-high-sleeper-bed-with-study-desk-pull-out-wardrobe</loc>
     <priority>0.6</priority>
   </url>
@@ -1368,11 +1348,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/vision-white-low-sleeper-bed-with-integrated-desk-storage-shelves</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/stella-white-low-sleeper-bed</loc>
     <priority>0.6</priority>
   </url>
@@ -1383,17 +1358,7 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/vision-mid-sleeper-bed-with-storage-white</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/acorn-white-treehouse-mid-sleeper-bed-with-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/kimbo-midsleeper-cabin-bed-with-pull-out-desk-drawers-shelving</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2964,6 +2929,11 @@
 
   <url>
     <loc>https://www.reveliving.co.uk/product/julian-bowen-fleur-rattan-wooden-bed-frame-light-oak-double-king-size</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/knoxley-black-oak-extending-dining-table-with-6-chairs-6-seater-dining-set</loc>
     <priority>0.6</priority>
   </url>
 
