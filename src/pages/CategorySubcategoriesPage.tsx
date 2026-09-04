@@ -141,7 +141,9 @@ const CategorySubcategoriesPage = () => {
       if (cachedSnapshot) {
         setCategory(cachedSnapshot.category);
         setSubcategories(cachedSnapshot.subcategories);
-        setProducts(cachedSnapshot.products);
+        // Collection cards must never briefly show a saved product list: a
+        // product may have been deleted since this snapshot was written.
+        setProducts([]);
         setIsLoading(false);
       } else {
         setIsLoading(true);
@@ -155,7 +157,9 @@ const CategorySubcategoriesPage = () => {
       try {
         const initialProductsPromise = apiGet<Product[] | { results?: Product[] }>(
           buildCategoryProductsPath(slug),
-          apiOptions
+          // Product counts and fallback images on the Collections route must
+          // reflect deletion immediately, rather than a browser cache entry.
+          { noStore: true }
         );
 
         const categoryMatches = await apiGet<Category[]>(`/categories/?slug=${slug}`, apiOptions).catch(() => []);
@@ -186,7 +190,7 @@ const CategorySubcategoriesPage = () => {
         writePageSnapshot(slug, {
           category: categoryItem,
           subcategories: nextSubcategories,
-          products: cachedSnapshot?.products ?? [],
+          products: [],
         });
 
         try {
@@ -194,7 +198,7 @@ const CategorySubcategoriesPage = () => {
           const needsSlugRetry = resolvedSlug !== slug;
 
           const productsRes = await (needsSlugRetry
-            ? apiGet<Product[] | { results?: Product[] }>(buildCategoryProductsPath(resolvedSlug), apiOptions)
+            ? apiGet<Product[] | { results?: Product[] }>(buildCategoryProductsPath(resolvedSlug), { noStore: true })
             : initialProductsPromise);
 
           if (cancelled) return;
