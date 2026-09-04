@@ -126,38 +126,39 @@ const CollectionsPage = () => {
   const tiles = useMemo<CollectionTile[]>(() => {
     const categoryMap = new Map(categories.map((category) => [category.id, category]));
 
-    const categoryTiles = categories
-      .filter((category) => category.show_in_all_collections)
-      .map((category) => {
-        return {
-          id: `category-${category.id}`,
-          name: category.name,
-          description: category.description || '',
-          image: resolveImageUrl(category.image),
-          href: `/category/${category.slug}`,
-          sortOrder: Number(category.sort_order) || 0,
-        };
-      });
+    const compareByConfiguredOrder = (a: { sort_order?: number; name: string }, b: { sort_order?: number; name: string }) =>
+      (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0) || a.name.localeCompare(b.name);
 
-    const subcategoryTiles = subcategories
-      .filter((subcategory) => subcategory.show_in_all_collections)
-      .map((subcategory) => {
-        const parent = categoryMap.get(subcategory.category);
+    // Keep every category together with its own subcategories.  Previously
+    // all cards were globally sorted by their individual order, which could
+    // place a Dining card between two Beds cards.
+    return [...categories]
+      .sort(compareByConfiguredOrder)
+      .flatMap((category) => {
+        const categoryTile: CollectionTile[] = category.show_in_all_collections
+          ? [{
+              id: `category-${category.id}`,
+              name: category.name,
+              description: category.description || '',
+              image: resolveImageUrl(category.image),
+              href: `/category/${category.slug}`,
+              sortOrder: Number(category.sort_order) || 0,
+            }]
+          : [];
 
-        return {
-          id: `subcategory-${subcategory.id}`,
-          name: subcategory.name,
-          description: subcategory.description || '',
-          image: resolveImageUrl(subcategory.image) || resolveImageUrl(parent?.image),
-          href: parent ? `/category/${parent.slug}?sub=${subcategory.slug}` : `/categories`,
-          sortOrder: Number(subcategory.sort_order) || 0,
-        };
-      });
+        const childTiles = subcategories
+          .filter((subcategory) => subcategory.category === category.id && subcategory.show_in_all_collections)
+          .sort(compareByConfiguredOrder)
+          .map((subcategory) => ({
+            id: `subcategory-${subcategory.id}`,
+            name: subcategory.name,
+            description: subcategory.description || '',
+            image: resolveImageUrl(subcategory.image) || resolveImageUrl(categoryMap.get(subcategory.category)?.image),
+            href: `/category/${category.slug}?sub=${subcategory.slug}`,
+            sortOrder: Number(subcategory.sort_order) || 0,
+          }));
 
-    return [...subcategoryTiles, ...categoryTiles]
-      .sort((a, b) => {
-        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-        return a.name.localeCompare(b.name);
+        return [...categoryTile, ...childTiles];
       });
   }, [categories, subcategories]);
 
