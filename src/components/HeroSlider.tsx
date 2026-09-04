@@ -115,8 +115,10 @@ const HeroSlider = () => {
           .map((slide) => ({
             id: slide.id ?? slide.title,
             image: resolveImageUrl(slide.image),
-            title: slide.title,
-            subtitle: slide.subtitle?.trim() || 'Discover our latest arrivals curated for you.',
+            // Dedicated hero-slide text is optional.  Do not replace a blank
+            // admin value with automatic copy on the storefront.
+            title: slide.title?.trim() || '',
+            subtitle: slide.subtitle?.trim() || '',
             cta: slide.cta_text?.trim() || (slide.category_name ? `Shop ${slide.category_name}` : 'Shop Now'),
             link:
               (slide.subcategory_slug && slide.category_slug
@@ -174,22 +176,26 @@ const HeroSlider = () => {
 
             <div className="container relative mx-auto flex h-full items-end px-4 pb-20 md:pb-24 md:pl-16 lg:pl-20">
               <div className="max-w-2xl pl-8 md:pl-0">
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.6 }}
-                  className="mb-4 text-sm uppercase tracking-widest text-cream md:text-base"
-                >
-                  {activeSlide.subtitle}
-                </motion.p>
-                <motion.h1
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.6 }}
-                  className="mb-6 font-serif text-4xl font-bold text-cream md:text-6xl lg:text-7xl"
-                >
-                  {activeSlide.title}
-                </motion.h1>
+                {activeSlide.subtitle && (
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3, duration: 0.6 }}
+                    className="mb-4 text-sm uppercase tracking-widest text-cream md:text-base"
+                  >
+                    {activeSlide.subtitle}
+                  </motion.p>
+                )}
+                {activeSlide.title && (
+                  <motion.h1
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6 }}
+                    className="mb-6 font-serif text-4xl font-bold text-cream md:text-6xl lg:text-7xl"
+                  >
+                    {activeSlide.title}
+                  </motion.h1>
+                )}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
