@@ -397,7 +397,11 @@ const CategoryPage = () => {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const searchParamsKey = searchParams.toString();
-  const subSlug = searchParams.get('sub') || '';
+  const requestedSubSlug = searchParams.get('sub') || '';
+  // Kids Beds was reorganised into subcategories.  Its former parent-level
+  // rows are legacy placements, while All Kids Beds is the current catalogue
+  // scope.  Use that current scope when the parent URL is opened directly.
+  const subSlug = requestedSubSlug || (slug === 'kids-beds' ? 'all-kids-beds' : '');
   const linkedBedSize = searchParams.get('bed-size') || '';
   const linkedBedProduct = searchParams.get('from') || '';
   const sortFromQuery = normalizeSortParam(searchParams.get('sort'));
