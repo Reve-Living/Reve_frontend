@@ -26,7 +26,7 @@ const CATEGORY_STALE_CACHE_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 10 * 60 * 1000;
 // New version clears old category snapshots that may still contain products
 // deleted before collection/product cache invalidation was added.
-const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v7:';
+const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v8:';
 const CATEGORY_PAGE_PERSISTED_SNAPSHOT_MS = 24 * 60 * 60 * 1000;
 const SINGLE_FILTER_PREFETCH_LIMIT = 12;
 
@@ -564,14 +564,17 @@ const CategoryPage = () => {
       if (cachedSnapshot) {
         setCategory(cachedSnapshot.category);
         setSubcategories(cachedSnapshot.subcategories);
-        setAllProducts(cachedSnapshot.products);
-        setTotalProductCount(cachedSnapshot.totalProductCount);
-        setLoadedProductKey(requestedProductKey);
+        // Category products must come from the live catalogue.  A product can
+        // be deleted after this snapshot was saved, so never render its old
+        // product rows while the current request is loading.
+        setAllProducts([]);
+        setTotalProductCount(null);
+        setLoadedProductKey('');
         setAvailableFilters(latestFilters);
         if (latestFilters.length > 0) {
           setLoadedFilterScopeKey(requestedFilterScopeKey);
         }
-        setIsLoading(false);
+        setIsLoading(true);
         setIsFiltersLoading(needsFilterDefinitions && latestFilters.length === 0);
       } else {
         setIsFiltersLoading(needsFilterDefinitions);
@@ -634,14 +637,10 @@ const CategoryPage = () => {
           });
           return { orderedProducts, count: nextCount, normalizedProducts: nextProducts };
         };
-        const productApiOptions = {
-          ...apiOptions,
-          refreshOnCacheHit: true,
-          onUpdate: (data: unknown) => {
-            if (cancelled) return;
-            applyProductsResponse(data as ProductListResponse);
-          },
-        };
+        // Do not use a browser-cached product list on category pages.  This
+        // guarantees that an admin deletion is reflected in every category
+        // and subcategory as soon as the page is opened.
+        const productApiOptions = { noStore: true, signal: controller.signal };
 
         const initialProductsPromise = apiGet<ProductListResponse>(
           buildCategoryProductsPath(
