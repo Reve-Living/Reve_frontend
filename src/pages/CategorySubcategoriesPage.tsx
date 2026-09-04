@@ -11,7 +11,8 @@ import type { Category, Product, SubCategory } from '@/lib/types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 const SUBCATEGORY_PAGE_CACHE_MS = 10 * 60 * 1000;
-const SUBCATEGORY_PAGE_CACHE_PREFIX = 'reve-subcategory-page:v3:';
+// Do not reuse old subcategory snapshots that can contain deleted products.
+const SUBCATEGORY_PAGE_CACHE_PREFIX = 'reve-subcategory-page:v4:';
 const SUBCATEGORY_PRODUCTS_LIMIT = 120;
 
 const resolveImageUrl = (value?: string): string => {

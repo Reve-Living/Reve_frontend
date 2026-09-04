@@ -24,7 +24,9 @@ const PRODUCTS_PER_PAGE = 18;
 const INITIAL_PRODUCTS_LIMIT = PRODUCTS_PER_PAGE;
 const CATEGORY_STALE_CACHE_MS = 10 * 60 * 1000;
 const CATEGORY_PAGE_SNAPSHOT_MS = 10 * 60 * 1000;
-const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v6:';
+// New version clears old category snapshots that may still contain products
+// deleted before collection/product cache invalidation was added.
+const CATEGORY_PAGE_SNAPSHOT_PREFIX = 'reve-category-page:v7:';
 const CATEGORY_PAGE_PERSISTED_SNAPSHOT_MS = 24 * 60 * 60 * 1000;
 const SINGLE_FILTER_PREFETCH_LIMIT = 12;
 
