@@ -1081,12 +1081,22 @@ type MattressDetailView = {
     const aggregateRatingSchema = buildAggregateRatingSchema(reviewSummary.rating, reviewSummary.reviewCount);
     const reviewSchemas = buildReviewSchemas(reviews);
 
+    // Products priced per-size (sofas, beds, etc.) have no single true "price" - a flat
+    // Offer.price here would advertise a number that matches none of the real purchasable
+    // sizes. When there's a genuine size price range, use AggregateOffer instead.
+    const sizePrices = (product.sizes || [])
+      .map((s) => Number(s?.price_delta))
+      .filter((n) => Number.isFinite(n) && n > 0);
+    const minSizePrice = sizePrices.length ? Math.min(...sizePrices) : undefined;
+    const maxSizePrice = sizePrices.length ? Math.max(...sizePrices) : undefined;
+    const hasSizePriceRange = minSizePrice !== undefined && maxSizePrice !== undefined && maxSizePrice > minSizePrice;
+
     setPropertyMeta('og:title', seoTitle);
     setPropertyMeta('og:description', plainDescription);
     setPropertyMeta('og:type', 'product');
     setPropertyMeta('og:url', canonicalUrl);
     if (imageUrl) setPropertyMeta('og:image', imageUrl);
-    setPropertyMeta('product:price:amount', String(product.price));
+    setPropertyMeta('product:price:amount', String(hasSizePriceRange ? minSizePrice : product.price));
     setPropertyMeta('product:price:currency', PRODUCT_SCHEMA_CURRENCY);
 
     let canonical = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
@@ -1116,10 +1126,11 @@ type MattressDetailView = {
       ...(aggregateRatingSchema ? { aggregateRating: aggregateRatingSchema } : {}),
       ...(reviewSchemas.length > 0 ? { review: reviewSchemas } : {}),
       offers: {
-        '@type': 'Offer',
+        ...(hasSizePriceRange
+          ? { '@type': 'AggregateOffer', lowPrice: String(minSizePrice), highPrice: String(maxSizePrice) }
+          : { '@type': 'Offer', price: String(product.price) }),
         url: canonicalUrl,
         priceCurrency: PRODUCT_SCHEMA_CURRENCY,
-        price: String(product.price),
         availability: product.in_stock === false || product.stock_status === 'out_of_stock'
           ? 'https://schema.org/OutOfStock'
           : 'https://schema.org/InStock',
@@ -2189,9 +2200,7 @@ type MattressDetailView = {
     sizeOptions[0];
 
   const selectedSizeBasePrice =
-    isSofaProduct
-      ? Number(product?.price ?? 0)
-      : sizeOptions.length > 0
+    sizeOptions.length > 0
       ? Number(activeSizeOption?.price ?? 0)
       : Number(product?.price ?? 0);
 
