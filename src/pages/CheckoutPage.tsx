@@ -12,7 +12,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import PaymentBrandMark from '@/components/PaymentBrandMark';
 import { useCart } from '@/context/CartContext';
-import { apiPost, apiUpload } from '@/lib/api';
+import { apiGet, apiPost, apiUpload } from '@/lib/api';
 import type {
   Order,
   ProductStyle,
@@ -369,6 +369,7 @@ const CheckoutPage = () => {
   } = useCart();
   const [step, setStep] = useState<CheckoutStep>('information');
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [paymentFeeRates, setPaymentFeeRates] = useState({ paypal: 3, klarna: 5 });
   const [isProcessing, setIsProcessing] = useState(false);
   const [promoCode, setPromoCode] = useState(state.appliedPromo?.code || '');
   const [promoAvailable, setPromoAvailable] = useState(false);
@@ -379,6 +380,9 @@ const CheckoutPage = () => {
     0
   );
   const orderTotal = discountedTotalPrice + deliveryFee;
+  const paymentProcessingFeeRate = paymentMethod === 'paypal' ? paymentFeeRates.paypal : paymentMethod === 'klarna' ? paymentFeeRates.klarna : 0;
+  const paymentProcessingFee = Math.round(orderTotal * paymentProcessingFeeRate) / 100;
+  const grandTotal = orderTotal + paymentProcessingFee;
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -397,6 +401,19 @@ const CheckoutPage = () => {
   >([]);
   const [confirmedOrder, setConfirmedOrder] = useState<Order | null>(null);
   const [isLoadingConfirmedOrder, setIsLoadingConfirmedOrder] = useState(false);
+
+  useEffect(() => {
+    void apiGet<{ paypal?: number; klarna?: number }>('/payments/processing_fees/')
+      .then((rates) => {
+        if (Number.isFinite(rates.paypal) && Number.isFinite(rates.klarna)) {
+          setPaymentFeeRates({ paypal: Number(rates.paypal), klarna: Number(rates.klarna) });
+        }
+      })
+      .catch(() => {
+        // The displayed defaults match the server defaults if this optional
+        // configuration request is temporarily unavailable.
+      });
+  }, []);
 
   const checkoutParams = new URLSearchParams(window.location.search);
   const isSuccessCheckout = checkoutParams.get('success') === '1' || Boolean(checkoutParams.get('token'));
@@ -748,7 +765,9 @@ const CheckoutPage = () => {
         city: formData.city,
         postal_code: formData.postcode,
         floor_number: formData.floorNumber.trim(),
-        total_amount: orderTotal,
+        // The server recalculates all totals (including this fee) from the
+        // order contents. These values only keep the immediate UI in sync.
+        total_amount: grandTotal,
         delivery_charges: deliveryFee,
         promo_code: state.appliedPromo?.code || '',
         payment_method: paymentMethod,
@@ -775,7 +794,7 @@ const CheckoutPage = () => {
       
       // 👈 CAPTURE ITEMS AND TOTALS BEFORE CLEARING CART
       localStorage.setItem('last_order_items', JSON.stringify(state.items));
-      localStorage.setItem('last_order_total', String(orderTotal));
+      localStorage.setItem('last_order_total', String(grandTotal));
       localStorage.setItem('last_delivery_fee', String(deliveryFee));
 
       if (paymentMethod === 'cod') {
@@ -791,23 +810,12 @@ const CheckoutPage = () => {
 
       if (isStripeBackedPaymentMethod(paymentMethod)) {
         try {
-          const discountRate = (state.appliedPromo?.discountPercentage || 0) / 100;
-          const applicableSet = new Set(state.appliedPromo?.applicableProductIds || []);
-          localStorage.removeItem('last_order_id');
-          localStorage.setItem('pending_order_payload', JSON.stringify(orderPayload));
+          const orderRes = await apiPost<Order>('/orders/', orderPayload);
+          localStorage.setItem('last_order_id', String(orderRes.id));
+          localStorage.removeItem('pending_order_payload');
           localStorage.setItem('last_stripe_payment_method', paymentMethod);
           const session = await apiPost<{ url: string; id: string }>('/payments/create_stripe_session/', {
-            items: state.items.map((item) => ({
-              name: item.product.name,
-              price: String(
-                applicableSet.has(item.product.id)
-                  ? Number(((item.unit_price ?? item.product.price) * (1 - discountRate)).toFixed(2))
-                  : Number((item.unit_price ?? item.product.price).toFixed(2))
-              ),
-              quantity: item.quantity,
-            })),
-            delivery_charges: String(deliveryFee),
-            currency: 'gbp',
+            order_id: orderRes.id,
             payment_method: paymentMethod,
             success_url: `${window.location.origin}/checkout?success=1`,
             cancel_url: `${window.location.origin}/checkout?canceled=1`,
@@ -831,12 +839,13 @@ const CheckoutPage = () => {
       }
 
       if (paymentMethod === 'paypal') {
-        localStorage.removeItem('last_order_id');
-        localStorage.setItem('pending_order_payload', JSON.stringify(orderPayload));
+        const orderRes = await apiPost<Order>('/orders/', orderPayload);
+        localStorage.setItem('last_order_id', String(orderRes.id));
+        localStorage.removeItem('pending_order_payload');
         const paypalOrder = await apiPost<{ links: { rel: string; href: string }[] }>(
           '/payments/create_paypal_order/',
           {
-            total: orderTotal.toFixed(2),
+            order_id: orderRes.id,
             currency: 'GBP',
             return_url: `${window.location.origin}/checkout?success=1`,
             cancel_url: `${window.location.origin}/checkout?canceled=1`,
@@ -944,6 +953,14 @@ const CheckoutPage = () => {
                         Refund note: {confirmedOrder.refund_error}
                       </p>
                     )}
+                    {Number(confirmedOrder.payment_processing_fee_amount || 0) > 0 && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Payment processing fee ({confirmedOrder.payment_processing_fee_rate}%): £{Number(confirmedOrder.payment_processing_fee_amount).toFixed(2)}
+                      </p>
+                    )}
+                    <p className="mt-2 text-sm font-semibold">
+                      Total paid: £{Number(confirmedOrder.grand_total || confirmedOrder.total_amount).toFixed(2)}
+                    </p>
                   </div>
                   <span
                     className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${getOrderStatusClasses(confirmedOrder.status)}`}
@@ -1167,6 +1184,9 @@ const CheckoutPage = () => {
                   className="rounded-lg bg-card p-6 shadow-luxury"
                 >
                   <h2 className="mb-6 font-serif text-2xl font-semibold">Payment Method</h2>
+                  <p className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                    An additional payment-processing fee applies when PayPal or Klarna is selected. The fee will be displayed clearly before you confirm your order.
+                  </p>
                   <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
                     <div className="space-y-4">
                       <div className={`flex items-center gap-4 rounded-lg border p-4 transition-colors ${
@@ -1340,7 +1360,7 @@ const CheckoutPage = () => {
                     ? 'Processing...'
                     : step === 'information'
                     ? 'Continue to Payment'
-                    : `Pay £${orderTotal.toFixed(2)}`}
+                    : `Pay £${grandTotal.toFixed(2)}`}
                 </Button>
               </div>
             </div>
@@ -1406,9 +1426,15 @@ const CheckoutPage = () => {
                     <span className="text-muted-foreground">Delivery</span>
                     <span>£{deliveryFee.toFixed(2)}</span>
                   </div>
+                  {paymentProcessingFeeRate > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Payment processing fee ({paymentProcessingFeeRate}%)</span>
+                      <span>£{paymentProcessingFee.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between border-t border-border pt-2 text-lg font-semibold">
                     <span>Total</span>
-                    <span className="text-primary">£{orderTotal.toFixed(2)}</span>
+                    <span className="text-primary">£{grandTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>

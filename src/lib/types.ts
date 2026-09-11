@@ -427,6 +427,13 @@ export interface Order {
   floor_number?: string;
   total_amount: number;
   delivery_charges: number;
+  base_subtotal?: number;
+  discount_amount?: number;
+  shipping_amount?: number;
+  tax_amount?: number;
+  payment_processing_fee_rate?: number;
+  payment_processing_fee_amount?: number;
+  grand_total?: number;
   status: string;
   payment_method: string;
   payment_id?: string;
