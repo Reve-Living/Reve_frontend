@@ -22,6 +22,8 @@ type ProductSeoRecord = {
   in_stock?: boolean;
   primary_image_url?: string;
   images?: { url?: string }[];
+  min_size_price?: string | number | null;
+  max_size_price?: string | number | null;
 };
 
 type ProductSeoReviewRecord = {
@@ -59,7 +61,10 @@ const plainText = (value = "") =>
 
 const buildProductFallbackHtml = (product: ProductSeoRecord, description: string, imageUrl: string) => {
   const name = plainText(product.name);
-  const price = formatSchemaMoney(product.price);
+  const minSizePrice = Number(product.min_size_price);
+  const priceLabel = Number.isFinite(minSizePrice) && minSizePrice > 0
+    ? `From £${escapeHtml(formatSchemaMoney(minSizePrice))}`
+    : `£${escapeHtml(formatSchemaMoney(product.price))}`;
   const availability = product.in_stock === false || product.stock_status === "out_of_stock"
     ? "Out of stock"
     : "In stock";
@@ -69,7 +74,7 @@ const buildProductFallbackHtml = (product: ProductSeoRecord, description: string
     imageUrl ? `<img src="${escapeHtml(imageUrl)}" alt="${escapeHtml(name)}" style="max-width:420px;width:100%;height:auto;object-fit:contain;" />` : "",
     `<h1 style="font-size:32px;line-height:1.2;margin:24px 0 12px;">${escapeHtml(name)}</h1>`,
     `<p style="font-size:16px;line-height:1.6;margin:0 0 16px;">${escapeHtml(description)}</p>`,
-    `<p style="font-size:20px;font-weight:700;margin:0 0 8px;">£${escapeHtml(price)}</p>`,
+    `<p style="font-size:20px;font-weight:700;margin:0 0 8px;">${priceLabel}</p>`,
     `<p style="font-size:14px;margin:0;">${escapeHtml(availability)}</p>`,
     "</main>",
   ].filter(Boolean).join("");
@@ -201,6 +206,15 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         : "https://schema.org/InStock";
       const aggregateRatingSchema = buildAggregateRatingSchema(product.rating, product.review_count);
       const reviewSchemas = buildReviewSchemas(product.reviews);
+      // Products priced per-size (sofas, beds, etc.) have no single true "price" - a flat
+      // Offer.price here would advertise a number that matches none of the real purchasable
+      // sizes. When the backend reports a genuine size price range, use AggregateOffer instead.
+      const minSizePrice = Number(product.min_size_price);
+      const maxSizePrice = Number(product.max_size_price);
+      const hasSizePriceRange = Number.isFinite(minSizePrice) && Number.isFinite(maxSizePrice) && maxSizePrice > minSizePrice;
+      const offerPriceFields = hasSizePriceRange
+        ? { "@type": "AggregateOffer", lowPrice: formatSchemaMoney(minSizePrice), highPrice: formatSchemaMoney(maxSizePrice) }
+        : { "@type": "Offer", price: String(product.price) };
       const schema = JSON.stringify({
         "@context": "https://schema.org",
         "@type": "Product",
@@ -212,10 +226,9 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         ...(aggregateRatingSchema ? { aggregateRating: aggregateRatingSchema } : {}),
         ...(reviewSchemas.length > 0 ? { review: reviewSchemas } : {}),
         offers: {
-          "@type": "Offer",
+          ...offerPriceFields,
           url: canonicalUrl,
           priceCurrency: PRODUCT_SCHEMA_CURRENCY,
-          price: String(product.price),
           availability,
           shippingDetails: {
             "@type": "OfferShippingDetails",
@@ -272,7 +285,7 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
         `<link rel="canonical" href="${escapeHtml(canonicalUrl)}" />`,
         `<meta property="og:url" content="${escapeHtml(canonicalUrl)}" />`,
         imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}" />` : "",
-        `<meta property="product:price:amount" content="${escapeHtml(String(product.price))}" />`,
+        `<meta property="product:price:amount" content="${escapeHtml(hasSizePriceRange ? formatSchemaMoney(minSizePrice) : String(product.price))}" />`,
         `<meta property="product:price:currency" content="${PRODUCT_SCHEMA_CURRENCY}" />`,
         `<script id="product-json-ld" type="application/ld+json">${schema}</script>`,
       ].filter(Boolean).join("\n    ");
