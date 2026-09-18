@@ -1076,6 +1076,23 @@ type MattressDetailView = {
     }
     meta.setAttribute('content', plainDescription);
 
+    // The server always responds 200 for unknown product slugs (SPA catch-all), so a
+    // deleted/nonexistent product has no way to signal a real 404 to crawlers. Explicitly
+    // noindex it once we know it's genuinely missing - this is Google's own recommended
+    // fix for "Soft 404" on client-rendered apps that can't return a true 404 status.
+    let robotsMeta = document.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!robotsMeta) {
+      robotsMeta = document.createElement('meta');
+      robotsMeta.setAttribute('name', 'robots');
+      document.head.appendChild(robotsMeta);
+    }
+    if (!product && !isLoading) {
+      document.title = 'Product Not Found | Reve Living';
+      robotsMeta.setAttribute('content', 'noindex, follow');
+      return;
+    }
+    robotsMeta.setAttribute('content', 'index, follow');
+
     if (!product) return;
 
     const aggregateRatingSchema = buildAggregateRatingSchema(reviewSummary.rating, reviewSummary.reviewCount);
@@ -1176,7 +1193,7 @@ type MattressDetailView = {
         },
       },
     });
-  }, [product, reviewSummary.rating, reviewSummary.reviewCount, reviews, slug]);
+  }, [product, isLoading, reviewSummary.rating, reviewSummary.reviewCount, reviews, slug]);
   const [isMattressOpen, setIsMattressOpen] = useState(false);
   const [showAllMattresses, setShowAllMattresses] = useState(true);
   const [selectedFabric, setSelectedFabric] = useState('');
