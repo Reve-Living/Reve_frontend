@@ -24,6 +24,7 @@ type ProductSeoRecord = {
   images?: { url?: string }[];
   min_size_price?: string | number | null;
   max_size_price?: string | number | null;
+  size_price_option_count?: number | null;
 };
 
 type ProductSeoReviewRecord = {
@@ -213,7 +214,7 @@ const productSeoPlugin = (apiBaseUrl: string): Plugin => ({
       const maxSizePrice = Number(product.max_size_price);
       const hasSizePriceRange = Number.isFinite(minSizePrice) && Number.isFinite(maxSizePrice) && maxSizePrice > minSizePrice;
       const offerPriceFields = hasSizePriceRange
-        ? { "@type": "AggregateOffer", lowPrice: formatSchemaMoney(minSizePrice), highPrice: formatSchemaMoney(maxSizePrice) }
+        ? { "@type": "AggregateOffer", lowPrice: formatSchemaMoney(minSizePrice), highPrice: formatSchemaMoney(maxSizePrice), offerCount: product.size_price_option_count || undefined }
         : { "@type": "Offer", price: String(product.price) };
       const schema = JSON.stringify({
         "@context": "https://schema.org",

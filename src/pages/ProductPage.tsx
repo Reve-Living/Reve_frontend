@@ -1144,7 +1144,7 @@ type MattressDetailView = {
       ...(reviewSchemas.length > 0 ? { review: reviewSchemas } : {}),
       offers: {
         ...(hasSizePriceRange
-          ? { '@type': 'AggregateOffer', lowPrice: String(minSizePrice), highPrice: String(maxSizePrice) }
+          ? { '@type': 'AggregateOffer', lowPrice: String(minSizePrice), highPrice: String(maxSizePrice), offerCount: sizePrices.length }
           : { '@type': 'Offer', price: String(product.price) }),
         url: canonicalUrl,
         priceCurrency: PRODUCT_SCHEMA_CURRENCY,
