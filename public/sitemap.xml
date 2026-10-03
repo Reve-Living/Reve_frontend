@@ -163,41 +163,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom</loc>
-    <priority>0.8</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom/subcategories</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom?sub=bedside-tables</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom?sub=chest-of-drawers</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom?sub=dressing-tables</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom?sub=wardrobes</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/bedroom?sub=mirrors</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/category/living</loc>
     <priority>0.8</priority>
   </url>
@@ -228,17 +193,7 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/category/living?sub=tv-units</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/living?sub=bookcases</loc>
-    <priority>0.7</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/category/living?sub=display-units</loc>
+    <loc>https://www.reveliving.co.uk/category/living?sub=chest-of-drawers</loc>
     <priority>0.7</priority>
   </url>
 
@@ -1203,197 +1158,12 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/domino-bunk-bed-with-shelves-and-stairs</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/vision-white-bunk-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/trio-triple-sleeper-bunk-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/willow-white-treehouse-bunk-bed-with-stairs</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/orpheus-white-house-midsleeper-bed-with-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/gaia-bunk-bed-with-storage-stairs</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mars-grey-oak-bunk-bed-with-trundle-shelving</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/horizon-pale-wood-white-bunk-bed-with-wardrobe-shelving</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/orion-bunk-bed-with-storage-drawer-shelving</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/orion-triple-sleeper-bunk-bed-with-storage-drawer-shelving</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/parsec-white-bunk-bed-with-built-in-shelves</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/solomon-white-bunk-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/safari-jungle-bunk-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/teddy-boucle-upholstered-bunk-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/storm-racer-car-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/scorpion-high-gloss-red-racer-car-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/light-blue-campervan-kids-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/london-bus-bunk-bed-red</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/atlantis-white-taupe-toddler-car-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/gaia-high-sleeper-bed-with-wardrobe-storage-tv-unit</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/blaze-black-pale-wood-gaming-high-sleeper-bed-with-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/blaze-white-gaming-high-sleeper-bed-with-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/eagle-black-red-gaming-high-sleeper-loft-bed-with-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/impact-black-red-gaming-high-sleeper-bed-with-desk-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-pegasus-high-sleeper-bed-with-study-desk-pull-out-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/vision-white-high-sleeper-bed-with-desk-wardrobe-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/titan-white-high-sleeper-bed-with-integrated-desk-shelving</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/ocean-high-sleeper-bed-with-desk-wardrobe-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/nebula-gaming-high-sleeper-bed-anthracite</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/stella-white-low-sleeper-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/tourer-childrens-caravan-cabin-bed-white-vapour-grey</loc>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/acorn-white-treehouse-mid-sleeper-bed-with-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/saturn-mid-sleeper-cabin-bed-with-pull-out-desk-3-drawers-open-shelves</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/gaia-mid-sleeper-cabin-bed-with-pull-out-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/jupiter-mid-sleeper-cabin-bed-with-pull-out-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/cookie-cabin-bed-with-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/vespa-white-mid-sleeper-cabin-bed-with-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/roxy-stone-white-sleepstation-bed-with-desk-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/neptune-mid-sleeper-bed-with-desk-storage</loc>
     <priority>0.6</priority>
   </url>
 
@@ -1483,11 +1253,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/barcelona-stone-white-hideaway-bed-wooden-single-guest-bed-with-lift-up-trundle</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/maine-antrhacite-bookcase-bed-with-pull-out-trundle-wooden-single-guest-bed-with-bookcase-headboard</loc>
     <priority>0.6</priority>
   </url>
@@ -1499,21 +1264,6 @@
 
   <url>
     <loc>https://www.reveliving.co.uk/product/maine-surf-white-bookcase-bed-with-pull-out-trundle-wooden-single-guest-bed-with-bookcase-headboard</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/roxanne-black-solid-pine-4-poster-canopy-bed-frame-wooden-double-king-size-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mapleton-white-oak-22-chest-of-drawers-4-drawer-bedroom-storage-chest</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mapleton-white-oak-23-chest-of-drawers-5-drawer-bedroom-storage-chest-1</loc>
     <priority>0.6</priority>
   </url>
 
@@ -1608,102 +1358,12 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/monza-dark-grey-velvet-sofa-bed-scandinavian-style-convertible-sofa-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/monza-blue-linen-sofa-bed-scandinavian-style-convertible-sofa-bed</loc>
     <priority>0.6</priority>
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/angel-storage-corner-sofa-bed-pull-out-sofa-bed-with-storage-light-grey-linen</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rowan-single-sofa-bed-fold-out-fabric-chair-bed-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/monza-grey-linen-armchair-scandinavian-accent-chair</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/monza-blue-linen-armchair-scandinavian-accent-chair</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/monza-dark-grey-velvet-armchair-scandinavian-accent-chair</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rohe-light-grey-armchair-modern-fabric-accent-chair</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/hayward-grey-chenille-armchair-modern-accent-chair</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rohe-2-seater-sofa-platinum-wool-effect-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rohe-3-seater-sofa-platinum-wool-effect-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/hayward-2-seater-sofa-grey-chenille-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/hayward-2-seater-sofa-grey-velvet-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/hayward-3-seater-sofa-grey-chenille-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/hayward-3-seater-sofa-grey-velvet-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/ottilie-2-seater-sofa-natural-beige-chenille-fabric-sofa</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/henley-2-seater-sofa-black-faux-leather</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/henley-2-seater-sofa-green-velvet</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/henrietta-2-seater-sofa-natural-beige-linen-fabric</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/carrera-32-seater-sofa-suite-oyster-cream-chenille-fabric</loc>
     <priority>0.6</priority>
   </url>
 
@@ -1833,21 +1493,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/bali-ottoman-storage-bed-with-bookcase-headboard-grey-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/bali-ottoman-storage-bed-with-bookcase-headboard-natural-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/bali-bookcase-headboard-bed-frame-grey-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/hannah-electric-micro-fibre-fabric-corner-recliner-sofa-grey-l-shape-sofa</loc>
     <priority>0.6</priority>
   </url>
@@ -1878,37 +1523,7 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/arden-white-high-gloss-3-drawer-dresser</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/helsinki-white-high-gloss-bed-frame-double-king-size</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/helsinki-white-high-gloss-narrow-5-drawer-chest</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/helsinki-white-high-gloss-3-drawer-dressing-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/helsinki-white-high-gloss-dressing-table-set-with-mirror-stool</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/arden-white-high-gloss-dressing-table-with-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/zircon-white-dressing-table-with-mirror</loc>
     <priority>0.6</priority>
   </url>
 
@@ -1923,137 +1538,7 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/california-grey-4-drawer-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/california-grey-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/zircon-white-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/arden-white-high-gloss-5-drawer-chest-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/zircon-white-4-drawer-chest-of-drawers-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/vigo-white-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-wooden-rattan-bedside-table-with-drawer-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/alicia-wooden-rattan-bed-frame-oak-finish-double-king-size</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/vigo-oak-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/bardalona-oak-effect-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/bardalona-oak-effect-4-drawer-chest</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/bardalona-oak-effect-2-door-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/bardalona-trio-bedroom-furniture-set-2-door-wardrobe-4-drawer-chest-bedside-table-oak-effect</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-3-drawer-wide-chest</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-5-drawer-narrow-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-3-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-dressing-table-mirror-set</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-2-drawer-dressing-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/topline-white-dressing-table-with-mirror-stool</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/topline-black-dressing-table-with-mirror-stool</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/topline-black-42-chest-of-drawers-modern-bedroom-storage-chest</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/topline-white-55-chest-of-drawers-modern-10-drawer-bedroom-storage-cabinet</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/belvoir-grey-oak-dressing-table-with-mirror-stool-set</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/belvoir-grey-oak-2-drawer-dressing-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/belvoir-grey-oak-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/belvoir-grey-oak-5-drawer-chest-of-drawers</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2063,192 +1548,7 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/topline-black-high-gloss-2-door-sliding-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/topline-black-high-gloss-3-door-wardrobe-with-centre-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/topline-black-high-gloss-4-door-wardrobe-with-two-mirrors</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-black-2-door-combination-wardrobe-with-2-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-white-2-door-combination-wardrobe-with-2-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-black-5-drawer-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-white-5-drawer-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-black-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-white-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-trio-bedroom-furniture-set-2-door-wardrobe-5-drawer-chest-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-trio-bedroom-furniture-set-white-2-door-wardrobe-5-drawer-chest-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/alicia-6-drawer-wide-chest-of-drawers-matt-anthracite</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/augustina-crushed-velvet-bed-frame-with-mirrored-headboard-silver-double-king-size</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/chloe-2-drawer-bedside-table-storm-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/chloe-4-drawer-chest-of-drawers-storm-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/chloe-2-door-wardrobe-with-shelf-hanging-rail-drawer-storm-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/chloe-storm-grey-bedroom-furniture-set-2-door-wardrobe-4-drawer-chest-2-drawer-bedside-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/chloe-storm-grey-6-drawer-wide-chest-of-drawers-modern-bedroom-storage-cabinet</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/chloe-storm-grey-king-size-wooden-bed-frame-modern-king-size-bed</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/manhattan-white-high-gloss-2-door-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-2-door-wardrobe-with-drawer-anthracite</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-2-door-wardrobe-with-drawer-surf-white</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-2-door-wardrobe-with-drawer-dove-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-3-door-combination-wardrobe-with-2-drawers-surf-white</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-3-door-combination-wardrobe-with-2-drawers-anthracite</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-3-door-combination-wardrobe-with-2-drawers-dove-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/camille-dressing-table-with-stool-oak-effect-vanity-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-dove-grey-dressing-table-stool-6-drawer-vanity-set</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-surf-white-dressing-table-6-drawer-vanity-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/prima-freestanding-jewellery-mirror-with-storage</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/fresco-white-freestanding-storage-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/falcon-black-metal-leaning-full-length-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/palais-black-lean-to-full-length-dress-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/palais-black-dress-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/palais-white-dress-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/palais-white-lean-to-full-length-dress-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/soprano-lean-to-dress-mirror-venetian-full-length-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/baroque-distressed-wall-mirror-antique-white-ornate-decorative-mirror</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2274,86 +1574,6 @@
 
   <url>
     <loc>https://www.reveliving.co.uk/product/cleveland-clear-glass-console-table-silver-stainless-steel-hallway-table-side-console-tables-console-tables</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rushmore-black-organic-wall-mirror-130cm-modern-metal-framed-asymmetrical-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/soprano-venetian-wall-mirror-80-60cm-bevelled-glass-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/staccato-silver-fragment-wall-mirror-110-80cm-decorative-glass-wall-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/soprano-venetian-wall-mirror-80-60cm-bevelled-glass-mirror-copy</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rococo-pewter-wall-mirror-110-80cm-ornate-bevelled-decorative-wall-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/soprano-folding-dressing-table-mirror-65-50cm-bevelled-vanity-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/augustina-dressing-table-mirror-895-595cm-vanity-mirror</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-anthracite-32-drawer-chest-of-drawers</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-32-drawer-chest-of-drawers-dove-grey</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-32-drawer-chest-of-drawers-surf-white</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-anthracite-3-drawer-bedside-table-bedside-cabinet-nightstand</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-dove-grey-3-drawer-bedside-table-bedside-cabinet-nightstand</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-surf-white-3-drawer-bedside-table-bedside-cabinet-nightstand</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-anthracite-3-drawer-chest-of-drawers-bedroom-storage-cabinet-84cm</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-dove-grey-3-drawer-chest-of-drawers-bedroom-storage-cabinet-84cm</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/maine-surf-white-3-drawer-chest-of-drawers-bedroom-storage-cabinet-84cm</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2398,37 +1618,12 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-6-drawer-dressing-table-stool-wall-mirror-set-solid-oak-vanity-set</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-wooden-2-door-1-drawer-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-wooden-3-door-2-drawer-wardrobe</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-wooden-4-drawer-chest</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-wooden-large-sideboard</loc>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-coffee-table-with-2-drawers-shelf-wooden-living-room-coffee-table</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-3-drawer-bedside-table-wooden-bedside-cabinet-with-storage</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2453,112 +1648,12 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/moritz-tv-unit-white</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-tv-unit-wooden-tv-stand-media-cabinet</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/cotswold-solid-oak-widescreen-tv-unit</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/louis-black-fluted-tv-unit</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-tall-bookcase</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/corona-compact-bookcase-with-4-shelves-1-drawer-distressed-waxed-light-pine</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/corona-medium-bookcase-with-3-shelves-distressed-waxed-light-pine</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/corona-large-bookcase-with-4-shelves-distressed-waxed-light-pine</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/michigan-bookcase-with-2-doors-oak-effect-black-metal-frame</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/michigan-sideboard-with-2-doors-3-drawers-oak-effect-black-metal-frame</loc>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://www.reveliving.co.uk/product/michigan-coffee-table-with-2-drawers-oak-effect-black-metal-frame</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/lagonda-160cm-clear-glass-tv-stand-with-high-gloss-white-drawer</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rowley-black-high-gloss-tv-cabinet-120cm</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/rowley-white-high-gloss-tv-cabinet-120cm</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/marco-white-high-gloss-tempered-glass-tv-unit-160cm</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mapleton-tall-ladder-bookcase-with-drawer-white-oak-effect</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/mapleton-tall-ladder-bookcase-with-drawer-white-black</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/arctic-wide-white-bookcase-110cm-modern-open-display-storage-shelving-unit</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/sonoma-narrow-bookcase-oak-effect-with-black-metal-legs</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/sonoma-wide-bookcase-oak-effect-with-black-metal-legs</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/stirling-solid-oak-bookcase-with-3-shelves-985cm-wide-wooden-bookcase</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/stirling-solid-oak-bookcase-with-2-shelves-985cm-wide-wooden-bookcase</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2574,31 +1669,6 @@
 
   <url>
     <loc>https://www.reveliving.co.uk/product/stirling-solid-oak-6-seater-extending-dining-table-chairs-set-160210cm</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/selby-wall-mounted-glass-display-cabinet-white-silver-light-beech</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/selby-1-door-glass-display-cabinet-white-silver-black-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/selby-2-door-glass-display-cabinet-black-silver-white-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/selby-corner-glass-display-cabinet-corner-display-unit-with-glass-shelves-black-silver-white-oak</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/hatton-2-door-glass-display-cabinet-chrome-black-display-unit</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2693,36 +1763,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-carrera-3-seater-sofa-oyster-cream-chenille</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-henrietta-3-seater-sofa-natural-beige-linen-fabric</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-monza-grey-linen-compact-2-seater-sofa-scandinavian-style</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-monza-grey-linen-compact-3-seater-sofa-scandinavian-style</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-monza-blue-linen-compact-2-seater-sofa-scandinavian-style</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-monza-blue-linen-compact-3-seater-sofa-scandinavian-style</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/verona-grey-fabric-swivel-armchair-contemporary-accent-chair</loc>
     <priority>0.6</priority>
   </url>
@@ -2783,22 +1823,12 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-arya-dark-oak-media-unit-160cm-tv-unit-tv-stand</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/julian-bowen-arya-dark-oak-extending-dining-table-round-to-oval-200cm</loc>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://www.reveliving.co.uk/product/fusion-faux-leather-ottoman-storage-bed-black-grey-small-double-double-king</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-bali-oak-finish-bed-with-bookcase-headboard-single-small-double-double</loc>
     <priority>0.6</priority>
   </url>
 
@@ -2878,11 +1908,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-knoxley-black-oak-extending-dining-table-6-8-seater</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/julian-bowen-lima-grey-velvet-dining-chairs-set-of-4-or-6</loc>
     <priority>0.6</priority>
   </url>
@@ -2908,11 +1933,6 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-como-grey-high-gloss-extending-dining-table-6-seater</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/julian-bowen-como-grey-high-gloss-extending-dining-table-4-chairs-4-seater-dining-set</loc>
     <priority>0.6</priority>
   </url>
@@ -2923,22 +1943,157 @@
   </url>
 
   <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-camille-french-style-limed-oak-bed-frame-oatmeal-upholstered-headboard</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
-    <loc>https://www.reveliving.co.uk/product/julian-bowen-fleur-rattan-wooden-bed-frame-light-oak-double-king-size</loc>
-    <priority>0.6</priority>
-  </url>
-
-  <url>
     <loc>https://www.reveliving.co.uk/product/knoxley-black-oak-extending-dining-table-with-6-chairs-6-seater-dining-set</loc>
     <priority>0.6</priority>
   </url>
 
   <url>
     <loc>https://www.reveliving.co.uk/product/newline-large-black-high-gloss-sideboard-2-door-3-drawer-storage-cabinet</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/maine-anthracite-32-drawer-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/chloe-4-drawer-chest-of-drawers-storm-grey-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/alicia-6-drawer-wide-chest-of-drawers-matt-anthracite-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/chloe-storm-grey-6-drawer-wide-chest-of-drawers-modern-bedroom-storage-cabinet-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/zircon-white-4-drawer-chest-of-drawers-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/topline-black-42-chest-of-drawers-modern-bedroom-storage-chest-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/helsinki-white-high-gloss-narrow-5-drawer-chest-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/alicia-black-5-drawer-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/topline-white-55-chest-of-drawers-modern-10-drawer-bedroom-storage-cabinet-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/alicia-white-5-drawer-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/belvoir-grey-oak-5-drawer-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/arden-white-high-gloss-5-drawer-chest-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/maine-32-drawer-chest-of-drawers-dove-grey-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-3-drawer-wide-chest-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/maine-anthracite-3-drawer-chest-of-drawers-bedroom-storage-cabinet-84cm-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/maine-32-drawer-chest-of-drawers-surf-white-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/mapleton-white-oak-23-chest-of-drawers-5-drawer-bedroom-storage-chest-1-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/mapleton-white-oak-22-chest-of-drawers-4-drawer-bedroom-storage-chest-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/augustina-mirrored-5-drawer-narrow-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/california-grey-4-drawer-chest-of-drawers-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/mallory-solid-oak-wooden-4-drawer-chest-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/maine-dove-grey-3-drawer-chest-of-drawers-bedroom-storage-cabinet-84cm-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/bardalona-oak-effect-4-drawer-chest-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/maine-surf-white-3-drawer-chest-of-drawers-bedroom-storage-cabinet-84cm-chest-of-drawers</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/arctic-grey-fabric-corner-sofa-bed-with-storage-left-or-right-hand-facing</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/anton-grey-fabric-corner-sofa-bed-with-storage-left-or-right-hand-facing</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/francesca-grey-corner-sofa-bed-with-storage-usb-charging-cup-holders-universal-left-or-right-hand</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/lucca-grey-linen-fabric-corner-sofa-bed-with-storage-universal-left-or-right-hand</loc>
+    <priority>0.6</priority>
+  </url>
+
+  <url>
+    <loc>https://www.reveliving.co.uk/product/lakelyn-light-grey-fabric-electric-recliner-corner-suite-with-led-lights-speakers</loc>
     <priority>0.6</priority>
   </url>
 
